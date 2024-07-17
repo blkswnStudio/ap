@@ -1,0 +1,1175 @@
+[
+    {
+        "inputs": [],
+        "name": "AlreadyInitialized",
+        "type": "error"
+    },
+    {
+        "inputs": [],
+        "name": "BadOracle",
+        "type": "error"
+    },
+    {
+        "inputs": [],
+        "name": "FeeExceedMaxPercentage",
+        "type": "error"
+    },
+    {
+        "inputs": [],
+        "name": "InvalidPaymentForOracleUpdate",
+        "type": "error"
+    },
+    {
+        "inputs": [],
+        "name": "NoStockSplitUpdateRequired",
+        "type": "error"
+    },
+    {
+        "inputs": [],
+        "name": "NotContract",
+        "type": "error"
+    },
+    {
+        "inputs": [],
+        "name": "NotFromTokenManager",
+        "type": "error"
+    },
+    {
+        "inputs": [
+            {
+                "internalType": "address",
+                "name": "tokenAddress",
+                "type": "address"
+            }
+        ],
+        "name": "OracleUntrusted",
+        "type": "error"
+    },
+    {
+        "inputs": [
+            {
+                "internalType": "address",
+                "name": "owner",
+                "type": "address"
+            }
+        ],
+        "name": "OwnableInvalidOwner",
+        "type": "error"
+    },
+    {
+        "inputs": [
+            {
+                "internalType": "address",
+                "name": "account",
+                "type": "address"
+            }
+        ],
+        "name": "OwnableUnauthorizedAccount",
+        "type": "error"
+    },
+    {
+        "inputs": [
+            {
+                "internalType": "address",
+                "name": "tokenAddress",
+                "type": "address"
+            }
+        ],
+        "name": "PythUpdateNotFound",
+        "type": "error"
+    },
+    {
+        "inputs": [],
+        "name": "StockSplitUpdateFailed",
+        "type": "error"
+    },
+    {
+        "inputs": [],
+        "name": "TokenNotInCache",
+        "type": "error"
+    },
+    {
+        "inputs": [],
+        "name": "TooOldPythPrices",
+        "type": "error"
+    },
+    {
+        "inputs": [],
+        "name": "UnknownOracleId",
+        "type": "error"
+    },
+    {
+        "inputs": [],
+        "name": "ZeroAddress",
+        "type": "error"
+    },
+    {
+        "anonymous": false,
+        "inputs": [
+            {
+                "indexed": true,
+                "internalType": "address",
+                "name": "previousOwner",
+                "type": "address"
+            },
+            {
+                "indexed": true,
+                "internalType": "address",
+                "name": "newOwner",
+                "type": "address"
+            }
+        ],
+        "name": "OwnershipTransferred",
+        "type": "event"
+    },
+    {
+        "anonymous": false,
+        "inputs": [
+            {
+                "indexed": false,
+                "internalType": "address",
+                "name": "tellorCallerAddress",
+                "type": "address"
+            },
+            {
+                "indexed": false,
+                "internalType": "address",
+                "name": "tokenManagerAddress",
+                "type": "address"
+            }
+        ],
+        "name": "PriceFeedInitialized",
+        "type": "event"
+    },
+    {
+        "anonymous": false,
+        "inputs": [
+            {
+                "indexed": false,
+                "internalType": "address",
+                "name": "altPriceFeed",
+                "type": "address"
+            }
+        ],
+        "name": "SetAltPriceFeed",
+        "type": "event"
+    },
+    {
+        "inputs": [],
+        "name": "CCR",
+        "outputs": [
+            {
+                "internalType": "uint256",
+                "name": "",
+                "type": "uint256"
+            }
+        ],
+        "stateMutability": "view",
+        "type": "function"
+    },
+    {
+        "inputs": [],
+        "name": "COLL_LIQUIDATION_GAS_COMP_PERCENT_DIVISOR",
+        "outputs": [
+            {
+                "internalType": "uint256",
+                "name": "",
+                "type": "uint256"
+            }
+        ],
+        "stateMutability": "view",
+        "type": "function"
+    },
+    {
+        "inputs": [],
+        "name": "MAX_BORROWING_FEE",
+        "outputs": [
+            {
+                "internalType": "uint256",
+                "name": "",
+                "type": "uint256"
+            }
+        ],
+        "stateMutability": "view",
+        "type": "function"
+    },
+    {
+        "inputs": [],
+        "name": "MCR",
+        "outputs": [
+            {
+                "internalType": "uint256",
+                "name": "",
+                "type": "uint256"
+            }
+        ],
+        "stateMutability": "view",
+        "type": "function"
+    },
+    {
+        "inputs": [],
+        "name": "MIN_TROVE_COLL_USD",
+        "outputs": [
+            {
+                "internalType": "uint256",
+                "name": "",
+                "type": "uint256"
+            }
+        ],
+        "stateMutability": "view",
+        "type": "function"
+    },
+    {
+        "inputs": [],
+        "name": "NAME",
+        "outputs": [
+            {
+                "internalType": "string",
+                "name": "",
+                "type": "string"
+            }
+        ],
+        "stateMutability": "view",
+        "type": "function"
+    },
+    {
+        "inputs": [],
+        "name": "OLD_PYTH_PRICE_TIMEOUT",
+        "outputs": [
+            {
+                "internalType": "uint256",
+                "name": "",
+                "type": "uint256"
+            }
+        ],
+        "stateMutability": "view",
+        "type": "function"
+    },
+    {
+        "inputs": [],
+        "name": "ORACLE_AS_TRUSTED_TIMEOUT",
+        "outputs": [
+            {
+                "internalType": "uint256",
+                "name": "",
+                "type": "uint256"
+            }
+        ],
+        "stateMutability": "view",
+        "type": "function"
+    },
+    {
+        "inputs": [],
+        "name": "REDEMPTION_FEE_FLOOR",
+        "outputs": [
+            {
+                "internalType": "uint256",
+                "name": "",
+                "type": "uint256"
+            }
+        ],
+        "stateMutability": "view",
+        "type": "function"
+    },
+    {
+        "inputs": [],
+        "name": "SWAP_POOL_AMOUNT_CAP",
+        "outputs": [
+            {
+                "internalType": "uint256",
+                "name": "",
+                "type": "uint256"
+            }
+        ],
+        "stateMutability": "view",
+        "type": "function"
+    },
+    {
+        "inputs": [],
+        "name": "altFeed",
+        "outputs": [
+            {
+                "internalType": "contract IAlternativePriceFeed",
+                "name": "",
+                "type": "address"
+            }
+        ],
+        "stateMutability": "view",
+        "type": "function"
+    },
+    {
+        "inputs": [
+            {
+                "internalType": "bool",
+                "name": "revertOnUntrusted",
+                "type": "bool"
+            }
+        ],
+        "name": "buildPriceCache",
+        "outputs": [
+            {
+                "components": [
+                    {
+                        "components": [
+                            {
+                                "internalType": "address",
+                                "name": "tokenAddress",
+                                "type": "address"
+                            },
+                            {
+                                "internalType": "uint256",
+                                "name": "tokenDecimals",
+                                "type": "uint256"
+                            },
+                            {
+                                "internalType": "uint256",
+                                "name": "price",
+                                "type": "uint256"
+                            },
+                            {
+                                "internalType": "bool",
+                                "name": "isPriceTrusted",
+                                "type": "bool"
+                            },
+                            {
+                                "internalType": "bool",
+                                "name": "isPrimary",
+                                "type": "bool"
+                            },
+                            {
+                                "internalType": "uint256",
+                                "name": "supportedCollateralRatio",
+                                "type": "uint256"
+                            }
+                        ],
+                        "internalType": "struct IBase.TokenPrice[]",
+                        "name": "collPrices",
+                        "type": "tuple[]"
+                    },
+                    {
+                        "components": [
+                            {
+                                "internalType": "address",
+                                "name": "tokenAddress",
+                                "type": "address"
+                            },
+                            {
+                                "internalType": "uint256",
+                                "name": "tokenDecimals",
+                                "type": "uint256"
+                            },
+                            {
+                                "internalType": "uint256",
+                                "name": "price",
+                                "type": "uint256"
+                            },
+                            {
+                                "internalType": "bool",
+                                "name": "isPriceTrusted",
+                                "type": "bool"
+                            },
+                            {
+                                "internalType": "bool",
+                                "name": "isPrimary",
+                                "type": "bool"
+                            },
+                            {
+                                "internalType": "uint256",
+                                "name": "supportedCollateralRatio",
+                                "type": "uint256"
+                            }
+                        ],
+                        "internalType": "struct IBase.TokenPrice[]",
+                        "name": "debtPrices",
+                        "type": "tuple[]"
+                    }
+                ],
+                "internalType": "struct IBase.PriceCache",
+                "name": "cache",
+                "type": "tuple"
+            }
+        ],
+        "stateMutability": "view",
+        "type": "function"
+    },
+    {
+        "inputs": [
+            {
+                "internalType": "address",
+                "name": "_token",
+                "type": "address"
+            },
+            {
+                "internalType": "bool",
+                "name": "_trusted",
+                "type": "bool"
+            }
+        ],
+        "name": "checkPriceUsable",
+        "outputs": [
+            {
+                "internalType": "bool",
+                "name": "",
+                "type": "bool"
+            }
+        ],
+        "stateMutability": "view",
+        "type": "function"
+    },
+    {
+        "inputs": [
+            {
+                "components": [
+                    {
+                        "internalType": "address",
+                        "name": "tokenAddress",
+                        "type": "address"
+                    },
+                    {
+                        "internalType": "uint256",
+                        "name": "tokenDecimals",
+                        "type": "uint256"
+                    },
+                    {
+                        "internalType": "uint256",
+                        "name": "price",
+                        "type": "uint256"
+                    },
+                    {
+                        "internalType": "bool",
+                        "name": "isPriceTrusted",
+                        "type": "bool"
+                    },
+                    {
+                        "internalType": "bool",
+                        "name": "isPrimary",
+                        "type": "bool"
+                    },
+                    {
+                        "internalType": "uint256",
+                        "name": "supportedCollateralRatio",
+                        "type": "uint256"
+                    }
+                ],
+                "internalType": "struct IBase.TokenPrice",
+                "name": "_tokenPrice",
+                "type": "tuple"
+            },
+            {
+                "internalType": "uint256",
+                "name": "_usdValue",
+                "type": "uint256"
+            }
+        ],
+        "name": "getAmountFromUSDValue",
+        "outputs": [
+            {
+                "internalType": "uint256",
+                "name": "amount",
+                "type": "uint256"
+            }
+        ],
+        "stateMutability": "pure",
+        "type": "function"
+    },
+    {
+        "inputs": [
+            {
+                "components": [
+                    {
+                        "components": [
+                            {
+                                "internalType": "address",
+                                "name": "tokenAddress",
+                                "type": "address"
+                            },
+                            {
+                                "internalType": "uint256",
+                                "name": "tokenDecimals",
+                                "type": "uint256"
+                            },
+                            {
+                                "internalType": "uint256",
+                                "name": "price",
+                                "type": "uint256"
+                            },
+                            {
+                                "internalType": "bool",
+                                "name": "isPriceTrusted",
+                                "type": "bool"
+                            },
+                            {
+                                "internalType": "bool",
+                                "name": "isPrimary",
+                                "type": "bool"
+                            },
+                            {
+                                "internalType": "uint256",
+                                "name": "supportedCollateralRatio",
+                                "type": "uint256"
+                            }
+                        ],
+                        "internalType": "struct IBase.TokenPrice[]",
+                        "name": "collPrices",
+                        "type": "tuple[]"
+                    },
+                    {
+                        "components": [
+                            {
+                                "internalType": "address",
+                                "name": "tokenAddress",
+                                "type": "address"
+                            },
+                            {
+                                "internalType": "uint256",
+                                "name": "tokenDecimals",
+                                "type": "uint256"
+                            },
+                            {
+                                "internalType": "uint256",
+                                "name": "price",
+                                "type": "uint256"
+                            },
+                            {
+                                "internalType": "bool",
+                                "name": "isPriceTrusted",
+                                "type": "bool"
+                            },
+                            {
+                                "internalType": "bool",
+                                "name": "isPrimary",
+                                "type": "bool"
+                            },
+                            {
+                                "internalType": "uint256",
+                                "name": "supportedCollateralRatio",
+                                "type": "uint256"
+                            }
+                        ],
+                        "internalType": "struct IBase.TokenPrice[]",
+                        "name": "debtPrices",
+                        "type": "tuple[]"
+                    }
+                ],
+                "internalType": "struct IBase.PriceCache",
+                "name": "_priceCache",
+                "type": "tuple"
+            },
+            {
+                "internalType": "address",
+                "name": "_tokenAddress",
+                "type": "address"
+            },
+            {
+                "internalType": "uint256",
+                "name": "_usdValue",
+                "type": "uint256"
+            }
+        ],
+        "name": "getAmountFromUSDValue",
+        "outputs": [
+            {
+                "internalType": "uint256",
+                "name": "amount",
+                "type": "uint256"
+            }
+        ],
+        "stateMutability": "pure",
+        "type": "function"
+    },
+    {
+        "inputs": [
+            {
+                "internalType": "address",
+                "name": "_tokenAddress",
+                "type": "address"
+            },
+            {
+                "internalType": "uint256",
+                "name": "_usdValue",
+                "type": "uint256"
+            }
+        ],
+        "name": "getAmountFromUSDValue",
+        "outputs": [
+            {
+                "internalType": "uint256",
+                "name": "amount",
+                "type": "uint256"
+            }
+        ],
+        "stateMutability": "view",
+        "type": "function"
+    },
+    {
+        "inputs": [],
+        "name": "getGovToken",
+        "outputs": [
+            {
+                "internalType": "address",
+                "name": "",
+                "type": "address"
+            }
+        ],
+        "stateMutability": "view",
+        "type": "function"
+    },
+    {
+        "inputs": [
+            {
+                "internalType": "address",
+                "name": "_tokenAddress",
+                "type": "address"
+            }
+        ],
+        "name": "getPrice",
+        "outputs": [
+            {
+                "internalType": "uint256",
+                "name": "price",
+                "type": "uint256"
+            },
+            {
+                "internalType": "bool",
+                "name": "isTrusted",
+                "type": "bool"
+            },
+            {
+                "internalType": "bool",
+                "name": "secondarySource",
+                "type": "bool"
+            }
+        ],
+        "stateMutability": "view",
+        "type": "function"
+    },
+    {
+        "inputs": [
+            {
+                "internalType": "address",
+                "name": "_tokenAddress",
+                "type": "address"
+            },
+            {
+                "internalType": "bool",
+                "name": "_allowSecondary",
+                "type": "bool"
+            }
+        ],
+        "name": "getPriceFromSource",
+        "outputs": [
+            {
+                "internalType": "uint256",
+                "name": "price",
+                "type": "uint256"
+            },
+            {
+                "internalType": "bool",
+                "name": "isTrusted",
+                "type": "bool"
+            },
+            {
+                "internalType": "bool",
+                "name": "secondarySource",
+                "type": "bool"
+            }
+        ],
+        "stateMutability": "view",
+        "type": "function"
+    },
+    {
+        "inputs": [
+            {
+                "internalType": "bytes[]",
+                "name": "_priceUpdateData",
+                "type": "bytes[]"
+            }
+        ],
+        "name": "getPythUpdateFee",
+        "outputs": [
+            {
+                "internalType": "uint256",
+                "name": "",
+                "type": "uint256"
+            }
+        ],
+        "stateMutability": "view",
+        "type": "function"
+    },
+    {
+        "inputs": [
+            {
+                "components": [
+                    {
+                        "components": [
+                            {
+                                "internalType": "address",
+                                "name": "tokenAddress",
+                                "type": "address"
+                            },
+                            {
+                                "internalType": "uint256",
+                                "name": "tokenDecimals",
+                                "type": "uint256"
+                            },
+                            {
+                                "internalType": "uint256",
+                                "name": "price",
+                                "type": "uint256"
+                            },
+                            {
+                                "internalType": "bool",
+                                "name": "isPriceTrusted",
+                                "type": "bool"
+                            },
+                            {
+                                "internalType": "bool",
+                                "name": "isPrimary",
+                                "type": "bool"
+                            },
+                            {
+                                "internalType": "uint256",
+                                "name": "supportedCollateralRatio",
+                                "type": "uint256"
+                            }
+                        ],
+                        "internalType": "struct IBase.TokenPrice[]",
+                        "name": "collPrices",
+                        "type": "tuple[]"
+                    },
+                    {
+                        "components": [
+                            {
+                                "internalType": "address",
+                                "name": "tokenAddress",
+                                "type": "address"
+                            },
+                            {
+                                "internalType": "uint256",
+                                "name": "tokenDecimals",
+                                "type": "uint256"
+                            },
+                            {
+                                "internalType": "uint256",
+                                "name": "price",
+                                "type": "uint256"
+                            },
+                            {
+                                "internalType": "bool",
+                                "name": "isPriceTrusted",
+                                "type": "bool"
+                            },
+                            {
+                                "internalType": "bool",
+                                "name": "isPrimary",
+                                "type": "bool"
+                            },
+                            {
+                                "internalType": "uint256",
+                                "name": "supportedCollateralRatio",
+                                "type": "uint256"
+                            }
+                        ],
+                        "internalType": "struct IBase.TokenPrice[]",
+                        "name": "debtPrices",
+                        "type": "tuple[]"
+                    }
+                ],
+                "internalType": "struct IBase.PriceCache",
+                "name": "_priceCache",
+                "type": "tuple"
+            },
+            {
+                "internalType": "address",
+                "name": "_tokenAddress",
+                "type": "address"
+            }
+        ],
+        "name": "getTokenPrice",
+        "outputs": [
+            {
+                "components": [
+                    {
+                        "internalType": "address",
+                        "name": "tokenAddress",
+                        "type": "address"
+                    },
+                    {
+                        "internalType": "uint256",
+                        "name": "tokenDecimals",
+                        "type": "uint256"
+                    },
+                    {
+                        "internalType": "uint256",
+                        "name": "price",
+                        "type": "uint256"
+                    },
+                    {
+                        "internalType": "bool",
+                        "name": "isPriceTrusted",
+                        "type": "bool"
+                    },
+                    {
+                        "internalType": "bool",
+                        "name": "isPrimary",
+                        "type": "bool"
+                    },
+                    {
+                        "internalType": "uint256",
+                        "name": "supportedCollateralRatio",
+                        "type": "uint256"
+                    }
+                ],
+                "internalType": "struct IBase.TokenPrice",
+                "name": "",
+                "type": "tuple"
+            }
+        ],
+        "stateMutability": "pure",
+        "type": "function"
+    },
+    {
+        "inputs": [
+            {
+                "components": [
+                    {
+                        "internalType": "address",
+                        "name": "tokenAddress",
+                        "type": "address"
+                    },
+                    {
+                        "internalType": "uint256",
+                        "name": "tokenDecimals",
+                        "type": "uint256"
+                    },
+                    {
+                        "internalType": "uint256",
+                        "name": "price",
+                        "type": "uint256"
+                    },
+                    {
+                        "internalType": "bool",
+                        "name": "isPriceTrusted",
+                        "type": "bool"
+                    },
+                    {
+                        "internalType": "bool",
+                        "name": "isPrimary",
+                        "type": "bool"
+                    },
+                    {
+                        "internalType": "uint256",
+                        "name": "supportedCollateralRatio",
+                        "type": "uint256"
+                    }
+                ],
+                "internalType": "struct IBase.TokenPrice",
+                "name": "_tokenPrice",
+                "type": "tuple"
+            },
+            {
+                "internalType": "uint256",
+                "name": "_amount",
+                "type": "uint256"
+            }
+        ],
+        "name": "getUSDValue",
+        "outputs": [
+            {
+                "internalType": "uint256",
+                "name": "usdValue",
+                "type": "uint256"
+            }
+        ],
+        "stateMutability": "pure",
+        "type": "function"
+    },
+    {
+        "inputs": [
+            {
+                "components": [
+                    {
+                        "components": [
+                            {
+                                "internalType": "address",
+                                "name": "tokenAddress",
+                                "type": "address"
+                            },
+                            {
+                                "internalType": "uint256",
+                                "name": "tokenDecimals",
+                                "type": "uint256"
+                            },
+                            {
+                                "internalType": "uint256",
+                                "name": "price",
+                                "type": "uint256"
+                            },
+                            {
+                                "internalType": "bool",
+                                "name": "isPriceTrusted",
+                                "type": "bool"
+                            },
+                            {
+                                "internalType": "bool",
+                                "name": "isPrimary",
+                                "type": "bool"
+                            },
+                            {
+                                "internalType": "uint256",
+                                "name": "supportedCollateralRatio",
+                                "type": "uint256"
+                            }
+                        ],
+                        "internalType": "struct IBase.TokenPrice[]",
+                        "name": "collPrices",
+                        "type": "tuple[]"
+                    },
+                    {
+                        "components": [
+                            {
+                                "internalType": "address",
+                                "name": "tokenAddress",
+                                "type": "address"
+                            },
+                            {
+                                "internalType": "uint256",
+                                "name": "tokenDecimals",
+                                "type": "uint256"
+                            },
+                            {
+                                "internalType": "uint256",
+                                "name": "price",
+                                "type": "uint256"
+                            },
+                            {
+                                "internalType": "bool",
+                                "name": "isPriceTrusted",
+                                "type": "bool"
+                            },
+                            {
+                                "internalType": "bool",
+                                "name": "isPrimary",
+                                "type": "bool"
+                            },
+                            {
+                                "internalType": "uint256",
+                                "name": "supportedCollateralRatio",
+                                "type": "uint256"
+                            }
+                        ],
+                        "internalType": "struct IBase.TokenPrice[]",
+                        "name": "debtPrices",
+                        "type": "tuple[]"
+                    }
+                ],
+                "internalType": "struct IBase.PriceCache",
+                "name": "_priceCache",
+                "type": "tuple"
+            },
+            {
+                "internalType": "address",
+                "name": "_tokenAddress",
+                "type": "address"
+            },
+            {
+                "internalType": "uint256",
+                "name": "_amount",
+                "type": "uint256"
+            }
+        ],
+        "name": "getUSDValue",
+        "outputs": [
+            {
+                "internalType": "uint256",
+                "name": "usdValue",
+                "type": "uint256"
+            }
+        ],
+        "stateMutability": "pure",
+        "type": "function"
+    },
+    {
+        "inputs": [
+            {
+                "internalType": "address",
+                "name": "_tokenAddress",
+                "type": "address"
+            },
+            {
+                "internalType": "uint256",
+                "name": "_amount",
+                "type": "uint256"
+            }
+        ],
+        "name": "getUSDValue",
+        "outputs": [
+            {
+                "internalType": "uint256",
+                "name": "usdValue",
+                "type": "uint256"
+            }
+        ],
+        "stateMutability": "view",
+        "type": "function"
+    },
+    {
+        "inputs": [
+            {
+                "internalType": "address",
+                "name": "_tokenAddress",
+                "type": "address"
+            },
+            {
+                "internalType": "bytes32",
+                "name": "_oracleId",
+                "type": "bytes32"
+            }
+        ],
+        "name": "initiateNewOracleId",
+        "outputs": [],
+        "stateMutability": "nonpayable",
+        "type": "function"
+    },
+    {
+        "inputs": [
+            {
+                "internalType": "bytes32",
+                "name": "",
+                "type": "bytes32"
+            }
+        ],
+        "name": "oracleIdToToken",
+        "outputs": [
+            {
+                "internalType": "address",
+                "name": "",
+                "type": "address"
+            }
+        ],
+        "stateMutability": "view",
+        "type": "function"
+    },
+    {
+        "inputs": [],
+        "name": "owner",
+        "outputs": [
+            {
+                "internalType": "address",
+                "name": "",
+                "type": "address"
+            }
+        ],
+        "stateMutability": "view",
+        "type": "function"
+    },
+    {
+        "inputs": [],
+        "name": "pyth",
+        "outputs": [
+            {
+                "internalType": "contract IPyth",
+                "name": "",
+                "type": "address"
+            }
+        ],
+        "stateMutability": "view",
+        "type": "function"
+    },
+    {
+        "inputs": [],
+        "name": "renounceOwnership",
+        "outputs": [],
+        "stateMutability": "nonpayable",
+        "type": "function"
+    },
+    {
+        "inputs": [
+            {
+                "internalType": "address",
+                "name": "_pyth",
+                "type": "address"
+            },
+            {
+                "internalType": "address",
+                "name": "_tokenManagerAddress",
+                "type": "address"
+            }
+        ],
+        "name": "setAddresses",
+        "outputs": [],
+        "stateMutability": "nonpayable",
+        "type": "function"
+    },
+    {
+        "inputs": [
+            {
+                "internalType": "address",
+                "name": "_altFeed",
+                "type": "address"
+            }
+        ],
+        "name": "setAlternativePriceFeed",
+        "outputs": [],
+        "stateMutability": "nonpayable",
+        "type": "function"
+    },
+    {
+        "inputs": [],
+        "name": "tokenManager",
+        "outputs": [
+            {
+                "internalType": "contract ITokenManager",
+                "name": "",
+                "type": "address"
+            }
+        ],
+        "stateMutability": "view",
+        "type": "function"
+    },
+    {
+        "inputs": [
+            {
+                "internalType": "address",
+                "name": "",
+                "type": "address"
+            }
+        ],
+        "name": "tokenToOracleId",
+        "outputs": [
+            {
+                "internalType": "bytes32",
+                "name": "",
+                "type": "bytes32"
+            }
+        ],
+        "stateMutability": "view",
+        "type": "function"
+    },
+    {
+        "inputs": [
+            {
+                "internalType": "address",
+                "name": "newOwner",
+                "type": "address"
+            }
+        ],
+        "name": "transferOwnership",
+        "outputs": [],
+        "stateMutability": "nonpayable",
+        "type": "function"
+    },
+    {
+        "inputs": [
+            {
+                "internalType": "bytes[]",
+                "name": "_priceUpdateData",
+                "type": "bytes[]"
+            }
+        ],
+        "name": "updatePythPrices",
+        "outputs": [],
+        "stateMutability": "payable",
+        "type": "function"
+    }
+]

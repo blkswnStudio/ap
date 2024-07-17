@@ -1,0 +1,408 @@
+[
+    {
+        "inputs": [],
+        "name": "AlreadyInitialized",
+        "type": "error"
+    },
+    {
+        "inputs": [],
+        "name": "FeeExceedMaxPercentage",
+        "type": "error"
+    },
+    {
+        "anonymous": false,
+        "inputs": [
+            {
+                "indexed": false,
+                "internalType": "address",
+                "name": "_sortedTrovesAddress",
+                "type": "address"
+            },
+            {
+                "indexed": false,
+                "internalType": "address",
+                "name": "_troveManagerAddress",
+                "type": "address"
+            },
+            {
+                "indexed": false,
+                "internalType": "address",
+                "name": "_redemptionOperations",
+                "type": "address"
+            },
+            {
+                "indexed": false,
+                "internalType": "address",
+                "name": "_priceFeedAddress",
+                "type": "address"
+            }
+        ],
+        "name": "HintHelpersInitialized",
+        "type": "event"
+    },
+    {
+        "inputs": [
+            {
+                "internalType": "uint256",
+                "name": "_CR",
+                "type": "uint256"
+            },
+            {
+                "internalType": "uint256",
+                "name": "_numTrials",
+                "type": "uint256"
+            },
+            {
+                "internalType": "uint256",
+                "name": "_inputRandomSeed",
+                "type": "uint256"
+            }
+        ],
+        "name": "getApproxHint",
+        "outputs": [
+            {
+                "internalType": "address",
+                "name": "hintAddress",
+                "type": "address"
+            },
+            {
+                "internalType": "uint256",
+                "name": "diff",
+                "type": "uint256"
+            },
+            {
+                "internalType": "uint256",
+                "name": "latestRandomSeed",
+                "type": "uint256"
+            }
+        ],
+        "stateMutability": "view",
+        "type": "function"
+    },
+    {
+        "inputs": [
+            {
+                "internalType": "address",
+                "name": "_borrower",
+                "type": "address"
+            }
+        ],
+        "name": "getCurrentICR",
+        "outputs": [
+            {
+                "internalType": "uint256",
+                "name": "ICR",
+                "type": "uint256"
+            },
+            {
+                "internalType": "uint256",
+                "name": "IMCR",
+                "type": "uint256"
+            },
+            {
+                "internalType": "uint256",
+                "name": "currentDebtInUSD",
+                "type": "uint256"
+            },
+            {
+                "internalType": "uint256",
+                "name": "currentCollInUSD",
+                "type": "uint256"
+            }
+        ],
+        "stateMutability": "view",
+        "type": "function"
+    },
+    {
+        "inputs": [
+            {
+                "components": [
+                    {
+                        "components": [
+                            {
+                                "internalType": "address",
+                                "name": "tokenAddress",
+                                "type": "address"
+                            },
+                            {
+                                "internalType": "uint256",
+                                "name": "tokenDecimals",
+                                "type": "uint256"
+                            },
+                            {
+                                "internalType": "uint256",
+                                "name": "price",
+                                "type": "uint256"
+                            },
+                            {
+                                "internalType": "bool",
+                                "name": "isPriceTrusted",
+                                "type": "bool"
+                            },
+                            {
+                                "internalType": "bool",
+                                "name": "isPrimary",
+                                "type": "bool"
+                            },
+                            {
+                                "internalType": "uint256",
+                                "name": "supportedCollateralRatio",
+                                "type": "uint256"
+                            }
+                        ],
+                        "internalType": "struct IBase.TokenPrice[]",
+                        "name": "collPrices",
+                        "type": "tuple[]"
+                    },
+                    {
+                        "components": [
+                            {
+                                "internalType": "address",
+                                "name": "tokenAddress",
+                                "type": "address"
+                            },
+                            {
+                                "internalType": "uint256",
+                                "name": "tokenDecimals",
+                                "type": "uint256"
+                            },
+                            {
+                                "internalType": "uint256",
+                                "name": "price",
+                                "type": "uint256"
+                            },
+                            {
+                                "internalType": "bool",
+                                "name": "isPriceTrusted",
+                                "type": "bool"
+                            },
+                            {
+                                "internalType": "bool",
+                                "name": "isPrimary",
+                                "type": "bool"
+                            },
+                            {
+                                "internalType": "uint256",
+                                "name": "supportedCollateralRatio",
+                                "type": "uint256"
+                            }
+                        ],
+                        "internalType": "struct IBase.TokenPrice[]",
+                        "name": "debtPrices",
+                        "type": "tuple[]"
+                    }
+                ],
+                "internalType": "struct IBase.PriceCache",
+                "name": "_priceCache",
+                "type": "tuple"
+            },
+            {
+                "internalType": "address",
+                "name": "_borrower",
+                "type": "address"
+            }
+        ],
+        "name": "getCurrentICR",
+        "outputs": [
+            {
+                "internalType": "uint256",
+                "name": "ICR",
+                "type": "uint256"
+            },
+            {
+                "internalType": "uint256",
+                "name": "IMCR",
+                "type": "uint256"
+            },
+            {
+                "internalType": "uint256",
+                "name": "currentDebtInUSD",
+                "type": "uint256"
+            },
+            {
+                "internalType": "uint256",
+                "name": "currentCollInUSD",
+                "type": "uint256"
+            }
+        ],
+        "stateMutability": "view",
+        "type": "function"
+    },
+    {
+        "inputs": [
+            {
+                "internalType": "address",
+                "name": "_borrower",
+                "type": "address"
+            }
+        ],
+        "name": "getCurrentICRIncludingGov",
+        "outputs": [
+            {
+                "internalType": "uint256",
+                "name": "ICR",
+                "type": "uint256"
+            },
+            {
+                "internalType": "uint256",
+                "name": "IMCR",
+                "type": "uint256"
+            },
+            {
+                "internalType": "uint256",
+                "name": "currentDebtInUSD",
+                "type": "uint256"
+            },
+            {
+                "internalType": "uint256",
+                "name": "currentCollInUSD",
+                "type": "uint256"
+            },
+            {
+                "internalType": "uint256",
+                "name": "currentGovInUSD",
+                "type": "uint256"
+            }
+        ],
+        "stateMutability": "view",
+        "type": "function"
+    },
+    {
+        "inputs": [
+            {
+                "internalType": "address",
+                "name": "_borrower",
+                "type": "address"
+            },
+            {
+                "components": [
+                    {
+                        "internalType": "address",
+                        "name": "tokenAddress",
+                        "type": "address"
+                    },
+                    {
+                        "internalType": "uint256",
+                        "name": "amount",
+                        "type": "uint256"
+                    }
+                ],
+                "internalType": "struct IBase.TokenAmount[]",
+                "name": "addedColl",
+                "type": "tuple[]"
+            },
+            {
+                "components": [
+                    {
+                        "internalType": "address",
+                        "name": "tokenAddress",
+                        "type": "address"
+                    },
+                    {
+                        "internalType": "uint256",
+                        "name": "amount",
+                        "type": "uint256"
+                    }
+                ],
+                "internalType": "struct IBase.TokenAmount[]",
+                "name": "removedColl",
+                "type": "tuple[]"
+            },
+            {
+                "components": [
+                    {
+                        "internalType": "address",
+                        "name": "tokenAddress",
+                        "type": "address"
+                    },
+                    {
+                        "internalType": "uint256",
+                        "name": "amount",
+                        "type": "uint256"
+                    }
+                ],
+                "internalType": "struct IBase.TokenAmount[]",
+                "name": "addedDebt",
+                "type": "tuple[]"
+            },
+            {
+                "components": [
+                    {
+                        "internalType": "address",
+                        "name": "tokenAddress",
+                        "type": "address"
+                    },
+                    {
+                        "internalType": "uint256",
+                        "name": "amount",
+                        "type": "uint256"
+                    }
+                ],
+                "internalType": "struct IBase.TokenAmount[]",
+                "name": "removedDebt",
+                "type": "tuple[]"
+            }
+        ],
+        "name": "getICRIncludingPatch",
+        "outputs": [
+            {
+                "internalType": "uint256",
+                "name": "ICR",
+                "type": "uint256"
+            }
+        ],
+        "stateMutability": "view",
+        "type": "function"
+    },
+    {
+        "inputs": [
+            {
+                "internalType": "uint256",
+                "name": "_amountToRedeem",
+                "type": "uint256"
+            },
+            {
+                "internalType": "uint256",
+                "name": "_numTrails",
+                "type": "uint256"
+            },
+            {
+                "internalType": "uint256",
+                "name": "_inputRandomSeed",
+                "type": "uint256"
+            }
+        ],
+        "name": "getRedemptionIterationHints",
+        "outputs": [
+            {
+                "components": [
+                    {
+                        "internalType": "address",
+                        "name": "trove",
+                        "type": "address"
+                    },
+                    {
+                        "internalType": "address",
+                        "name": "upperHint",
+                        "type": "address"
+                    },
+                    {
+                        "internalType": "address",
+                        "name": "lowerHint",
+                        "type": "address"
+                    },
+                    {
+                        "internalType": "uint256",
+                        "name": "expectedCR",
+                        "type": "uint256"
+                    }
+                ],
+                "internalType": "struct IBase.RedeemIteration[]",
+                "name": "",
+                "type": "tuple[]"
+            }
+        ],
+        "stateMutability": "view",
+        "type": "function"
+    }
+]

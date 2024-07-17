@@ -1,0 +1,355 @@
+specVersion: 0.0.5
+schema:
+  file: ./schema.graphql
+dataSources:
+  - kind: ethereum
+    name: TroveManager
+    network: sei-testnet
+    source:
+      address: '0xDB4C9076B78762F4F46f8a8e34f0B52574d4b124'
+      abi: TroveManager
+      startBlock: 154017777
+    mapping:
+      kind: ethereum/events
+      apiVersion: 0.0.7
+      language: wasm/assemblyscript
+      entities:
+        - Placeholder
+      abis:
+        - name: TroveManager
+          file: ./abis/TroveManager.json
+        - name: StoragePool
+          file: ./abis/StoragePool.json
+        - name: ReservePool
+          file: ./abis/ReservePool.json
+        - name: PriceFeed
+          file: ./abis/PriceFeed.json
+        - name: DebtToken
+          file: ./abis/DebtToken.json
+        - name: StabilityPoolManager
+          file: ./abis/StabilityPoolManager.json
+        - name: StabilityPool
+          file: ./abis/StabilityPool.json
+      eventHandlers:
+        - event: TroveCollChanged(address,(address,uint256)[],bool)
+          handler: handleCollChanged
+        - event: PaidBorrowingFee(indexed address,uint256,uint256)
+          handler: handlePaidBorrowingFee
+      file: ./src/trove-manager.ts
+  - kind: ethereum
+    name: Pyth
+    network: sei-testnet
+    source:
+      # sei-testnetEVM-0x2880aB155794e7179c9eE2e38200202908C17B43
+      # sei-testnetEVMtestnet-0x2880aB155794e7179c9eE2e38200202908C17B43
+      address: '0x2880aB155794e7179c9eE2e38200202908C17B43'
+      abi: IPyth
+      startBlock: 154017777
+    mapping:
+      kind: ethereum/events
+      apiVersion: 0.0.7
+      language: wasm/assemblyscript
+      entities:
+        - Placeholder
+      abis:
+        - name: IPyth
+          file: ./abis/IPyth.json
+        - name: PriceFeed
+          file: ./abis/PriceFeed.json
+      eventHandlers:
+        - event: PriceFeedUpdate(indexed bytes32,uint64,int64,uint64)
+          handler: handlePriceFeedUpdate
+      file: ./src/pyth.ts
+  - kind: ethereum
+    name: StoragePool
+    network: sei-testnet
+    source:
+      address: '0x5FBD309ebe62B820E88F44aD2D94FF69DfA64619'
+      abi: StoragePool
+      startBlock: 154017777
+    mapping:
+      kind: ethereum/events
+      apiVersion: 0.0.7
+      language: wasm/assemblyscript
+      entities:
+        - Placeholder
+      abis:
+        - name: StoragePool
+          file: ./abis/StoragePool.json
+      eventHandlers:
+        - event: StoragePoolInitialized(address,address,address,address,address,address)
+          handler: handleStoragePoolInitialized
+        - event: StoragePoolValueUpdated(address,bool,uint8,uint256)
+          handler: handleStoragePoolValueUpdated
+      file: ./src/storage-pool.ts
+  - kind: ethereum
+    name: PriceFeed
+    network: sei-testnet
+    source:
+      address: '0x85F8bf90f0e1Fcc3C1A4B6D6d3e25293C925D3Be'
+      abi: PriceFeed
+      startBlock: 154017777
+    mapping:
+      kind: ethereum/events
+      apiVersion: 0.0.7
+      language: wasm/assemblyscript
+      entities:
+        - Placeholder
+      abis:
+        - name: PriceFeed
+          file: ./abis/PriceFeed.json
+      eventHandlers:
+        - event: PriceFeedInitialized(address,address)
+          handler: handlePriceFeedInitialized
+      file: ./src/price-feed.ts
+  - kind: ethereum
+    name: BorrowerOperations
+    network: sei-testnet
+    source:
+      address: '0x8900351E77deAA9392aA49B91C02B02df7261753'
+      abi: BorrowerOperations
+      startBlock: 154017777
+    mapping:
+      kind: ethereum/events
+      apiVersion: 0.0.7
+      language: wasm/assemblyscript
+      entities:
+        - Placeholder
+      abis:
+        - name: BorrowerOperations
+          file: ./abis/BorrowerOperations.json
+        - name: StoragePool
+          file: ./abis/StoragePool.json
+        - name: ReservePool
+          file: ./abis/ReservePool.json
+        - name: PriceFeed
+          file: ./abis/PriceFeed.json
+        - name: DebtToken
+          file: ./abis/DebtToken.json
+        - name: StabilityPoolManager
+          file: ./abis/StabilityPoolManager.json
+        - name: StabilityPool
+          file: ./abis/StabilityPool.json
+      eventHandlers:
+        - event: TroveCreated(address,(address,uint256)[])
+          handler: handleTroveCreated
+
+      file: ./src/borrower-operations.ts
+  - kind: ethereum
+    name: SwapOperations
+    network: sei-testnet
+    source:
+      address: '0x2144125E38eD5ba1d7577Be288A7C628dBf74D82'
+      abi: SwapOperations
+      startBlock: 154017777
+    mapping:
+      kind: ethereum/events
+      apiVersion: 0.0.7
+      language: wasm/assemblyscript
+      entities:
+        - Placeholder
+      abis:
+        - name: SwapOperations
+          file: ./abis/SwapOperations.json
+        - name: SwapPair
+          file: ./abis/SwapPair.json
+        - name: PriceFeed
+          file: ./abis/PriceFeed.json
+      eventHandlers:
+        - event: PairCreated(indexed address,indexed address,address,uint256)
+          handler: handlePairCreated
+      file: ./src/swap-operations.ts
+  - kind: ethereum
+    name: ReservePool
+    network: sei-testnet
+    source:
+      address: '0x13c1BD98Cd34DD5A3aaC51Cf3fD71F0762d58e71'
+      abi: ReservePool
+      startBlock: 154017777
+    mapping:
+      kind: ethereum/events
+      apiVersion: 0.0.7
+      language: wasm/assemblyscript
+      entities:
+        - Placeholder
+      abis:
+        - name: ReservePool
+          file: ./abis/ReservePool.json
+        - name: DebtToken
+          file: ./abis/DebtToken.json
+        - name: StabilityPoolManager
+          file: ./abis/StabilityPoolManager.json
+        - name: StabilityPool
+          file: ./abis/StabilityPool.json
+        - name: BorrowerOperations
+          file: ./abis/BorrowerOperations.json
+        - name: StoragePool
+          file: ./abis/StoragePool.json
+        - name: PriceFeed
+          file: ./abis/PriceFeed.json
+      eventHandlers:
+        - event: ReservePoolInitialized(address,address,address,address)
+          handler: handleReservePoolInitialized
+        - event: WithdrewReserves(uint256,uint256)
+          handler: handleWithdrewReserves
+      file: ./src/reserve-pool.ts
+  - kind: ethereum
+    name: TokenManager
+    network: sei-testnet
+    source:
+      address: '0x337E40127Db6432DdbDa6b2cDf246D1Fa9e9447C'
+      abi: TokenManager
+      startBlock: 154017777
+    mapping:
+      kind: ethereum/events
+      apiVersion: 0.0.7
+      language: wasm/assemblyscript
+      entities:
+        - Placeholder
+      abis:
+        - name: TokenManager
+          file: ./abis/TokenManager.json
+        - name: DebtToken
+          file: ./abis/DebtToken.json
+        - name: ERC20
+          file: ./abis/ERC20.json
+        - name: PriceFeed
+          file: ./abis/PriceFeed.json
+        - name: StabilityPoolManager
+          file: ./abis/StabilityPoolManager.json
+        - name: StabilityPool
+          file: ./abis/StabilityPool.json
+        - name: BorrowerOperations
+          file: ./abis/BorrowerOperations.json
+        - name: ReservePool
+          file: ./abis/ReservePool.json
+        - name: StoragePool
+          file: ./abis/StoragePool.json
+      eventHandlers:
+        - event: TokenManagerInitialized(address,address,address)
+          handler: handleTokenManagerInitiated
+        - event: CollTokenAdded(address,uint256,bool,bytes32)
+          handler: handleCollTokenAdded
+        - event: CollTokenSupportedCollateralRatioSet(address,uint256)
+          handler: handleCollTokenSupportedCollateralRatioSet
+        - event: DebtTokenAdded(address,bytes32)
+          handler: handleDebtTokenAdded
+      file: ./src/token-manager.ts
+  - kind: ethereum
+    name: StakingOperations
+    network: sei-testnet
+    source:
+      address: '0xD6aAF9D0a3fC6b027580B689461d5aD6552652d8'
+      abi: StakingOperations
+      startBlock: 154017777
+    mapping:
+      kind: ethereum/events
+      apiVersion: 0.0.7
+      language: wasm/assemblyscript
+      entities:
+        - Placeholder
+      abis:
+        - name: StakingOperations
+          file: ./abis/StakingOperations.json
+        - name: PriceFeed
+          file: ./abis/PriceFeed.json
+        - name: SwapPair
+          file: ./abis/SwapPair.json
+        - name: ERC20
+          file: ./abis/ERC20.json
+      eventHandlers:
+        - event: StakingOperationsInitialized(address,address,address)
+          handler: handleInit
+        - event: AddPool(indexed address)
+          handler: handleAddPool
+        - event: ConfigPool(indexed address,uint256,uint256)
+          handler: handleConfigPool
+        - event: AdditionalRewardsPerSecondChanged(indexed address,indexed address,uint256,bool)
+          handler: handleAdditionalRewardsPerSecondChanged
+        - event: Deposit(indexed address,indexed address,uint256)
+          handler: handleDeposit
+        - event: Withdraw(indexed address,indexed address,uint256)
+          handler: handleWithdraw
+      file: ./src/staking-operations.ts
+templates:
+  - kind: ethereum/contract
+    name: SwapPairTemplate
+    network: sei-testnet
+    source:
+      abi: SwapPair
+    mapping:
+      kind: ethereum/events
+      apiVersion: 0.0.7
+      language: wasm/assemblyscript
+      entities:
+        - Placeholder
+      abis:
+        - name: SwapPair
+          file: ./abis/SwapPair.json
+        - name: BorrowerOperations
+          file: ./abis/BorrowerOperations.json
+        - name: PriceFeed
+          file: ./abis/PriceFeed.json
+        - name: DebtToken
+          file: ./abis/DebtToken.json
+        - name: TokenManager
+          file: ./abis/TokenManager.json
+        - name: ERC20
+          file: ./abis/ERC20.json
+      eventHandlers:
+        - event: Approval(indexed address,indexed address,uint256)
+          handler: handleApproval
+        - event: Burn(indexed address,uint256,uint256)
+          handler: handleBurn
+        - event: Mint(indexed address,uint256,uint256)
+          handler: handleMint
+        - event: Swap(indexed address,uint256,uint256,uint256,uint256,uint256,uint256,indexed address)
+          handler: handleSwap
+        - event: Sync(uint112,uint112)
+          handler: handleSync
+        - event: Transfer(indexed address,indexed address,uint256)
+          handler: handleTransfer
+      file: ./src/swap-pair.ts
+  - kind: ethereum/contract
+    name: ERC20Template
+    network: sei-testnet
+    source:
+      abi: ERC20
+    mapping:
+      kind: ethereum/events
+      apiVersion: 0.0.7
+      language: wasm/assemblyscript
+      entities:
+        - Placeholder
+      abis:
+        - name: ERC20
+          file: ./abis/ERC20.json
+      file: ./src/erc-20.ts
+  - kind: ethereum/contract
+    name: DebtTokenTemplate
+    network: sei-testnet
+    source:
+      abi: DebtToken
+    mapping:
+      kind: ethereum/events
+      apiVersion: 0.0.7
+      language: wasm/assemblyscript
+      entities:
+        - Placeholder
+      abis:
+        - name: DebtToken
+          file: ./abis/DebtToken.json
+        - name: StabilityPoolManager
+          file: ./abis/StabilityPoolManager.json
+        - name: StabilityPool
+          file: ./abis/StabilityPool.json
+        - name: BorrowerOperations
+          file: ./abis/BorrowerOperations.json
+        - name: ReservePool
+          file: ./abis/ReservePool.json
+        - name: PriceFeed
+          file: ./abis/PriceFeed.json
+      eventHandlers:
+        - event: Transfer(indexed address,indexed address,uint256)
+          handler: handleTransfer
+      file: ./src/debt-token.ts

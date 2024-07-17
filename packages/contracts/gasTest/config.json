@@ -1,0 +1,12 @@
+{
+    "tokens": {
+        "coll": 16,
+        "debt": 9
+    },
+    "trove": {
+        "coll": 16,
+        "debt": 9
+    },
+    "liquidations": 1,
+    "redeems": 1
+}

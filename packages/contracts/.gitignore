@@ -1,0 +1,46 @@
+# Buidler contract JSONs
+/artifacts
+
+/bin
+
+# Buidler compilation cache
+/cache
+
+# Deployment Scripts
+/deploy/deployments
+
+# Ethereum accounts for testing
+/accountsList.js 
+
+# Exported function gas costs and test outputs
+/gasTest/outputs
+
+/secrets.js
+
+.vscode
+
+yarn-error.log
+
+# solidity-coverage
+/.coverage_artifacts
+/.coverage_cache
+/.coverage_contracts
+/coverage.json
+/coverage
+
+# echidna
+/crytic-export
+
+build
+typechain
+typechain-types
+artifacts
+cache
+coverage
+coverage.json
+
+.env
+
+/utils/swaps/*
+
+/flat/*

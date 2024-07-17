@@ -1,0 +1,941 @@
+[
+    {
+        "inputs": [
+            {
+                "internalType": "address",
+                "name": "target",
+                "type": "address"
+            }
+        ],
+        "name": "AddressEmptyCode",
+        "type": "error"
+    },
+    {
+        "inputs": [
+            {
+                "internalType": "address",
+                "name": "account",
+                "type": "address"
+            }
+        ],
+        "name": "AddressInsufficientBalance",
+        "type": "error"
+    },
+    {
+        "inputs": [],
+        "name": "AlreadyInitialized",
+        "type": "error"
+    },
+    {
+        "inputs": [],
+        "name": "FailedInnerCall",
+        "type": "error"
+    },
+    {
+        "inputs": [],
+        "name": "FeeExceedMaxPercentage",
+        "type": "error"
+    },
+    {
+        "inputs": [],
+        "name": "NotContract",
+        "type": "error"
+    },
+    {
+        "inputs": [],
+        "name": "NotFromBOorTroveMorSP",
+        "type": "error"
+    },
+    {
+        "inputs": [
+            {
+                "internalType": "address",
+                "name": "owner",
+                "type": "address"
+            }
+        ],
+        "name": "OwnableInvalidOwner",
+        "type": "error"
+    },
+    {
+        "inputs": [
+            {
+                "internalType": "address",
+                "name": "account",
+                "type": "address"
+            }
+        ],
+        "name": "OwnableUnauthorizedAccount",
+        "type": "error"
+    },
+    {
+        "inputs": [],
+        "name": "PoolEntryDoesntExist",
+        "type": "error"
+    },
+    {
+        "inputs": [
+            {
+                "internalType": "address",
+                "name": "token",
+                "type": "address"
+            }
+        ],
+        "name": "SafeERC20FailedOperation",
+        "type": "error"
+    },
+    {
+        "inputs": [],
+        "name": "ZeroAddress",
+        "type": "error"
+    },
+    {
+        "anonymous": false,
+        "inputs": [
+            {
+                "indexed": true,
+                "internalType": "address",
+                "name": "previousOwner",
+                "type": "address"
+            },
+            {
+                "indexed": true,
+                "internalType": "address",
+                "name": "newOwner",
+                "type": "address"
+            }
+        ],
+        "name": "OwnershipTransferred",
+        "type": "event"
+    },
+    {
+        "anonymous": false,
+        "inputs": [
+            {
+                "indexed": false,
+                "internalType": "address",
+                "name": "_borrowerOperationsAddress",
+                "type": "address"
+            },
+            {
+                "indexed": false,
+                "internalType": "address",
+                "name": "_troveManagerAddress",
+                "type": "address"
+            },
+            {
+                "indexed": false,
+                "internalType": "address",
+                "name": "_redemptionOperationsAddress",
+                "type": "address"
+            },
+            {
+                "indexed": false,
+                "internalType": "address",
+                "name": "_liquidationOperationsAddress",
+                "type": "address"
+            },
+            {
+                "indexed": false,
+                "internalType": "address",
+                "name": "_priceFeedAddress",
+                "type": "address"
+            },
+            {
+                "indexed": false,
+                "internalType": "address",
+                "name": "_reservePoolAddress",
+                "type": "address"
+            }
+        ],
+        "name": "StoragePoolInitialized",
+        "type": "event"
+    },
+    {
+        "anonymous": false,
+        "inputs": [
+            {
+                "indexed": false,
+                "internalType": "address",
+                "name": "_tokenAddress",
+                "type": "address"
+            },
+            {
+                "indexed": false,
+                "internalType": "bool",
+                "name": "_isColl",
+                "type": "bool"
+            },
+            {
+                "indexed": false,
+                "internalType": "enum IBase.PoolType",
+                "name": "_poolType",
+                "type": "uint8"
+            },
+            {
+                "indexed": false,
+                "internalType": "uint256",
+                "name": "_updatedAmount",
+                "type": "uint256"
+            }
+        ],
+        "name": "StoragePoolValueUpdated",
+        "type": "event"
+    },
+    {
+        "inputs": [],
+        "name": "CCR",
+        "outputs": [
+            {
+                "internalType": "uint256",
+                "name": "",
+                "type": "uint256"
+            }
+        ],
+        "stateMutability": "view",
+        "type": "function"
+    },
+    {
+        "inputs": [],
+        "name": "COLL_LIQUIDATION_GAS_COMP_PERCENT_DIVISOR",
+        "outputs": [
+            {
+                "internalType": "uint256",
+                "name": "",
+                "type": "uint256"
+            }
+        ],
+        "stateMutability": "view",
+        "type": "function"
+    },
+    {
+        "inputs": [],
+        "name": "MAX_BORROWING_FEE",
+        "outputs": [
+            {
+                "internalType": "uint256",
+                "name": "",
+                "type": "uint256"
+            }
+        ],
+        "stateMutability": "view",
+        "type": "function"
+    },
+    {
+        "inputs": [],
+        "name": "MCR",
+        "outputs": [
+            {
+                "internalType": "uint256",
+                "name": "",
+                "type": "uint256"
+            }
+        ],
+        "stateMutability": "view",
+        "type": "function"
+    },
+    {
+        "inputs": [],
+        "name": "MIN_TROVE_COLL_USD",
+        "outputs": [
+            {
+                "internalType": "uint256",
+                "name": "",
+                "type": "uint256"
+            }
+        ],
+        "stateMutability": "view",
+        "type": "function"
+    },
+    {
+        "inputs": [],
+        "name": "NAME",
+        "outputs": [
+            {
+                "internalType": "string",
+                "name": "",
+                "type": "string"
+            }
+        ],
+        "stateMutability": "view",
+        "type": "function"
+    },
+    {
+        "inputs": [],
+        "name": "REDEMPTION_FEE_FLOOR",
+        "outputs": [
+            {
+                "internalType": "uint256",
+                "name": "",
+                "type": "uint256"
+            }
+        ],
+        "stateMutability": "view",
+        "type": "function"
+    },
+    {
+        "inputs": [],
+        "name": "SWAP_POOL_AMOUNT_CAP",
+        "outputs": [
+            {
+                "internalType": "uint256",
+                "name": "",
+                "type": "uint256"
+            }
+        ],
+        "stateMutability": "view",
+        "type": "function"
+    },
+    {
+        "inputs": [
+            {
+                "internalType": "address",
+                "name": "_tokenAddress",
+                "type": "address"
+            },
+            {
+                "internalType": "bool",
+                "name": "_isColl",
+                "type": "bool"
+            },
+            {
+                "internalType": "enum IBase.PoolType",
+                "name": "_poolType",
+                "type": "uint8"
+            },
+            {
+                "internalType": "uint256",
+                "name": "_amount",
+                "type": "uint256"
+            }
+        ],
+        "name": "addValue",
+        "outputs": [],
+        "stateMutability": "nonpayable",
+        "type": "function"
+    },
+    {
+        "inputs": [],
+        "name": "borrowerOperationsAddress",
+        "outputs": [
+            {
+                "internalType": "address",
+                "name": "",
+                "type": "address"
+            }
+        ],
+        "stateMutability": "view",
+        "type": "function"
+    },
+    {
+        "inputs": [
+            {
+                "components": [
+                    {
+                        "components": [
+                            {
+                                "internalType": "address",
+                                "name": "tokenAddress",
+                                "type": "address"
+                            },
+                            {
+                                "internalType": "uint256",
+                                "name": "tokenDecimals",
+                                "type": "uint256"
+                            },
+                            {
+                                "internalType": "uint256",
+                                "name": "price",
+                                "type": "uint256"
+                            },
+                            {
+                                "internalType": "bool",
+                                "name": "isPriceTrusted",
+                                "type": "bool"
+                            },
+                            {
+                                "internalType": "bool",
+                                "name": "isPrimary",
+                                "type": "bool"
+                            },
+                            {
+                                "internalType": "uint256",
+                                "name": "supportedCollateralRatio",
+                                "type": "uint256"
+                            }
+                        ],
+                        "internalType": "struct IBase.TokenPrice[]",
+                        "name": "collPrices",
+                        "type": "tuple[]"
+                    },
+                    {
+                        "components": [
+                            {
+                                "internalType": "address",
+                                "name": "tokenAddress",
+                                "type": "address"
+                            },
+                            {
+                                "internalType": "uint256",
+                                "name": "tokenDecimals",
+                                "type": "uint256"
+                            },
+                            {
+                                "internalType": "uint256",
+                                "name": "price",
+                                "type": "uint256"
+                            },
+                            {
+                                "internalType": "bool",
+                                "name": "isPriceTrusted",
+                                "type": "bool"
+                            },
+                            {
+                                "internalType": "bool",
+                                "name": "isPrimary",
+                                "type": "bool"
+                            },
+                            {
+                                "internalType": "uint256",
+                                "name": "supportedCollateralRatio",
+                                "type": "uint256"
+                            }
+                        ],
+                        "internalType": "struct IBase.TokenPrice[]",
+                        "name": "debtPrices",
+                        "type": "tuple[]"
+                    }
+                ],
+                "internalType": "struct IBase.PriceCache",
+                "name": "_priceCache",
+                "type": "tuple"
+            }
+        ],
+        "name": "checkRecoveryMode",
+        "outputs": [
+            {
+                "internalType": "bool",
+                "name": "isInRecoveryMode",
+                "type": "bool"
+            },
+            {
+                "internalType": "uint256",
+                "name": "TCR",
+                "type": "uint256"
+            },
+            {
+                "internalType": "uint256",
+                "name": "entireSystemColl",
+                "type": "uint256"
+            },
+            {
+                "internalType": "uint256",
+                "name": "entireSystemDebt",
+                "type": "uint256"
+            }
+        ],
+        "stateMutability": "view",
+        "type": "function"
+    },
+    {
+        "inputs": [],
+        "name": "checkRecoveryMode",
+        "outputs": [
+            {
+                "internalType": "bool",
+                "name": "isInRecoveryMode",
+                "type": "bool"
+            },
+            {
+                "internalType": "uint256",
+                "name": "TCR",
+                "type": "uint256"
+            },
+            {
+                "internalType": "uint256",
+                "name": "entireSystemColl",
+                "type": "uint256"
+            },
+            {
+                "internalType": "uint256",
+                "name": "entireSystemDebt",
+                "type": "uint256"
+            }
+        ],
+        "stateMutability": "view",
+        "type": "function"
+    },
+    {
+        "inputs": [
+            {
+                "components": [
+                    {
+                        "components": [
+                            {
+                                "internalType": "address",
+                                "name": "tokenAddress",
+                                "type": "address"
+                            },
+                            {
+                                "internalType": "uint256",
+                                "name": "tokenDecimals",
+                                "type": "uint256"
+                            },
+                            {
+                                "internalType": "uint256",
+                                "name": "price",
+                                "type": "uint256"
+                            },
+                            {
+                                "internalType": "bool",
+                                "name": "isPriceTrusted",
+                                "type": "bool"
+                            },
+                            {
+                                "internalType": "bool",
+                                "name": "isPrimary",
+                                "type": "bool"
+                            },
+                            {
+                                "internalType": "uint256",
+                                "name": "supportedCollateralRatio",
+                                "type": "uint256"
+                            }
+                        ],
+                        "internalType": "struct IBase.TokenPrice[]",
+                        "name": "collPrices",
+                        "type": "tuple[]"
+                    },
+                    {
+                        "components": [
+                            {
+                                "internalType": "address",
+                                "name": "tokenAddress",
+                                "type": "address"
+                            },
+                            {
+                                "internalType": "uint256",
+                                "name": "tokenDecimals",
+                                "type": "uint256"
+                            },
+                            {
+                                "internalType": "uint256",
+                                "name": "price",
+                                "type": "uint256"
+                            },
+                            {
+                                "internalType": "bool",
+                                "name": "isPriceTrusted",
+                                "type": "bool"
+                            },
+                            {
+                                "internalType": "bool",
+                                "name": "isPrimary",
+                                "type": "bool"
+                            },
+                            {
+                                "internalType": "uint256",
+                                "name": "supportedCollateralRatio",
+                                "type": "uint256"
+                            }
+                        ],
+                        "internalType": "struct IBase.TokenPrice[]",
+                        "name": "debtPrices",
+                        "type": "tuple[]"
+                    }
+                ],
+                "internalType": "struct IBase.PriceCache",
+                "name": "_priceCache",
+                "type": "tuple"
+            }
+        ],
+        "name": "getEntireSystemColl",
+        "outputs": [
+            {
+                "internalType": "uint256",
+                "name": "entireSystemColl",
+                "type": "uint256"
+            }
+        ],
+        "stateMutability": "view",
+        "type": "function"
+    },
+    {
+        "inputs": [
+            {
+                "components": [
+                    {
+                        "components": [
+                            {
+                                "internalType": "address",
+                                "name": "tokenAddress",
+                                "type": "address"
+                            },
+                            {
+                                "internalType": "uint256",
+                                "name": "tokenDecimals",
+                                "type": "uint256"
+                            },
+                            {
+                                "internalType": "uint256",
+                                "name": "price",
+                                "type": "uint256"
+                            },
+                            {
+                                "internalType": "bool",
+                                "name": "isPriceTrusted",
+                                "type": "bool"
+                            },
+                            {
+                                "internalType": "bool",
+                                "name": "isPrimary",
+                                "type": "bool"
+                            },
+                            {
+                                "internalType": "uint256",
+                                "name": "supportedCollateralRatio",
+                                "type": "uint256"
+                            }
+                        ],
+                        "internalType": "struct IBase.TokenPrice[]",
+                        "name": "collPrices",
+                        "type": "tuple[]"
+                    },
+                    {
+                        "components": [
+                            {
+                                "internalType": "address",
+                                "name": "tokenAddress",
+                                "type": "address"
+                            },
+                            {
+                                "internalType": "uint256",
+                                "name": "tokenDecimals",
+                                "type": "uint256"
+                            },
+                            {
+                                "internalType": "uint256",
+                                "name": "price",
+                                "type": "uint256"
+                            },
+                            {
+                                "internalType": "bool",
+                                "name": "isPriceTrusted",
+                                "type": "bool"
+                            },
+                            {
+                                "internalType": "bool",
+                                "name": "isPrimary",
+                                "type": "bool"
+                            },
+                            {
+                                "internalType": "uint256",
+                                "name": "supportedCollateralRatio",
+                                "type": "uint256"
+                            }
+                        ],
+                        "internalType": "struct IBase.TokenPrice[]",
+                        "name": "debtPrices",
+                        "type": "tuple[]"
+                    }
+                ],
+                "internalType": "struct IBase.PriceCache",
+                "name": "_priceCache",
+                "type": "tuple"
+            }
+        ],
+        "name": "getEntireSystemDebt",
+        "outputs": [
+            {
+                "internalType": "uint256",
+                "name": "entireSystemDebt",
+                "type": "uint256"
+            }
+        ],
+        "stateMutability": "view",
+        "type": "function"
+    },
+    {
+        "inputs": [
+            {
+                "internalType": "address",
+                "name": "_tokenAddress",
+                "type": "address"
+            },
+            {
+                "internalType": "bool",
+                "name": "_isColl",
+                "type": "bool"
+            }
+        ],
+        "name": "getTokenTotalAmount",
+        "outputs": [
+            {
+                "internalType": "uint256",
+                "name": "",
+                "type": "uint256"
+            }
+        ],
+        "stateMutability": "view",
+        "type": "function"
+    },
+    {
+        "inputs": [
+            {
+                "internalType": "address",
+                "name": "_tokenAddress",
+                "type": "address"
+            },
+            {
+                "internalType": "bool",
+                "name": "_isColl",
+                "type": "bool"
+            },
+            {
+                "internalType": "enum IBase.PoolType",
+                "name": "_poolType",
+                "type": "uint8"
+            }
+        ],
+        "name": "getValue",
+        "outputs": [
+            {
+                "internalType": "uint256",
+                "name": "",
+                "type": "uint256"
+            }
+        ],
+        "stateMutability": "view",
+        "type": "function"
+    },
+    {
+        "inputs": [],
+        "name": "liquidationOperationsAddress",
+        "outputs": [
+            {
+                "internalType": "address",
+                "name": "",
+                "type": "address"
+            }
+        ],
+        "stateMutability": "view",
+        "type": "function"
+    },
+    {
+        "inputs": [],
+        "name": "owner",
+        "outputs": [
+            {
+                "internalType": "address",
+                "name": "",
+                "type": "address"
+            }
+        ],
+        "stateMutability": "view",
+        "type": "function"
+    },
+    {
+        "inputs": [],
+        "name": "priceFeed",
+        "outputs": [
+            {
+                "internalType": "contract IPriceFeed",
+                "name": "",
+                "type": "address"
+            }
+        ],
+        "stateMutability": "view",
+        "type": "function"
+    },
+    {
+        "inputs": [],
+        "name": "redemptionOperationsAddress",
+        "outputs": [
+            {
+                "internalType": "address",
+                "name": "",
+                "type": "address"
+            }
+        ],
+        "stateMutability": "view",
+        "type": "function"
+    },
+    {
+        "inputs": [],
+        "name": "renounceOwnership",
+        "outputs": [],
+        "stateMutability": "nonpayable",
+        "type": "function"
+    },
+    {
+        "inputs": [],
+        "name": "reservePoolAddress",
+        "outputs": [
+            {
+                "internalType": "address",
+                "name": "",
+                "type": "address"
+            }
+        ],
+        "stateMutability": "view",
+        "type": "function"
+    },
+    {
+        "inputs": [
+            {
+                "internalType": "address",
+                "name": "_borrowerOperationsAddress",
+                "type": "address"
+            },
+            {
+                "internalType": "address",
+                "name": "_troveManagerAddress",
+                "type": "address"
+            },
+            {
+                "internalType": "address",
+                "name": "_redemptionOperationsAddress",
+                "type": "address"
+            },
+            {
+                "internalType": "address",
+                "name": "_liquidationOperationsAddress",
+                "type": "address"
+            },
+            {
+                "internalType": "address",
+                "name": "_priceFeedAddress",
+                "type": "address"
+            },
+            {
+                "internalType": "address",
+                "name": "_reservePoolAddress",
+                "type": "address"
+            }
+        ],
+        "name": "setAddresses",
+        "outputs": [],
+        "stateMutability": "nonpayable",
+        "type": "function"
+    },
+    {
+        "inputs": [
+            {
+                "internalType": "address",
+                "name": "_tokenAddress",
+                "type": "address"
+            },
+            {
+                "internalType": "bool",
+                "name": "_isColl",
+                "type": "bool"
+            },
+            {
+                "internalType": "enum IBase.PoolType",
+                "name": "_poolType",
+                "type": "uint8"
+            },
+            {
+                "internalType": "uint256",
+                "name": "_amount",
+                "type": "uint256"
+            }
+        ],
+        "name": "subtractValue",
+        "outputs": [],
+        "stateMutability": "nonpayable",
+        "type": "function"
+    },
+    {
+        "inputs": [
+            {
+                "internalType": "address",
+                "name": "_tokenAddress",
+                "type": "address"
+            },
+            {
+                "internalType": "bool",
+                "name": "_isColl",
+                "type": "bool"
+            },
+            {
+                "internalType": "enum IBase.PoolType",
+                "name": "_fromType",
+                "type": "uint8"
+            },
+            {
+                "internalType": "enum IBase.PoolType",
+                "name": "_toType",
+                "type": "uint8"
+            },
+            {
+                "internalType": "uint256",
+                "name": "_amount",
+                "type": "uint256"
+            }
+        ],
+        "name": "transferBetweenTypes",
+        "outputs": [],
+        "stateMutability": "nonpayable",
+        "type": "function"
+    },
+    {
+        "inputs": [
+            {
+                "internalType": "address",
+                "name": "newOwner",
+                "type": "address"
+            }
+        ],
+        "name": "transferOwnership",
+        "outputs": [],
+        "stateMutability": "nonpayable",
+        "type": "function"
+    },
+    {
+        "inputs": [],
+        "name": "troveManagerAddress",
+        "outputs": [
+            {
+                "internalType": "address",
+                "name": "",
+                "type": "address"
+            }
+        ],
+        "stateMutability": "view",
+        "type": "function"
+    },
+    {
+        "inputs": [
+            {
+                "internalType": "address",
+                "name": "_receiver",
+                "type": "address"
+            },
+            {
+                "internalType": "address",
+                "name": "_tokenAddress",
+                "type": "address"
+            },
+            {
+                "internalType": "bool",
+                "name": "_isColl",
+                "type": "bool"
+            },
+            {
+                "internalType": "enum IBase.PoolType",
+                "name": "_poolType",
+                "type": "uint8"
+            },
+            {
+                "internalType": "uint256",
+                "name": "_amount",
+                "type": "uint256"
+            }
+        ],
+        "name": "withdrawalValue",
+        "outputs": [],
+        "stateMutability": "nonpayable",
+        "type": "function"
+    }
+]

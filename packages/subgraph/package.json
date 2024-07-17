@@ -1,0 +1,31 @@
+{
+  "name": "subgraph",
+  "license": "UNLICENSED",
+  "scripts": {
+    "codegen": "npm run sync:abis && graph codegen",
+    "codegen:clean": "npm run sync:abis && rm -r generated && graph codegen",
+    "build": "graph build",
+    "deploy": "yarn codegen:clean && graph deploy --node https://api.studio.thegraph.com/deploy/ subgraph",
+    "create-local": "graph create --node http://localhost:8020/ subgraph",
+    "remove-local": "graph remove --node http://localhost:8020/ subgraph",
+    "deploy-local": "yarn codegen:clean && graph deploy --node http://localhost:8020/ --ipfs http://localhost:5001 subgraph",
+    "test:unit": "graph test",
+    "test:unit:local": "graph test -d",
+    "test:unit:local:coverage": "graph test -d -c",
+    "prettier:check": "prettier --check **/*.{js,jsx,mjs,ts,tsx,json,css,md}",
+    "create:overview": "node scripts/createEventOverview.js && node scripts/createLeftoverEventOverview.js",
+    "sync:abis": "node scripts/syncAbis.js && prettier --write abis"
+  },
+  "installConfig": {
+    "hoistingLimits": "workspaces"
+  },
+  "devDependencies": {
+    "prettier": "^3.0.1",
+    "prettier-plugin-organize-imports": "^3.2.3"
+  },
+  "dependencies": {
+    "@graphprotocol/graph-cli": "^0.81.0",
+    "@graphprotocol/graph-ts": "^0.31.0",
+    "matchstick-as": "^0.6.0"
+  }
+}

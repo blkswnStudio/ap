@@ -1,0 +1,70 @@
+entity (collateral-token-meta-entity)
+  > handleCreateUpdateCollateralTokenMeta
+    ~ borrower-operations: handleTroveCreated
+    ~ borrower-operations: handlePaidBorrowingFee
+    ~ reserve-pool: handleWithdrewReserves
+    ~ token-manager: handleCollTokenSupportedCollateralRatioSet
+    ~ trove-manager: handleCollChanged
+entity (debt-token-meta-entity)
+  > handleCreateUpdateDebtTokenMeta
+    ~ borrower-operations: handlePaidBorrowingFee
+    ~ debt-token: handleTransfer
+    ~ reserve-pool: handleWithdrewReserves
+    ~ stability-pool: handleStabilityOffset
+    ~ stability-pool: handleStabilityProvided
+    ~ stability-pool: handleStabilityWithdrawn
+  > handleUpdateDebtTokenMeta_stabilityDepositAPY
+    ~ stability-pool: handleStabilityOffset
+entity (reserve-pool-USD-history-chunk)
+  > handleCreateReservePoolUSDHistoryChunk
+    ~ borrower-operations: handlePaidBorrowingFee
+    ~ reserve-pool: handleWithdrewReserves
+entity (token-candle-entity)
+  > bigIntWithZeros
+    ~ token-candle-entity: handleUpdateTokenCandle_low_high
+    ~ token-candle-entity: handleUpdateTokenCandle_volume
+  > handleCreateTokenCandleSingleton
+    ~ swap-operations: handlePairCreated
+  > handleUpdateTokenCandle_volume
+    ~ swap-pair: handleSwap
+  > handleUpdateTokenCandle_low_high
+    ~ swap-pair: handleSync
+entity (borrower-history-entity)
+  > handleCreateBorrowerHistory
+    ~ stability-pool: handleStabilityProvided
+    ~ stability-pool: handleStabilityWithdrawn
+entity (staking-event-entity)
+  > handleInitEvent
+    ~ staking-operations: handleInit
+  > handleAddPoolEvent
+    ~ staking-operations: handleAddPool
+  > handleConfigPoolEvent
+    ~ staking-operations: handleConfigPool
+  > handleRewardsChangedEvent
+    ~ staking-operations: handleRewardsChanged
+  > handleDepositWithdrawEvent
+    ~ staking-operations: handleDeposit
+    ~ staking-operations: handleWithdraw
+entity (total-value-locked-USD-history-chunk-entity)
+  > handleCreateTotalValueLockedUSDHistoryChunk
+    ~ storage-pool: handleStoragePoolValueUpdated
+entity (total-value-minted-USD-history-chunk-entity)
+  > handleCreateTotalValueMintedUSDHistoryChunk
+    ~ storage-pool: handleStoragePoolValueUpdated
+entity (pool-entity)
+  > handleCreateUpdatePool
+    ~ swap-operations: handlePairCreated
+  > handleUpdatePool_totalSupply
+    ~ swap-pair: handleBurn
+    ~ swap-pair: handleMint
+    ~ swap-pair: handleTransfer
+  > handleUpdatePool_liquidityDepositAPY
+    ~ swap-pair: handleSync
+  > handleUpdateLiquidity_totalAmount
+    ~ swap-pair: handleSync
+entity (token-entity)
+  > handleCreateToken
+    ~ swap-operations: handlePairCreated
+entity (swap-event-entity)
+  > handleCreateSwapEvent
+    ~ swap-pair: handleSwap

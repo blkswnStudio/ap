@@ -1,0 +1,325 @@
+# SINGLETON FOR SYSTEM INFO
+type SystemInfo @entity {
+  # "SystemInfo"
+  id: String!
+  timestamp: BigInt!
+  stableCoin: Bytes!
+  govToken: Bytes!
+  storagePool: Bytes!
+  stakingOps: Bytes!
+  priceFeed: Bytes!
+  reservePool: Bytes!
+  tokenManager: Bytes!
+
+  # Chart indexes
+  totalValueLockedUSDHistoryIndex: Int!
+  totalValueMintedUSDHistoryIndex: Int!
+  reservePoolUSDHistoryIndex: Int!
+}
+
+type Token @entity {
+  # contract address
+  id: Bytes!
+  address: String! # contract address
+  symbol: String!
+  createdAt: BigInt!
+  oracleId: Bytes!
+  isPoolToken: Boolean!
+  decimals: Int!
+}
+
+# Relational lookup for the update of the oracle price
+# FIXME: Why can this not be immutable? I only get bugs.
+type Oracle @entity {
+  # oracleId as Bytes
+  id: Bytes!
+  token: Token! @relation(name: "TokenToOracle")
+}
+
+type DebtTokenMeta @entity {
+  # "DebtTokenMeta" + token
+  id: String!
+  token: Token! @relation(name: "TokenToDebtTokenMeta")
+  timestamp: BigInt!
+
+  # global
+
+  # Only != 0 on the STABLE token
+  totalReserve: BigInt!
+  totalReserve30dAverage: TotalReserveAverage
+  # event StoragePoolValueUpdated
+  totalSupplyUSD: BigInt!
+  totalSupplyUSD30dAverage: TotalSupplyAverage!
+  # event StoragePoolValueUpdated
+}
+
+# aggregator for 30d average, each chunk is 60min
+type TotalReserveAverage @entity {
+  # "TotalReserveAverage" + token
+  id: String!
+  index: Int!
+  value: BigInt!
+}
+
+# A chunk is added once every 60min are over and is deducted at the end of 30d
+type TotalReserveAverageChunk @entity {
+  # "TotalReserveAverageChunk" + token + index
+  id: String!
+  timestamp: BigInt!
+  value: BigInt!
+}
+
+# aggregator for 30d average, each chunk is 60min
+type TotalSupplyAverage @entity {
+  # "TotalSupplyAverage" + token
+  id: String!
+  index: Int!
+  value: BigInt!
+}
+
+# A chunk is added once every 60min are over and is deducted at the end of 30d
+type TotalSupplyAverageChunk @entity {
+  # "TotalSupplyAverageChunk" + token + index
+  id: String!
+  timestamp: BigInt!
+  value: BigInt!
+}
+
+# type UserDebtTokenMeta @entity {
+#   # "UserDebtTokenMeta" + token + borrower
+#   id: String!
+#   borrower: Bytes!
+#   token: Bytes!
+
+#   walletAmount: BigInt!
+#   troveMintedAmount: BigInt!
+#   # When user claims rewards set to deposit => track any increase/decrease but claimed stability
+#   providedStablitySinceLastCollClaim: BigInt!
+#   stabilityCompoundAmount: BigInt!
+# }
+
+type CollateralTokenMeta @entity {
+  # "CollateralTokenMeta" + token
+  id: String!
+  token: Token! @relation(name: "TokenToCollateralTokenMeta")
+  timestamp: BigInt!
+
+  # global
+  # FIXME: Should be just value without USD
+  totalValueLockedUSD: BigInt!
+  totalValueLockedUSD30dAverage: TotalValueLockedAverage!
+  # Only != 0 on the GOV token
+  totalReserve: BigInt!
+  totalReserve30dAverage: TotalReserveAverage
+  # Actually is required, damn wasm
+  supportedCollateralRatio: BigInt
+}
+
+# aggregator for 30d average, each chunk is 60min
+type TotalValueLockedAverage @entity {
+  # "TotalValueLockedAverage" + token
+  id: String!
+  index: Int!
+  value: BigInt!
+}
+
+# A chunk is added once every 60min are over and is deducted at the end of 30d
+type TotalValueLockedChunk @entity {
+  # "TotalValueLockedChunk" + token + index
+  id: String!
+  timestamp: BigInt!
+  value: BigInt!
+}
+
+# type UserCollateralTokenMeta @entity {
+#   # "UserDebtTokenMeta" + token + borrower
+#   id: String!
+#   borrower: Bytes!
+#   token: Bytes!
+#   # borrower specific
+#   walletAmount: BigInt!
+#   troveLockedAmount: BigInt!
+
+# }
+
+enum LongShortDirection {
+  LONG
+  SHORT
+}
+
+type SwapEvent @entity(immutable: true) {
+  id: Bytes!
+  borrower: Bytes!
+  timestamp: BigInt!
+  #
+  token: Token! @relation(name: "TokenToSwapEvent")
+  direction: LongShortDirection! # Indicates whether the swap is LONG or SHORT
+  size: BigInt! # always positive, applied by direction. The size of the "non-stable" coin involved in the swap
+  totalPriceInStable: BigInt! # The total price at the time of the swap, always in stable coin
+  # die currentSwapFee wird in dem event als 1e6 angegeben → 1000000 sind 100%, 3000 sind 0.3%
+  swapFee: BigInt! # protocol fees, without gas. Long => jUSD / Short => DebtToken
+}
+
+type PoolLiquidity @entity {
+  # unique Byte combination of tokenA + tokenB
+  id: Bytes!
+  token: Token! @relation(name: "TokenToPoolLiquidity")
+  totalAmount: BigInt!
+}
+
+type Pool @entity {
+  # `Pool-${token0.toHexString()}-${token1.toHexString()}`
+  id: String!
+  # SwapPair contract address
+  address: Bytes!
+  # TODO: Must be required once the deployment is fixed
+  stakingPool: StakingPool
+
+  # Percent value applied when opening the first position for this pool. Can be negative and positive.
+  # swapFee: BigInt!
+  # Just linked once, always updated for all users
+  liquidity: [PoolLiquidity!]! @relation(name: "PoolLiquidityToPool")
+  # TODO: die fee in USD bitte ebenfalls im laufenden durchschnitt mitberechen, diese wird dann notwendig um die APY zu ermitteln
+  liquidityDepositAPY: BigInt!
+
+  volume30dUSD: PoolVolume30d!
+  # once the first PoolEvent of the array is > 24h ago, we can remove it from the array and push it to the 24hAgo field
+  volume30dUSD30dAgo: PoolVolume30d!
+
+  totalSupply: BigInt!
+  totalValueUSD: BigInt!
+}
+
+# Aggregator, pushed old events out and lets new in, recalculating the acc value each time
+type PoolVolume30d @entity {
+  # `PoolVolume30d-${swapPair.toHexString()}`
+  # `PoolVolume30dAgo-${swapPair.toHexString()}`
+  id: String!
+  leadingIndex: Int!
+  lastIndex: Int!
+  value: BigInt!
+  # die fee in USD bitte ebenfalls im laufenden durchschnitt mitberechen, diese wird dann notwendig um die APY zu ermitteln
+  feeUSD: BigInt!
+}
+
+# A chunk is added once 5min are over and is deducted at the end of 30d
+type PoolVolumeChunk @entity {
+  # "PoolVolumeChunk" + TokenA + TokenB + index
+  id: String!
+  timestamp: BigInt!
+  value: BigInt!
+  # die fee in USD bitte ebenfalls im laufenden durchschnitt mitberechen, diese wird dann notwendig um die APY zu ermitteln
+  feeUSD: BigInt!
+}
+
+type TokenAmount @entity(immutable: true) {
+  id: Bytes!
+  token: Token! @relation(name: "TokenToTokenAmount")
+  amount: BigInt!
+}
+
+# CHARTS
+
+# 1min, 10min, 1hour, 6hour, 1day, 1week
+# const CandleSizes = [1, 10, 60, 360, 1440, 10080];
+# We add to a singleton cande and then save it as soon as the candlesize is reached
+type TokenCandleSingleton @entity {
+  # "TokenCandleSingleton" + token + candleSize
+  id: String!
+  token: Token! @relation(name: "TokenToTokenCandle Singleton")
+  # last candle + candleSize
+  timestamp: BigInt!
+  # last candle
+  open: BigInt!
+  high: BigInt!
+  low: BigInt!
+  close: BigInt!
+  volume: BigInt!
+  candleSize: Int!
+  openOracle: BigInt!
+  highOracle: BigInt!
+  lowOracle: BigInt!
+  closeOracle: BigInt!
+}
+
+type TokenCandle @entity(immutable: true) {
+  # `TokenCandle-${pairToken.toHexString()}-${candleSize.toString()}-${candleSingleton.timestamp.toString()}`
+  id: String!
+  token: Token! @relation(name: "TokenToTokenCandle")
+  timestamp: BigInt!
+  candleSize: Int!
+  open: BigInt!
+  high: BigInt!
+  low: BigInt!
+  close: BigInt!
+  volume: BigInt!
+  openOracle: BigInt!
+  highOracle: BigInt!
+  lowOracle: BigInt!
+  closeOracle: BigInt!
+}
+
+#  SMALL BALANCE CHARTS
+
+# current total value locked, each in 1d chunks
+type TotalValueLockedUSDHistoryChunk @entity {
+  # "TotalValueLockedUSDHistoryChunk" + index
+  id: String!
+  timestamp: BigInt!
+  value: BigInt!
+  # interval in seconds. This allows to filter if more/less granularity is needed.
+  size: Int!
+}
+
+# current total value minted, each in 1d chunks
+type TotalValueMintedUSDHistoryChunk @entity {
+  # "TotalValueMintedUSDHistoryChunk" + index
+  id: String!
+  timestamp: BigInt!
+  value: BigInt!
+  # interval in seconds. This allows to filter if more/less granularity is needed.
+  size: Int!
+}
+
+# current total value locked by all reserve pools, each in 1d chunks
+type ReservePoolUSDHistoryChunk @entity {
+  # "ReservePoolUSDHistoryChunk" + index
+  id: String!
+  timestamp: BigInt!
+  value: BigInt!
+  # interval in seconds. This allows to filter if more/less granularity is needed.
+  size: Int!
+}
+
+# STAKING
+
+# staking contract
+
+type Staking @entity {
+  id: String! # "Staking"
+  pools: [StakingPool!]! @relation(name: "StakingPoolToStaking")
+  totalAllocPoints: BigInt!
+  rewardsPerSecond: BigInt!
+  rewardsPerYearUSD: BigInt!
+}
+
+# staking pools
+
+type StakingPool @entity {
+  id: Bytes! # {poolAddress} same as on the LP
+  allocPoints: BigInt!
+  totalDeposit: BigInt!
+  totalDepositUSD: BigInt!
+  totalRewardUSD: BigInt!
+  additionalRewardsPerYearUSD: BigInt!
+  stakingAPR: BigInt!
+  liquidityPool: Pool! @derivedFrom(field: "stakingPool")
+  rewards: [StakingPoolReward!]! @relation(name: "StakingPoolRewardToStakingPool")
+}
+
+type StakingPoolReward @entity {
+  id: String! # {poolAddress}-{reward}
+  token: Token! @relation(name: "TokenToStakingPoolReward")
+  rewardsPerSecond: BigInt!
+  rewardsPerYearUSD: BigInt!
+}
