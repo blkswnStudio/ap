@@ -1,0 +1,9 @@
+-- psql -h localhost -p 5432 -U graph-node -d graph-node -f scripts/seed-token_candle.sql
+
+INSERT INTO sgd1.token_candle (block$, id, token, timestamp, open, high, low, close, volume, candle_size)
+VALUES 
+(1, '0x7F1667b13768D15fedD4ab3B006B4C2174410501', '0x7F1667b13768D15fedD4ab3B006B4C2174410593', 1000000, 100, 110, 90, 105, 1000, 1),
+(2, '0x7F1667b13768D15fedD4ab3B006B4C2174410502', '0x7F1667b13768D15fedD4ab3B006B4C2174410593', 1001000, 105, 115, 95, 110, 1500, 1),
+(3, '0x7F1667b13768D15fedD4ab3B006B4C2174410503', '0x7F1667b13768D15fedD4ab3B006B4C2174410593', 1002000, 110, 120, 100, 115, 2000, 1),
+(4, '0x7F1667b13768D15fedD4ab3B006B4C2174410504', '0x7F1667b13768D15fedD4ab3B006B4C2174410593', 1003000, 115, 125, 105, 120, 2500, 1);
+-- Add more rows as needed with unique 'id' values

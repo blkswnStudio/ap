@@ -1,0 +1,7 @@
+{
+  "extends": "next/core-web-vitals",
+  "rules": {
+    // https://nextjs.org/docs/pages/building-your-application/deploying/static-exports#image-optimization
+    "@next/next/no-img-element": "off"
+  }
+}

@@ -1,0 +1,695 @@
+{
+  "data": {
+    "pools": [
+      {
+        "__typename": "Pool",
+        "id": "728e736d-c8f9-4d25-9a52-dad674b1205f",
+        "address": "0xb7278a61aa25c888815afc32ad3cc52ff24fe575",
+        "liquidity": [
+          {
+            "id": "94578532-5055-4b9a-bef5-bca94d7bd4c5",
+            "__typename": "PoolLiquidity",
+            "token": {
+              "id": "94ade5e6-8a4a-4098-8674-1729508efe1a",
+              "__typename": "Token",
+              "address": "0xc3e53f4d16ae77db1c982e75a937b9f60fe63690",
+              "symbol": "JUSD",
+              "createdAt": "1680656965.765",
+              "isPoolToken": false,
+              "decimals": 18
+            },
+            "totalAmount": "467238537600000000000000"
+          },
+          {
+            "id": "1c4de34c-f8bb-4005-be70-3b85769c26e5",
+            "__typename": "PoolLiquidity",
+            "token": {
+              "id": "2b8de0f9-d7a0-4c4c-9979-7eb8f87b9386",
+              "__typename": "Token",
+              "address": "0xea87ebaaa11de1eaacafc30dcebaf95b919ac211",
+              "symbol": "PEN",
+              "createdAt": "1688346251.332",
+              "isPoolToken": true,
+              "decimals": 18
+            },
+            "totalAmount": "185670222000000000000000"
+          }
+        ],
+        "liquidityDepositAPY": "174200000000000000",
+        "volume30dUSD": {
+          "__typename": "PoolVolume30d",
+          "id": "9e89c0dc-8945-48dd-aa46-9dd6294431d1",
+          "lastIndex": 0,
+          "leadingIndex": 0,
+          "value": "223112404700000000000000",
+          "feeUSD": "2338264500000000000000"
+        },
+        "volume30dUSD30dAgo": {
+          "__typename": "PoolVolume30d",
+          "id": "9294f361-f289-4963-8672-9d6964636ef0",
+          "lastIndex": 0,
+          "leadingIndex": 0,
+          "value": "239168512900000000000000",
+          "feeUSD": "3440918100000000000000"
+        },
+        "totalSupply": "439131992100000000000000"
+      },
+      {
+        "__typename": "Pool",
+        "id": "dc213d94-a5ac-4828-84d8-e4b827da655c",
+        "address": "0x245f86cdf593881fcd1f2fddd59f7fbcc076a4cb",
+        "liquidity": [
+          {
+            "id": "8100791c-0b74-491b-8899-8fbfcd1cac18",
+            "__typename": "PoolLiquidity",
+            "token": {
+              "id": "94ade5e6-8a4a-4098-8674-1729508efe1a",
+              "__typename": "Token",
+              "address": "0xc3e53f4d16ae77db1c982e75a937b9f60fe63690",
+              "symbol": "JUSD",
+              "createdAt": "1680656965.765",
+              "isPoolToken": false,
+              "decimals": 18
+            },
+            "totalAmount": "115917753800000000000000"
+          },
+          {
+            "id": "020cb7fb-ae9f-410a-9787-7a8972ad2985",
+            "__typename": "PoolLiquidity",
+            "token": {
+              "id": "1e35ff0c-0788-4a02-bdc3-81d23e6b82cb",
+              "__typename": "Token",
+              "address": "0x559d18f2dff65a6040c238e8193c8cdeaa87ab86",
+              "symbol": "INR",
+              "createdAt": "1700934266.78",
+              "isPoolToken": false,
+              "decimals": 18
+            },
+            "totalAmount": "318919230800000000000000"
+          }
+        ],
+        "liquidityDepositAPY": "165300000000000000",
+        "volume30dUSD": {
+          "__typename": "PoolVolume30d",
+          "id": "fcf9d584-6330-4012-b55d-77c0d134b416",
+          "lastIndex": 0,
+          "leadingIndex": 0,
+          "value": "305013661000000000000000",
+          "feeUSD": "4124595400000000000000"
+        },
+        "volume30dUSD30dAgo": {
+          "__typename": "PoolVolume30d",
+          "id": "84de25bf-0049-41d8-b229-498b25887356",
+          "lastIndex": 0,
+          "leadingIndex": 0,
+          "value": "155897791800000000000000",
+          "feeUSD": "4760008100000000000000"
+        },
+        "totalSupply": "371349035900000000000000"
+      },
+      {
+        "__typename": "Pool",
+        "id": "eccd8d33-0a18-47cb-9dfa-bf7b1f0f9965",
+        "address": "0x30e8f1ea9ff106c0a8fabeeabc69e421fd439fde",
+        "liquidity": [
+          {
+            "id": "c169c236-cbfc-4f7b-a864-419c84bc925c",
+            "__typename": "PoolLiquidity",
+            "token": {
+              "id": "94ade5e6-8a4a-4098-8674-1729508efe1a",
+              "__typename": "Token",
+              "address": "0xc3e53f4d16ae77db1c982e75a937b9f60fe63690",
+              "symbol": "JUSD",
+              "createdAt": "1680656965.765",
+              "isPoolToken": false,
+              "decimals": 18
+            },
+            "totalAmount": "397691267800000000000000"
+          },
+          {
+            "id": "e164fa7a-a2ff-4893-be63-4d47d7563463",
+            "__typename": "PoolLiquidity",
+            "token": {
+              "id": "b0e50bf9-6a33-41bd-93ab-3673b25d2ccf",
+              "__typename": "Token",
+              "address": "0xe1fb868ffd3ef114f2bfa8088ee1875a99cfbfcc",
+              "symbol": "MYR",
+              "createdAt": "1709686048.334",
+              "isPoolToken": false,
+              "decimals": 18
+            },
+            "totalAmount": "404593928800000000000000"
+          }
+        ],
+        "liquidityDepositAPY": "34700000000000000",
+        "volume30dUSD": {
+          "__typename": "PoolVolume30d",
+          "id": "b1d12d98-fb1a-4d9d-bd71-fd8bf2c3ae8f",
+          "lastIndex": 0,
+          "leadingIndex": 0,
+          "value": "368771434600000000000000",
+          "feeUSD": "1193135100000000000000"
+        },
+        "volume30dUSD30dAgo": {
+          "__typename": "PoolVolume30d",
+          "id": "e5d2d62c-b690-410b-82b3-85ab52ef35f6",
+          "lastIndex": 0,
+          "leadingIndex": 0,
+          "value": "190598714500000000000000",
+          "feeUSD": "3223317500000000000000"
+        },
+        "totalSupply": "181759801800000000000000"
+      },
+      {
+        "__typename": "Pool",
+        "id": "c24b3c91-d744-4b7d-aa7f-7f4e850f4a72",
+        "address": "0x9fb16d1ee0464bfbbf1a2aaedab3eb464fc08a26",
+        "liquidity": [
+          {
+            "id": "c19fb89d-143a-48ca-bbe2-c43d6426212e",
+            "__typename": "PoolLiquidity",
+            "token": {
+              "id": "94ade5e6-8a4a-4098-8674-1729508efe1a",
+              "__typename": "Token",
+              "address": "0xc3e53f4d16ae77db1c982e75a937b9f60fe63690",
+              "symbol": "JUSD",
+              "createdAt": "1680656965.765",
+              "isPoolToken": false,
+              "decimals": 18
+            },
+            "totalAmount": "178569525000000000000000"
+          },
+          {
+            "id": "7988c4de-da26-4c2a-b3ff-c2bc577065e3",
+            "__typename": "PoolLiquidity",
+            "token": {
+              "id": "83ea7915-274f-41d3-bca7-1972126342e3",
+              "__typename": "Token",
+              "address": "0xf5c33439afa2d7bae2ab53bcf4fdd9bafabdaaff",
+              "symbol": "CUP",
+              "createdAt": "1694926023.486",
+              "isPoolToken": true,
+              "decimals": 18
+            },
+            "totalAmount": "424942981900000000000000"
+          }
+        ],
+        "liquidityDepositAPY": "183000000000000000",
+        "volume30dUSD": {
+          "__typename": "PoolVolume30d",
+          "id": "140e3554-63bf-4fa2-826e-143a6bc53567",
+          "lastIndex": 0,
+          "leadingIndex": 0,
+          "value": "499248626700000000000000",
+          "feeUSD": "2620288300000000000000"
+        },
+        "volume30dUSD30dAgo": {
+          "__typename": "PoolVolume30d",
+          "id": "4e638768-f627-4a42-a85c-0289fbf63e16",
+          "lastIndex": 0,
+          "leadingIndex": 0,
+          "value": "174753950800000000000000",
+          "feeUSD": "1289607800000000000000"
+        },
+        "totalSupply": "152180369100000000000000"
+      },
+      {
+        "__typename": "Pool",
+        "id": "ad0d8ca1-fb2a-4d88-9c43-2b60ca013acf",
+        "address": "0xd4d9fbad3de64c72286619d8175eccc9dbb9beaf",
+        "liquidity": [
+          {
+            "id": "119a7522-8fd7-4d5a-8271-41654fb7c357",
+            "__typename": "PoolLiquidity",
+            "token": {
+              "id": "94ade5e6-8a4a-4098-8674-1729508efe1a",
+              "__typename": "Token",
+              "address": "0xc3e53f4d16ae77db1c982e75a937b9f60fe63690",
+              "symbol": "JUSD",
+              "createdAt": "1680656965.765",
+              "isPoolToken": false,
+              "decimals": 18
+            },
+            "totalAmount": "123353252100000000000000"
+          },
+          {
+            "id": "f44972fd-d892-4c32-87eb-fef6633047c7",
+            "__typename": "PoolLiquidity",
+            "token": {
+              "id": "57c7003d-57a7-47b7-992a-b89e6ebf3fa1",
+              "__typename": "Token",
+              "address": "0xfc49ea213c2e4e2cbaefd0b3982cfcbdaaecfeb3",
+              "symbol": "MDL",
+              "createdAt": "1709562633.241",
+              "isPoolToken": true,
+              "decimals": 18
+            },
+            "totalAmount": "259080467000000000000000"
+          }
+        ],
+        "liquidityDepositAPY": "148300000000000000",
+        "volume30dUSD": {
+          "__typename": "PoolVolume30d",
+          "id": "73c82a1e-c74c-49ca-b677-5f19efc9705d",
+          "lastIndex": 0,
+          "leadingIndex": 0,
+          "value": "463032076800000000000000",
+          "feeUSD": "1024373200000000000000"
+        },
+        "volume30dUSD30dAgo": {
+          "__typename": "PoolVolume30d",
+          "id": "e9622bcc-ccf5-4d1b-9798-90a59cf76b54",
+          "lastIndex": 0,
+          "leadingIndex": 0,
+          "value": "443451692100000000000000",
+          "feeUSD": "2082972100000000000000"
+        },
+        "totalSupply": "121721075200000000000000"
+      },
+      {
+        "__typename": "Pool",
+        "id": "bfeb98ae-f3b0-4339-8db1-47e885549618",
+        "address": "0xe63d92ba56a9fdafcafc70dfdbb35d5d410a69a4",
+        "liquidity": [
+          {
+            "id": "dcd66bbc-749d-43d0-a485-7fe5f06f8046",
+            "__typename": "PoolLiquidity",
+            "token": {
+              "id": "94ade5e6-8a4a-4098-8674-1729508efe1a",
+              "__typename": "Token",
+              "address": "0xc3e53f4d16ae77db1c982e75a937b9f60fe63690",
+              "symbol": "JUSD",
+              "createdAt": "1680656965.765",
+              "isPoolToken": false,
+              "decimals": 18
+            },
+            "totalAmount": "229205449100000000000000"
+          },
+          {
+            "id": "8967b97a-d8d7-4359-b7d6-9f8225198083",
+            "__typename": "PoolLiquidity",
+            "token": {
+              "id": "d02ba6ef-dfa5-4194-8d32-26a010f70359",
+              "__typename": "Token",
+              "address": "0xca0e2d4e38c7ddae74fd7b29c6f7a10226ed0d72",
+              "symbol": "MMK",
+              "createdAt": "1694955012.067",
+              "isPoolToken": true,
+              "decimals": 18
+            },
+            "totalAmount": "312319982700000000000000"
+          }
+        ],
+        "liquidityDepositAPY": "109200000000000000",
+        "volume30dUSD": {
+          "__typename": "PoolVolume30d",
+          "id": "8191e53f-696a-4ea8-9eae-3ead62e6c941",
+          "lastIndex": 0,
+          "leadingIndex": 0,
+          "value": "488706792900000000000000",
+          "feeUSD": "3269177500000000000000"
+        },
+        "volume30dUSD30dAgo": {
+          "__typename": "PoolVolume30d",
+          "id": "07726005-6f9d-4fae-aacd-e67cf2c84567",
+          "lastIndex": 0,
+          "leadingIndex": 0,
+          "value": "469951111100000000000000",
+          "feeUSD": "2081820100000000000000"
+        },
+        "totalSupply": "140538647400000000000000"
+      },
+      {
+        "__typename": "Pool",
+        "id": "d314600f-f9a1-43cb-abf3-d2ca8ed1ae2b",
+        "address": "0x16a7abcbbbfcca7c9ea88fdac7bdfe1f2fdfc0bb",
+        "liquidity": [
+          {
+            "id": "03726dba-bd49-45c9-8944-0cd2a5e55b17",
+            "__typename": "PoolLiquidity",
+            "token": {
+              "id": "94ade5e6-8a4a-4098-8674-1729508efe1a",
+              "__typename": "Token",
+              "address": "0xc3e53f4d16ae77db1c982e75a937b9f60fe63690",
+              "symbol": "JUSD",
+              "createdAt": "1680656965.765",
+              "isPoolToken": false,
+              "decimals": 18
+            },
+            "totalAmount": "494292071000000000000000"
+          },
+          {
+            "id": "6632fe6f-add5-4e74-ae8b-06672435ec75",
+            "__typename": "PoolLiquidity",
+            "token": {
+              "id": "6db3dc98-0954-4722-929e-b808a1f5d3fe",
+              "__typename": "Token",
+              "address": "0x5d0135d1d9210133412ce5e151a520a50fb36a0c",
+              "symbol": "BSD",
+              "createdAt": "1702112243.98",
+              "isPoolToken": true,
+              "decimals": 18
+            },
+            "totalAmount": "388677161800000000000000"
+          }
+        ],
+        "liquidityDepositAPY": "207400000000000000",
+        "volume30dUSD": {
+          "__typename": "PoolVolume30d",
+          "id": "a416146d-c912-4939-abd6-6a77227f4a50",
+          "lastIndex": 0,
+          "leadingIndex": 0,
+          "value": "387246760500000000000000",
+          "feeUSD": "2253590200000000000000"
+        },
+        "volume30dUSD30dAgo": {
+          "__typename": "PoolVolume30d",
+          "id": "446efa30-6a51-453e-b8d5-a953efb40da2",
+          "lastIndex": 0,
+          "leadingIndex": 0,
+          "value": "489232241400000000000000",
+          "feeUSD": "4238141400000000000000"
+        },
+        "totalSupply": "403868559400000000000000"
+      },
+      {
+        "__typename": "Pool",
+        "id": "19754863-5ee3-4a74-927d-b0701007d1c3",
+        "address": "0x1b2ef866f8eeac8bd643bfae1a5e5e50b95cadce",
+        "liquidity": [
+          {
+            "id": "9d64d268-bb6f-43a4-86aa-48a763188f27",
+            "__typename": "PoolLiquidity",
+            "token": {
+              "id": "94ade5e6-8a4a-4098-8674-1729508efe1a",
+              "__typename": "Token",
+              "address": "0xc3e53f4d16ae77db1c982e75a937b9f60fe63690",
+              "symbol": "JUSD",
+              "createdAt": "1680656965.765",
+              "isPoolToken": false,
+              "decimals": 18
+            },
+            "totalAmount": "418995708400000000000000"
+          },
+          {
+            "id": "283909d7-8c3e-4b76-b582-277a360a826e",
+            "__typename": "PoolLiquidity",
+            "token": {
+              "id": "26b28830-04ca-4fca-b0cb-bb37ce717ef6",
+              "__typename": "Token",
+              "address": "0xadd3b0cdb74ca16cb351e8e4c76cc4922ce1ffcf",
+              "symbol": "PHP",
+              "createdAt": "1690705343.924",
+              "isPoolToken": true,
+              "decimals": 18
+            },
+            "totalAmount": "221941325000000000000000"
+          }
+        ],
+        "liquidityDepositAPY": "58000000000000000",
+        "volume30dUSD": {
+          "__typename": "PoolVolume30d",
+          "id": "2abc5ff6-e63b-4b0c-a26f-a6c7209c4d3e",
+          "lastIndex": 0,
+          "leadingIndex": 0,
+          "value": "349202754300000000000000",
+          "feeUSD": "1225560900000000000000"
+        },
+        "volume30dUSD30dAgo": {
+          "__typename": "PoolVolume30d",
+          "id": "ee548139-140a-4827-a8df-3fea83f3e4c4",
+          "lastIndex": 0,
+          "leadingIndex": 0,
+          "value": "116144531300000000000000",
+          "feeUSD": "2929853300000000000000"
+        },
+        "totalSupply": "203970602600000000000000"
+      },
+      {
+        "__typename": "Pool",
+        "id": "9d0a66aa-9251-452a-9fd6-99ed3cfaa8b8",
+        "address": "0x89fbeb40f4fae9238cdc842be8cfe3c1dbc4dcef",
+        "liquidity": [
+          {
+            "id": "eb719022-77ab-45ff-aabf-f792bf791157",
+            "__typename": "PoolLiquidity",
+            "token": {
+              "id": "94ade5e6-8a4a-4098-8674-1729508efe1a",
+              "__typename": "Token",
+              "address": "0xc3e53f4d16ae77db1c982e75a937b9f60fe63690",
+              "symbol": "JUSD",
+              "createdAt": "1680656965.765",
+              "isPoolToken": false,
+              "decimals": 18
+            },
+            "totalAmount": "452867458200000000000000"
+          },
+          {
+            "id": "b82c3eeb-394f-4c91-8422-254385ce9fc6",
+            "__typename": "PoolLiquidity",
+            "token": {
+              "id": "6bd8fa45-a04b-46a4-838e-ae23260e502a",
+              "__typename": "Token",
+              "address": "0xae85480efdad2339df252b2503ab38b02fd85e98",
+              "symbol": "YER",
+              "createdAt": "1686785285.658",
+              "isPoolToken": true,
+              "decimals": 18
+            },
+            "totalAmount": "417836107200000000000000"
+          }
+        ],
+        "liquidityDepositAPY": "203300000000000000",
+        "volume30dUSD": {
+          "__typename": "PoolVolume30d",
+          "id": "e8d912ea-6871-438f-b79b-aaf591454687",
+          "lastIndex": 0,
+          "leadingIndex": 0,
+          "value": "145463679700000000000000",
+          "feeUSD": "3571995400000000000000"
+        },
+        "volume30dUSD30dAgo": {
+          "__typename": "PoolVolume30d",
+          "id": "5111f01b-1970-43ec-93b9-c66daa7608a2",
+          "lastIndex": 0,
+          "leadingIndex": 0,
+          "value": "494036820400000000000000",
+          "feeUSD": "4948833500000000000000"
+        },
+        "totalSupply": "441758438500000000000000"
+      },
+      {
+        "__typename": "Pool",
+        "id": "f79f3639-705b-4ab9-9993-16c49df7605e",
+        "address": "0x1ed1cd5dddbe4af61540ccaffd7c483bdf9ff73c",
+        "liquidity": [
+          {
+            "id": "d8352147-9342-49c3-beda-ea098afbd93a",
+            "__typename": "PoolLiquidity",
+            "token": {
+              "id": "94ade5e6-8a4a-4098-8674-1729508efe1a",
+              "__typename": "Token",
+              "address": "0xc3e53f4d16ae77db1c982e75a937b9f60fe63690",
+              "symbol": "JUSD",
+              "createdAt": "1680656965.765",
+              "isPoolToken": false,
+              "decimals": 18
+            },
+            "totalAmount": "258386228900000000000000"
+          },
+          {
+            "id": "eea32de5-0a73-44c5-8e16-efff9a4e8fed",
+            "__typename": "PoolLiquidity",
+            "token": {
+              "id": "a0dd024a-14ea-4f62-87dd-8ca7e40dca83",
+              "__typename": "Token",
+              "address": "0x9beeaba92bd8cdfebdc715d6ff17d3b0dce63cfe",
+              "symbol": "HUF",
+              "createdAt": "1703973837.194",
+              "isPoolToken": false,
+              "decimals": 18
+            },
+            "totalAmount": "314887196200000000000000"
+          }
+        ],
+        "liquidityDepositAPY": "66300000000000000",
+        "volume30dUSD": {
+          "__typename": "PoolVolume30d",
+          "id": "ef923595-ac56-4d2d-a16c-301b0fb2e325",
+          "lastIndex": 0,
+          "leadingIndex": 0,
+          "value": "330656720600000000000000",
+          "feeUSD": "1338465300000000000000"
+        },
+        "volume30dUSD30dAgo": {
+          "__typename": "PoolVolume30d",
+          "id": "3d9a11ab-2eab-41c4-a7a3-bee8810131be",
+          "lastIndex": 0,
+          "leadingIndex": 0,
+          "value": "391268075000000000000000",
+          "feeUSD": "4175127900000000000000"
+        },
+        "totalSupply": "363776797800000000000000"
+      },
+      {
+        "__typename": "Pool",
+        "id": "52639014-2329-4974-83a6-cfdc632fbf07",
+        "address": "0x8c3d02bffd8af9bfb8a0eee22c598332df17d39f",
+        "liquidity": [
+          {
+            "id": "bed06a9f-d91d-4569-89c1-b87a9053ada8",
+            "__typename": "PoolLiquidity",
+            "token": {
+              "id": "94ade5e6-8a4a-4098-8674-1729508efe1a",
+              "__typename": "Token",
+              "address": "0xc3e53f4d16ae77db1c982e75a937b9f60fe63690",
+              "symbol": "JUSD",
+              "createdAt": "1680656965.765",
+              "isPoolToken": false,
+              "decimals": 18
+            },
+            "totalAmount": "437064293300000000000000"
+          },
+          {
+            "id": "d294ead9-7676-4a01-bc1f-e0b2af3796f1",
+            "__typename": "PoolLiquidity",
+            "token": {
+              "id": "67476dd6-071f-42e3-824b-dd78fd0e76ff",
+              "__typename": "Token",
+              "address": "0xc5a5c42992decbae36851359345fe25997f5c42d",
+              "symbol": "BTC",
+              "createdAt": "1684949585.005",
+              "isPoolToken": false,
+              "decimals": 18
+            },
+            "totalAmount": "484697782900000000000000"
+          }
+        ],
+        "liquidityDepositAPY": "61500000000000000",
+        "volume30dUSD": {
+          "__typename": "PoolVolume30d",
+          "id": "0e3d49aa-0448-4bfb-87a9-27ee5e51abd5",
+          "lastIndex": 0,
+          "leadingIndex": 0,
+          "value": "269911700500000000000000",
+          "feeUSD": "2253840800000000000000"
+        },
+        "volume30dUSD30dAgo": {
+          "__typename": "PoolVolume30d",
+          "id": "3c00b1ef-1f73-4ecb-b7cb-99d7ebda96f2",
+          "lastIndex": 0,
+          "leadingIndex": 0,
+          "value": "330701728700000000000000",
+          "feeUSD": "4350427800000000000000"
+        },
+        "totalSupply": "437820439500000000000000"
+      },
+      {
+        "__typename": "Pool",
+        "id": "d04e6d77-6a45-4872-a15d-8359e853d5a2",
+        "address": "0x05774d9e0dcdcd0a970abafe1bcfe3afba2a0cf9",
+        "liquidity": [
+          {
+            "id": "1bd3b1c1-a583-44af-81df-6b6bb3eff407",
+            "__typename": "PoolLiquidity",
+            "token": {
+              "id": "94ade5e6-8a4a-4098-8674-1729508efe1a",
+              "__typename": "Token",
+              "address": "0xc3e53f4d16ae77db1c982e75a937b9f60fe63690",
+              "symbol": "JUSD",
+              "createdAt": "1680656965.765",
+              "isPoolToken": false,
+              "decimals": 18
+            },
+            "totalAmount": "416818147600000000000000"
+          },
+          {
+            "id": "16e840fa-7c63-411e-811a-9d1a1151b56b",
+            "__typename": "PoolLiquidity",
+            "token": {
+              "id": "9ef4b5e4-50dc-45ff-9cdc-06e9db7c235a",
+              "__typename": "Token",
+              "address": "0x67d269191c92caf3cd7723f116c85e6e9bf55933",
+              "symbol": "USDT",
+              "createdAt": "1687570427.426",
+              "isPoolToken": false,
+              "decimals": 18
+            },
+            "totalAmount": "255436682200000000000000"
+          }
+        ],
+        "liquidityDepositAPY": "43900000000000000",
+        "volume30dUSD": {
+          "__typename": "PoolVolume30d",
+          "id": "0bffda46-9a20-4bf9-8bb0-470672d26634",
+          "lastIndex": 0,
+          "leadingIndex": 0,
+          "value": "290564761000000000000000",
+          "feeUSD": "4987704200000000000000"
+        },
+        "volume30dUSD30dAgo": {
+          "__typename": "PoolVolume30d",
+          "id": "6fc359f5-a42c-4bec-9d59-215814e26fd0",
+          "lastIndex": 0,
+          "leadingIndex": 0,
+          "value": "208757666800000000000000",
+          "feeUSD": "4647760200000000000000"
+        },
+        "totalSupply": "167996727500000000000000"
+      },
+      {
+        "__typename": "Pool",
+        "id": "ff3b2226-7e48-4f8c-9477-745a354fd7ba",
+        "address": "0xb50e042fb74fadaaa30efa9a4cfe0be26bea02d3",
+        "liquidity": [
+          {
+            "id": "2332c5ad-4c6c-40d9-803c-643da81f96e0",
+            "__typename": "PoolLiquidity",
+            "token": {
+              "id": "94ade5e6-8a4a-4098-8674-1729508efe1a",
+              "__typename": "Token",
+              "address": "0xc3e53f4d16ae77db1c982e75a937b9f60fe63690",
+              "symbol": "JUSD",
+              "createdAt": "1680656965.765",
+              "isPoolToken": false,
+              "decimals": 18
+            },
+            "totalAmount": "426393291000000000000000"
+          },
+          {
+            "id": "064ed384-1078-4752-a410-2d1acd24f8f4",
+            "__typename": "PoolLiquidity",
+            "token": {
+              "id": "d6898c51-0ab5-474c-a1a4-354c602d97a2",
+              "__typename": "Token",
+              "address": "0xe6e340d132b5f46d1e472debcd681b2abc16e57e",
+              "symbol": "GOV",
+              "createdAt": "1698326236.465",
+              "isPoolToken": true,
+              "decimals": 18
+            },
+            "totalAmount": "458783279700000000000000"
+          }
+        ],
+        "liquidityDepositAPY": "79200000000000000",
+        "volume30dUSD": {
+          "__typename": "PoolVolume30d",
+          "id": "9c6865ed-cd5c-4677-ac0d-5fdd0f681a30",
+          "lastIndex": 0,
+          "leadingIndex": 0,
+          "value": "262762233200000000000000",
+          "feeUSD": "1610896200000000000000"
+        },
+        "volume30dUSD30dAgo": {
+          "__typename": "PoolVolume30d",
+          "id": "a35d1b06-53be-42a5-a3cc-8bd53f4f3c4a",
+          "lastIndex": 0,
+          "leadingIndex": 0,
+          "value": "386803164600000000000000",
+          "feeUSD": "3332887500000000000000"
+        },
+        "totalSupply": "333485919600000000000000"
+      }
+    ]
+  }
+}

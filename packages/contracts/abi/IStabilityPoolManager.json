@@ -1,0 +1,633 @@
+[
+    {
+        "inputs": [],
+        "name": "AlreadyInitialized",
+        "type": "error"
+    },
+    {
+        "inputs": [],
+        "name": "FeeExceedMaxPercentage",
+        "type": "error"
+    },
+    {
+        "inputs": [],
+        "name": "NotFromLiquidationOps",
+        "type": "error"
+    },
+    {
+        "inputs": [],
+        "name": "NotFromReservePool",
+        "type": "error"
+    },
+    {
+        "inputs": [],
+        "name": "PoolExist",
+        "type": "error"
+    },
+    {
+        "inputs": [],
+        "name": "PoolNotExist",
+        "type": "error"
+    },
+    {
+        "inputs": [],
+        "name": "Unauthorized",
+        "type": "error"
+    },
+    {
+        "anonymous": false,
+        "inputs": [
+            {
+                "indexed": false,
+                "internalType": "address",
+                "name": "stabilityPoolAddress",
+                "type": "address"
+            }
+        ],
+        "name": "StabilityPoolAdded",
+        "type": "event"
+    },
+    {
+        "anonymous": false,
+        "inputs": [
+            {
+                "indexed": false,
+                "internalType": "address",
+                "name": "liquidationOperationsAddress",
+                "type": "address"
+            },
+            {
+                "indexed": false,
+                "internalType": "address",
+                "name": "storgePoolAddress",
+                "type": "address"
+            },
+            {
+                "indexed": false,
+                "internalType": "address",
+                "name": "reservePoolAddress",
+                "type": "address"
+            },
+            {
+                "indexed": false,
+                "internalType": "address",
+                "name": "tokenManagerAddress",
+                "type": "address"
+            },
+            {
+                "indexed": false,
+                "internalType": "address",
+                "name": "priceFeedAddress",
+                "type": "address"
+            }
+        ],
+        "name": "StabilityPoolManagerInitiated",
+        "type": "event"
+    },
+    {
+        "inputs": [
+            {
+                "internalType": "contract IDebtToken",
+                "name": "_debtToken",
+                "type": "address"
+            }
+        ],
+        "name": "addStabilityPool",
+        "outputs": [],
+        "stateMutability": "nonpayable",
+        "type": "function"
+    },
+    {
+        "inputs": [],
+        "name": "getCompoundedDeposits",
+        "outputs": [
+            {
+                "components": [
+                    {
+                        "internalType": "address",
+                        "name": "tokenAddress",
+                        "type": "address"
+                    },
+                    {
+                        "internalType": "uint256",
+                        "name": "amount",
+                        "type": "uint256"
+                    }
+                ],
+                "internalType": "struct IBase.TokenAmount[]",
+                "name": "deposits",
+                "type": "tuple[]"
+            }
+        ],
+        "stateMutability": "view",
+        "type": "function"
+    },
+    {
+        "inputs": [
+            {
+                "internalType": "address",
+                "name": "_depositor",
+                "type": "address"
+            }
+        ],
+        "name": "getDepositorCollGains",
+        "outputs": [
+            {
+                "components": [
+                    {
+                        "internalType": "address",
+                        "name": "tokenAddress",
+                        "type": "address"
+                    },
+                    {
+                        "internalType": "uint256",
+                        "name": "amount",
+                        "type": "uint256"
+                    }
+                ],
+                "internalType": "struct IBase.TokenAmount[]",
+                "name": "collGains",
+                "type": "tuple[]"
+            }
+        ],
+        "stateMutability": "view",
+        "type": "function"
+    },
+    {
+        "inputs": [
+            {
+                "internalType": "address",
+                "name": "_depositor",
+                "type": "address"
+            },
+            {
+                "internalType": "address",
+                "name": "_debtTokenAddress",
+                "type": "address"
+            }
+        ],
+        "name": "getDepositorCompoundedDeposit",
+        "outputs": [
+            {
+                "internalType": "uint256",
+                "name": "amount",
+                "type": "uint256"
+            }
+        ],
+        "stateMutability": "view",
+        "type": "function"
+    },
+    {
+        "inputs": [
+            {
+                "internalType": "address",
+                "name": "_depositor",
+                "type": "address"
+            }
+        ],
+        "name": "getDepositorCompoundedDeposits",
+        "outputs": [
+            {
+                "components": [
+                    {
+                        "internalType": "address",
+                        "name": "tokenAddress",
+                        "type": "address"
+                    },
+                    {
+                        "internalType": "uint256",
+                        "name": "amount",
+                        "type": "uint256"
+                    }
+                ],
+                "internalType": "struct IBase.TokenAmount[]",
+                "name": "deposits",
+                "type": "tuple[]"
+            }
+        ],
+        "stateMutability": "view",
+        "type": "function"
+    },
+    {
+        "inputs": [
+            {
+                "internalType": "address",
+                "name": "_depositor",
+                "type": "address"
+            },
+            {
+                "internalType": "address",
+                "name": "_debtTokenAddress",
+                "type": "address"
+            }
+        ],
+        "name": "getDepositorDeposit",
+        "outputs": [
+            {
+                "internalType": "uint256",
+                "name": "amount",
+                "type": "uint256"
+            }
+        ],
+        "stateMutability": "view",
+        "type": "function"
+    },
+    {
+        "inputs": [
+            {
+                "internalType": "address",
+                "name": "_depositor",
+                "type": "address"
+            }
+        ],
+        "name": "getDepositorDeposits",
+        "outputs": [
+            {
+                "components": [
+                    {
+                        "internalType": "address",
+                        "name": "tokenAddress",
+                        "type": "address"
+                    },
+                    {
+                        "internalType": "uint256",
+                        "name": "amount",
+                        "type": "uint256"
+                    }
+                ],
+                "internalType": "struct IBase.TokenAmount[]",
+                "name": "deposits",
+                "type": "tuple[]"
+            }
+        ],
+        "stateMutability": "view",
+        "type": "function"
+    },
+    {
+        "inputs": [
+            {
+                "components": [
+                    {
+                        "components": [
+                            {
+                                "internalType": "address",
+                                "name": "tokenAddress",
+                                "type": "address"
+                            },
+                            {
+                                "internalType": "uint256",
+                                "name": "tokenDecimals",
+                                "type": "uint256"
+                            },
+                            {
+                                "internalType": "uint256",
+                                "name": "price",
+                                "type": "uint256"
+                            },
+                            {
+                                "internalType": "bool",
+                                "name": "isPriceTrusted",
+                                "type": "bool"
+                            },
+                            {
+                                "internalType": "uint256",
+                                "name": "supportedCollateralRatio",
+                                "type": "uint256"
+                            }
+                        ],
+                        "internalType": "struct IBase.TokenPrice[]",
+                        "name": "collPrices",
+                        "type": "tuple[]"
+                    },
+                    {
+                        "components": [
+                            {
+                                "internalType": "address",
+                                "name": "tokenAddress",
+                                "type": "address"
+                            },
+                            {
+                                "internalType": "uint256",
+                                "name": "tokenDecimals",
+                                "type": "uint256"
+                            },
+                            {
+                                "internalType": "uint256",
+                                "name": "price",
+                                "type": "uint256"
+                            },
+                            {
+                                "internalType": "bool",
+                                "name": "isPriceTrusted",
+                                "type": "bool"
+                            },
+                            {
+                                "internalType": "uint256",
+                                "name": "supportedCollateralRatio",
+                                "type": "uint256"
+                            }
+                        ],
+                        "internalType": "struct IBase.TokenPrice[]",
+                        "name": "debtPrices",
+                        "type": "tuple[]"
+                    }
+                ],
+                "internalType": "struct IBase.PriceCache",
+                "name": "_priceCache",
+                "type": "tuple"
+            }
+        ],
+        "name": "getRemainingStability",
+        "outputs": [
+            {
+                "components": [
+                    {
+                        "internalType": "contract IStabilityPool",
+                        "name": "stabilityPool",
+                        "type": "address"
+                    },
+                    {
+                        "internalType": "address",
+                        "name": "tokenAddress",
+                        "type": "address"
+                    },
+                    {
+                        "internalType": "uint256",
+                        "name": "remaining",
+                        "type": "uint256"
+                    },
+                    {
+                        "internalType": "uint256",
+                        "name": "debtToOffset",
+                        "type": "uint256"
+                    },
+                    {
+                        "components": [
+                            {
+                                "internalType": "address",
+                                "name": "tokenAddress",
+                                "type": "address"
+                            },
+                            {
+                                "internalType": "uint256",
+                                "name": "amount",
+                                "type": "uint256"
+                            }
+                        ],
+                        "internalType": "struct IBase.TokenAmount[]",
+                        "name": "collGained",
+                        "type": "tuple[]"
+                    }
+                ],
+                "internalType": "struct IBBase.RemainingStability[]",
+                "name": "",
+                "type": "tuple[]"
+            }
+        ],
+        "stateMutability": "view",
+        "type": "function"
+    },
+    {
+        "inputs": [
+            {
+                "internalType": "contract IDebtToken",
+                "name": "_debtToken",
+                "type": "address"
+            }
+        ],
+        "name": "getStabilityPool",
+        "outputs": [
+            {
+                "internalType": "contract IStabilityPool",
+                "name": "",
+                "type": "address"
+            }
+        ],
+        "stateMutability": "view",
+        "type": "function"
+    },
+    {
+        "inputs": [
+            {
+                "internalType": "address",
+                "name": "_debtTokenAddress",
+                "type": "address"
+            }
+        ],
+        "name": "getTotalDeposit",
+        "outputs": [
+            {
+                "internalType": "uint256",
+                "name": "amount",
+                "type": "uint256"
+            }
+        ],
+        "stateMutability": "view",
+        "type": "function"
+    },
+    {
+        "inputs": [],
+        "name": "getTotalDeposits",
+        "outputs": [
+            {
+                "components": [
+                    {
+                        "internalType": "address",
+                        "name": "tokenAddress",
+                        "type": "address"
+                    },
+                    {
+                        "internalType": "uint256",
+                        "name": "amount",
+                        "type": "uint256"
+                    }
+                ],
+                "internalType": "struct IBase.TokenAmount[]",
+                "name": "deposits",
+                "type": "tuple[]"
+            }
+        ],
+        "stateMutability": "view",
+        "type": "function"
+    },
+    {
+        "inputs": [
+            {
+                "components": [
+                    {
+                        "components": [
+                            {
+                                "internalType": "address",
+                                "name": "tokenAddress",
+                                "type": "address"
+                            },
+                            {
+                                "internalType": "uint256",
+                                "name": "tokenDecimals",
+                                "type": "uint256"
+                            },
+                            {
+                                "internalType": "uint256",
+                                "name": "price",
+                                "type": "uint256"
+                            },
+                            {
+                                "internalType": "bool",
+                                "name": "isPriceTrusted",
+                                "type": "bool"
+                            },
+                            {
+                                "internalType": "uint256",
+                                "name": "supportedCollateralRatio",
+                                "type": "uint256"
+                            }
+                        ],
+                        "internalType": "struct IBase.TokenPrice[]",
+                        "name": "collPrices",
+                        "type": "tuple[]"
+                    },
+                    {
+                        "components": [
+                            {
+                                "internalType": "address",
+                                "name": "tokenAddress",
+                                "type": "address"
+                            },
+                            {
+                                "internalType": "uint256",
+                                "name": "tokenDecimals",
+                                "type": "uint256"
+                            },
+                            {
+                                "internalType": "uint256",
+                                "name": "price",
+                                "type": "uint256"
+                            },
+                            {
+                                "internalType": "bool",
+                                "name": "isPriceTrusted",
+                                "type": "bool"
+                            },
+                            {
+                                "internalType": "uint256",
+                                "name": "supportedCollateralRatio",
+                                "type": "uint256"
+                            }
+                        ],
+                        "internalType": "struct IBase.TokenPrice[]",
+                        "name": "debtPrices",
+                        "type": "tuple[]"
+                    }
+                ],
+                "internalType": "struct IBase.PriceCache",
+                "name": "_priceCache",
+                "type": "tuple"
+            },
+            {
+                "components": [
+                    {
+                        "internalType": "contract IStabilityPool",
+                        "name": "stabilityPool",
+                        "type": "address"
+                    },
+                    {
+                        "internalType": "address",
+                        "name": "tokenAddress",
+                        "type": "address"
+                    },
+                    {
+                        "internalType": "uint256",
+                        "name": "remaining",
+                        "type": "uint256"
+                    },
+                    {
+                        "internalType": "uint256",
+                        "name": "debtToOffset",
+                        "type": "uint256"
+                    },
+                    {
+                        "components": [
+                            {
+                                "internalType": "address",
+                                "name": "tokenAddress",
+                                "type": "address"
+                            },
+                            {
+                                "internalType": "uint256",
+                                "name": "amount",
+                                "type": "uint256"
+                            }
+                        ],
+                        "internalType": "struct IBase.TokenAmount[]",
+                        "name": "collGained",
+                        "type": "tuple[]"
+                    }
+                ],
+                "internalType": "struct IBBase.RemainingStability[]",
+                "name": "_toOffset",
+                "type": "tuple[]"
+            }
+        ],
+        "name": "offset",
+        "outputs": [],
+        "stateMutability": "nonpayable",
+        "type": "function"
+    },
+    {
+        "inputs": [
+            {
+                "components": [
+                    {
+                        "internalType": "address",
+                        "name": "tokenAddress",
+                        "type": "address"
+                    },
+                    {
+                        "internalType": "uint256",
+                        "name": "amount",
+                        "type": "uint256"
+                    }
+                ],
+                "internalType": "struct IBase.TokenAmount[]",
+                "name": "_debts",
+                "type": "tuple[]"
+            }
+        ],
+        "name": "provideStability",
+        "outputs": [],
+        "stateMutability": "nonpayable",
+        "type": "function"
+    },
+    {
+        "inputs": [],
+        "name": "withdrawGains",
+        "outputs": [],
+        "stateMutability": "nonpayable",
+        "type": "function"
+    },
+    {
+        "inputs": [
+            {
+                "components": [
+                    {
+                        "internalType": "address",
+                        "name": "tokenAddress",
+                        "type": "address"
+                    },
+                    {
+                        "internalType": "uint256",
+                        "name": "amount",
+                        "type": "uint256"
+                    }
+                ],
+                "internalType": "struct IBase.TokenAmount[]",
+                "name": "_debts",
+                "type": "tuple[]"
+            }
+        ],
+        "name": "withdrawStability",
+        "outputs": [],
+        "stateMutability": "nonpayable",
+        "type": "function"
+    }
+]

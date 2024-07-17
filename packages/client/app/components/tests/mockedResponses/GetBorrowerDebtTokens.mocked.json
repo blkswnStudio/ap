@@ -1,0 +1,357 @@
+{
+  "data": {
+    "debtTokenMetas": [
+      {
+        "__typename": "DebtTokenMeta",
+        "id": "3216c81f-9d9e-48b1-8bb5-7d2ee83975d9",
+        "timestamp": "1711454149",
+        "token": {
+          "id": "b0e50bf9-6a33-41bd-93ab-3673b25d2ccf",
+          "__typename": "Token",
+          "address": "0xe1fb868ffd3ef114f2bfa8088ee1875a99cfbfcc",
+          "symbol": "MYR",
+          "createdAt": "1709686048.334",
+          "isPoolToken": false,
+          "decimals": 18
+        },
+        "totalDepositedStability": "1597345000000000000000",
+        "totalReserve": "0",
+        "totalReserve30dAverage": null,
+        "totalSupplyUSD": "30921845900000000000000",
+        "totalSupplyUSD30dAverage": {
+          "__typename": "TotalSupplyAverage",
+          "id": "50e7f73d-63c4-41dd-815c-ffb9f6a94724",
+          "index": 0,
+          "value": "22253288000000000000000"
+        },
+        "stabilityDepositAPY": {
+          "__typename": "StabilityDepositAPY",
+          "id": "fe5e0884-0bb4-4ac1-a74b-b616b5c2b1ba",
+          "index": 0,
+          "profit": "84249100000000000000",
+          "volume": "141946400000000000000"
+        }
+      },
+      {
+        "__typename": "DebtTokenMeta",
+        "id": "d53d6cf9-4f8a-4a28-8728-acd58675617d",
+        "timestamp": "1711454149",
+        "token": {
+          "id": "d02ba6ef-dfa5-4194-8d32-26a010f70359",
+          "__typename": "Token",
+          "address": "0xca0e2d4e38c7ddae74fd7b29c6f7a10226ed0d72",
+          "symbol": "MMK",
+          "createdAt": "1694955012.067",
+          "isPoolToken": true,
+          "decimals": 18
+        },
+        "totalDepositedStability": "1639778800000000000000",
+        "totalReserve": "0",
+        "totalReserve30dAverage": null,
+        "totalSupplyUSD": "43934948500000000000000",
+        "totalSupplyUSD30dAverage": {
+          "__typename": "TotalSupplyAverage",
+          "id": "db3394f7-a0be-4cc3-83a6-6927e46b9a58",
+          "index": 0,
+          "value": "19386374200000000000000"
+        },
+        "stabilityDepositAPY": {
+          "__typename": "StabilityDepositAPY",
+          "id": "0d8da9b4-69f3-499b-88a7-6b99873556d7",
+          "index": 0,
+          "profit": "71666500000000000000",
+          "volume": "110111800000000000000"
+        }
+      },
+      {
+        "__typename": "DebtTokenMeta",
+        "id": "6461d18f-7f40-4d3b-bbb2-0ec6a382703e",
+        "timestamp": "1711454149",
+        "token": {
+          "id": "a0dd024a-14ea-4f62-87dd-8ca7e40dca83",
+          "__typename": "Token",
+          "address": "0x9beeaba92bd8cdfebdc715d6ff17d3b0dce63cfe",
+          "symbol": "HUF",
+          "createdAt": "1703973837.194",
+          "isPoolToken": false,
+          "decimals": 18
+        },
+        "totalDepositedStability": "3190443500000000000000",
+        "totalReserve": "4743749100000000000000",
+        "totalReserve30dAverage": {
+          "__typename": "TotalReserveAverage",
+          "id": "91aa61a8-2a26-4741-9ae0-6f5e1633308b",
+          "index": 0,
+          "value": "2657241800000000000000"
+        },
+        "totalSupplyUSD": "22684270000000000000000",
+        "totalSupplyUSD30dAverage": {
+          "__typename": "TotalSupplyAverage",
+          "id": "17658b47-dfce-416e-8612-b66c9af357d9",
+          "index": 0,
+          "value": "38401195600000000000000"
+        },
+        "stabilityDepositAPY": {
+          "__typename": "StabilityDepositAPY",
+          "id": "d7364410-8309-4e60-a4f5-1a14209979b0",
+          "index": 0,
+          "profit": "25642800000000000000",
+          "volume": "182185400000000000000"
+        }
+      },
+      {
+        "__typename": "DebtTokenMeta",
+        "id": "3d73960f-3b1b-4c84-b0a3-c69c0ada9e93",
+        "timestamp": "1711454149",
+        "token": {
+          "id": "2b8de0f9-d7a0-4c4c-9979-7eb8f87b9386",
+          "__typename": "Token",
+          "address": "0xea87ebaaa11de1eaacafc30dcebaf95b919ac211",
+          "symbol": "PEN",
+          "createdAt": "1688346251.332",
+          "isPoolToken": true,
+          "decimals": 18
+        },
+        "totalDepositedStability": "1383525500000000000000",
+        "totalReserve": "0",
+        "totalReserve30dAverage": null,
+        "totalSupplyUSD": "31014847900000000000000",
+        "totalSupplyUSD30dAverage": {
+          "__typename": "TotalSupplyAverage",
+          "id": "4649d1ed-39c6-4b51-b5a7-aea08dc1964c",
+          "index": 0,
+          "value": "48087813200000000000000"
+        },
+        "stabilityDepositAPY": {
+          "__typename": "StabilityDepositAPY",
+          "id": "aa78cba9-4207-41eb-a7b0-ff3039517f09",
+          "index": 0,
+          "profit": "82003100000000000000",
+          "volume": "156389200000000000000"
+        }
+      },
+      {
+        "__typename": "DebtTokenMeta",
+        "id": "54b970fa-5d69-459f-a206-39568a39ae86",
+        "timestamp": "1711454149",
+        "token": {
+          "id": "26b28830-04ca-4fca-b0cb-bb37ce717ef6",
+          "__typename": "Token",
+          "address": "0xadd3b0cdb74ca16cb351e8e4c76cc4922ce1ffcf",
+          "symbol": "PHP",
+          "createdAt": "1690705343.924",
+          "isPoolToken": true,
+          "decimals": 18
+        },
+        "totalDepositedStability": "1362151200000000000000",
+        "totalReserve": "0",
+        "totalReserve30dAverage": null,
+        "totalSupplyUSD": "11242515900000000000000",
+        "totalSupplyUSD30dAverage": {
+          "__typename": "TotalSupplyAverage",
+          "id": "f9a1631d-af24-4a95-9215-2cb98dac3686",
+          "index": 0,
+          "value": "45434738600000000000000"
+        },
+        "stabilityDepositAPY": {
+          "__typename": "StabilityDepositAPY",
+          "id": "c0f0d209-3175-4ea9-9a17-4ea27eac3c80",
+          "index": 0,
+          "profit": "86308200000000000000",
+          "volume": "170214600000000000000"
+        }
+      },
+      {
+        "__typename": "DebtTokenMeta",
+        "id": "badc81b2-8d60-4674-9689-7884df9679f4",
+        "timestamp": "1711454149",
+        "token": {
+          "id": "6bd8fa45-a04b-46a4-838e-ae23260e502a",
+          "__typename": "Token",
+          "address": "0xae85480efdad2339df252b2503ab38b02fd85e98",
+          "symbol": "YER",
+          "createdAt": "1686785285.658",
+          "isPoolToken": true,
+          "decimals": 18
+        },
+        "totalDepositedStability": "2373232400000000000000",
+        "totalReserve": "0",
+        "totalReserve30dAverage": null,
+        "totalSupplyUSD": "44498274300000000000000",
+        "totalSupplyUSD30dAverage": {
+          "__typename": "TotalSupplyAverage",
+          "id": "534c06b0-1701-447d-9229-c255c77026eb",
+          "index": 0,
+          "value": "40386299600000000000000"
+        },
+        "stabilityDepositAPY": {
+          "__typename": "StabilityDepositAPY",
+          "id": "61b5af55-2f5a-478f-b38a-be9423825ce3",
+          "index": 0,
+          "profit": "90567000000000000000",
+          "volume": "161646000000000000000"
+        }
+      },
+      {
+        "__typename": "DebtTokenMeta",
+        "id": "71d27ea5-1328-4fdb-988f-a8f463f3d5b9",
+        "timestamp": "1711454149",
+        "token": {
+          "id": "57c7003d-57a7-47b7-992a-b89e6ebf3fa1",
+          "__typename": "Token",
+          "address": "0xfc49ea213c2e4e2cbaefd0b3982cfcbdaaecfeb3",
+          "symbol": "MDL",
+          "createdAt": "1709562633.241",
+          "isPoolToken": true,
+          "decimals": 18
+        },
+        "totalDepositedStability": "4531053500000000000000",
+        "totalReserve": "0",
+        "totalReserve30dAverage": null,
+        "totalSupplyUSD": "45348294900000000000000",
+        "totalSupplyUSD30dAverage": {
+          "__typename": "TotalSupplyAverage",
+          "id": "8ff5a1f0-40bb-4062-a042-8566cb5ac928",
+          "index": 0,
+          "value": "44712325900000000000000"
+        },
+        "stabilityDepositAPY": {
+          "__typename": "StabilityDepositAPY",
+          "id": "77aa9822-b999-4aef-a75c-02ea0a3ab7e2",
+          "index": 0,
+          "profit": "5391000000000000000",
+          "volume": "192065700000000000000"
+        }
+      },
+      {
+        "__typename": "DebtTokenMeta",
+        "id": "b0845aab-7027-4123-a13b-01aec93d943d",
+        "timestamp": "1711454149",
+        "token": {
+          "id": "6db3dc98-0954-4722-929e-b808a1f5d3fe",
+          "__typename": "Token",
+          "address": "0x5d0135d1d9210133412ce5e151a520a50fb36a0c",
+          "symbol": "BSD",
+          "createdAt": "1702112243.98",
+          "isPoolToken": true,
+          "decimals": 18
+        },
+        "totalDepositedStability": "4337064300000000000000",
+        "totalReserve": "0",
+        "totalReserve30dAverage": null,
+        "totalSupplyUSD": "14034425000000000000000",
+        "totalSupplyUSD30dAverage": {
+          "__typename": "TotalSupplyAverage",
+          "id": "7af6a178-60dd-4d7a-94af-5a1d0a729a0d",
+          "index": 0,
+          "value": "39260930700000000000000"
+        },
+        "stabilityDepositAPY": {
+          "__typename": "StabilityDepositAPY",
+          "id": "954fa9df-9dc2-411c-9efa-95ccbd3b77d3",
+          "index": 0,
+          "profit": "98611500000000000000",
+          "volume": "129714300000000000000"
+        }
+      },
+      {
+        "__typename": "DebtTokenMeta",
+        "id": "e994e61d-7512-4a26-a66d-f08f058f863b",
+        "timestamp": "1711454149",
+        "token": {
+          "id": "83ea7915-274f-41d3-bca7-1972126342e3",
+          "__typename": "Token",
+          "address": "0xf5c33439afa2d7bae2ab53bcf4fdd9bafabdaaff",
+          "symbol": "CUP",
+          "createdAt": "1694926023.486",
+          "isPoolToken": true,
+          "decimals": 18
+        },
+        "totalDepositedStability": "3727896200000000000000",
+        "totalReserve": "0",
+        "totalReserve30dAverage": null,
+        "totalSupplyUSD": "25835861400000000000000",
+        "totalSupplyUSD30dAverage": {
+          "__typename": "TotalSupplyAverage",
+          "id": "829d856c-27a9-465d-93de-9705e1a94f80",
+          "index": 0,
+          "value": "40872172000000000000000"
+        },
+        "stabilityDepositAPY": {
+          "__typename": "StabilityDepositAPY",
+          "id": "814e81b0-54de-4427-87c3-5cc8f9e4f49d",
+          "index": 0,
+          "profit": "47033800000000000000",
+          "volume": "128780700000000000000"
+        }
+      },
+      {
+        "__typename": "DebtTokenMeta",
+        "id": "4c977fcf-9b72-4246-a794-73af7b9a72b3",
+        "timestamp": "1711454149",
+        "token": {
+          "id": "1e35ff0c-0788-4a02-bdc3-81d23e6b82cb",
+          "__typename": "Token",
+          "address": "0x559d18f2dff65a6040c238e8193c8cdeaa87ab86",
+          "symbol": "INR",
+          "createdAt": "1700934266.78",
+          "isPoolToken": false,
+          "decimals": 18
+        },
+        "totalDepositedStability": "1954712000000000000000",
+        "totalReserve": "0",
+        "totalReserve30dAverage": null,
+        "totalSupplyUSD": "45643276100000000000000",
+        "totalSupplyUSD30dAverage": {
+          "__typename": "TotalSupplyAverage",
+          "id": "11051275-ef80-46f4-8f4e-3bbe4f8c15be",
+          "index": 0,
+          "value": "34207126000000000000000"
+        },
+        "stabilityDepositAPY": {
+          "__typename": "StabilityDepositAPY",
+          "id": "e0411e45-2d51-4982-931a-b7395330a450",
+          "index": 0,
+          "profit": "87612900000000000000",
+          "volume": "182899000000000000000"
+        }
+      },
+      {
+        "__typename": "DebtTokenMeta",
+        "id": "3f8c83c1-fdae-4d99-87e7-99c0be97bc12",
+        "timestamp": "1711454149",
+        "token": {
+          "id": "94ade5e6-8a4a-4098-8674-1729508efe1a",
+          "__typename": "Token",
+          "address": "0xc3e53f4d16ae77db1c982e75a937b9f60fe63690",
+          "symbol": "JUSD",
+          "createdAt": "1680656965.765",
+          "isPoolToken": false,
+          "decimals": 18
+        },
+        "totalDepositedStability": "3940060200000000000000",
+        "totalReserve": "3822371500000000000000",
+        "totalReserve30dAverage": {
+          "__typename": "TotalReserveAverage",
+          "id": "fc915eaa-aeff-42ba-8085-0aaaa8fb3212",
+          "index": 0,
+          "value": "1267600100000000000000"
+        },
+        "totalSupplyUSD": "13030776900000000000000",
+        "totalSupplyUSD30dAverage": {
+          "__typename": "TotalSupplyAverage",
+          "id": "27ac090c-b27e-42e9-b560-bf7d89a95e36",
+          "index": 0,
+          "value": "49254988600000000000000"
+        },
+        "stabilityDepositAPY": {
+          "__typename": "StabilityDepositAPY",
+          "id": "73e5cd6b-1f54-4710-9619-96f814b6899c",
+          "index": 0,
+          "profit": "34395100000000000000",
+          "volume": "165115700000000000000"
+        }
+      }
+    ]
+  }
+}

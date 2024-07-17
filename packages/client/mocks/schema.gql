@@ -1,0 +1,357 @@
+# stringified BigInt from API because GQL doesnt allow bigints
+scalar BigInt
+# return from contract as a native bigint
+scalar bigint
+scalar Bytes
+
+type Token {
+  id: Bytes!
+  address: Bytes!
+  symbol: String!
+  createdAt: BigInt!
+  isPoolToken: Boolean!
+  oracleId: Bytes!
+  decimals: Int!
+  # handled by client
+  priceUSDOracle: bigint!
+  borrowingRate: bigint!
+}
+
+type DebtTokenMeta {
+  id: ID!
+  token: Token!
+  timestamp: BigInt!
+  # handled by client
+  walletAmount: bigint!
+  troveMintedAmount: bigint!
+  providedStability: bigint!
+  compoundedDeposit: bigint!
+  troveRepableDebtAmount: bigint!
+  troveDebtAmount: bigint!
+
+  # global
+  stabilityDepositAPY: StabilityDepositAPY!
+  totalDepositedStability: BigInt!
+  totalReserve: BigInt!
+  # only defined for gov and stableDebtToken
+  totalReserve30dAverage: TotalReserveAverage
+  totalSupplyUSD: BigInt!
+  totalSupplyUSD30dAverage: TotalSupplyAverage!
+}
+
+type TotalReserveAverage {
+  id: ID!
+  index: Int!
+  value: BigInt!
+}
+
+type TotalSupplyAverage {
+  id: ID!
+  index: Int!
+  value: BigInt!
+}
+
+type StabilityDepositAPY {
+  id: ID!
+  index: Int!
+  profit: BigInt!
+  volume: BigInt!
+}
+
+type CollateralTokenMeta {
+  id: ID!
+  token: Token!
+  timestamp: BigInt!
+  # borrower specific
+  walletAmount: bigint!
+  troveLockedAmount: bigint!
+  stabilityGainedAmount: bigint!
+  collSurplusAmount: bigint!
+
+  # global
+  totalValueLockedUSD: BigInt!
+  totalValueLockedUSD30dAverage: TotalValueLockedAverage!
+  supportedCollateralRatio: BigInt!
+}
+
+type TotalValueLockedAverage {
+  id: ID!
+  index: Int!
+  value: BigInt!
+}
+
+type Query {
+  # without borrower address troveAmount and walletAmount are always undefined
+  # every token is returned, even if it is not used by the borrower (troveAmount, walletAmount = 0)
+  # the same token can be returned twice, if it is used as debt and collateral
+  debtTokenMetas(borrower: String): [DebtTokenMeta!]!
+  collateralTokenMetas(borrower: String): [CollateralTokenMeta!]!
+  # TODO: Rename this for the subgraph query
+  token(id: String!): Token!
+  tokens: [Token!]!
+}
+
+enum LongShortDirection {
+  LONG
+  SHORT
+}
+
+type SwapEvent {
+  id: Bytes!
+  borrower: Bytes!
+  timestamp: BigInt!
+  #
+  token: Token!
+  direction: LongShortDirection! # Indicates whether the swap is LONG or SHORT
+  size: BigInt! # always positive, applied by direction. The size of the "non-stable" coin involved in the swap
+  totalPriceInStable: BigInt! # The total price at the time of the swap, always in stable coin
+  swapFee: BigInt! # protocol fees, without gas. Long => jUSD / Short => DebtToken
+}
+
+input SwapEvent_filter {
+  borrower: Bytes
+}
+
+enum SwapEvent_orderBy {
+  timestamp
+}
+
+type Query {
+  swapEvents(
+    first: Int = 100
+    orderBy: SwapEvent_orderBy
+    orderDirection: OrderDirection
+    skip: Int = 0
+    where: SwapEvent_filter
+  ): [SwapEvent!]!
+}
+
+type PoolLiquidity {
+  id: Bytes!
+  token: Token!
+  totalAmount: BigInt!
+}
+
+type Pool {
+  # `Pool-${token0.toHexString()}-${token1.toHexString()}`
+  id: ID!
+  # SwapPair contract address
+  address: Bytes!
+  liquidity: [PoolLiquidity!]!
+  # TODO: Still hardcoded to 0%
+  liquidityDepositAPY: BigInt!
+  volume30dUSD: PoolVolume30d!
+  volume30dUSD30dAgo: PoolVolume30d!
+  totalSupply: BigInt!
+
+  # client side
+  borrowerAmount: bigint!
+  # Percent value applied when opening the first position for this pool. Can be negative and positive.
+  swapFee: bigint!
+}
+
+type PoolVolume30d {
+  id: Bytes!
+  feeUSD: BigInt!
+  lastIndex: Int!
+  leadingIndex: Int!
+  value: BigInt!
+}
+
+type Query {
+  # every pool is returned, even if it is empty
+  # without borrower address borrowerLiquidity and borrowerRewards are always undefined
+  # with borrower address only the pools are returned, where the borrower has liquidity or rewards
+  pools(borrower: String): [Pool!]!
+  totalValueLockedUSDHistoryChunks(
+    first: Int = 90
+    orderBy: TotalValueLockedUSDHistoryChunk_orderBy
+    orderDirection: OrderDirection
+    skip: Int = 0
+  ): [TotalValueLockedUSDHistoryChunk!]!
+  totalValueMintedUSDHistoryChunks(
+    first: Int = 90
+    orderBy: TotalValueMintedUSDHistoryChunk_orderBy
+    orderDirection: OrderDirection
+    skip: Int = 0
+  ): [TotalValueMintedUSDHistoryChunk!]!
+  reservePoolUSDHistoryChunks(
+    first: Int = 90
+    orderBy: ReservePoolUSDHistoryChunk_orderBy
+    orderDirection: OrderDirection
+    skip: Int = 0
+  ): [ReservePoolUSDHistoryChunk!]!
+}
+
+# GLOBAL CHARTS
+enum TotalValueLockedUSDHistoryChunk_orderBy {
+  timestamp
+}
+enum TotalValueMintedUSDHistoryChunk_orderBy {
+  timestamp
+}
+enum ReservePoolUSDHistoryChunk_orderBy {
+  timestamp
+}
+
+type TotalValueLockedUSDHistoryChunk {
+  id: String!
+  size: Int!
+  timestamp: BigInt!
+  value: BigInt!
+}
+type TotalValueMintedUSDHistoryChunk {
+  id: String!
+  size: Int!
+  timestamp: BigInt!
+  value: BigInt!
+}
+type ReservePoolUSDHistoryChunk {
+  id: String!
+  size: Int!
+  timestamp: BigInt!
+  value: BigInt!
+}
+
+type TokenAmount {
+  id: Bytes!
+  token: Token!
+  amount: BigInt!
+}
+
+enum BorrowerHistoryType {
+  DEPOSITED
+  WITHDRAWN
+  CLAIMED_REWARDS
+}
+
+type BorrowerHistory {
+  id: Bytes!
+  borrower: Bytes!
+  pool: Bytes!
+  timestamp: BigInt!
+  type: BorrowerHistoryType!
+  values: [TokenAmount!]!
+  # worth of the claimed tokens in USD at the time of the event, only set on CLAIMED_REWARDS
+  claimInUSD: BigInt
+  # worth of the lost debtToken in USD at the time of the event, only set on CLAIMED_REWARDS
+  lostDepositInUSD: BigInt
+}
+
+enum BorrowerHistory_orderBy {
+  timestamp
+}
+
+input BorrowerHistory_filter {
+  borrower: Bytes
+}
+
+type Query {
+  borrowerHistories(
+    first: Int = 100
+    orderBy: BorrowerHistory_orderBy
+    orderDirection: OrderDirection
+    skip: Int = 0
+    where: BorrowerHistory_filter
+  ): [BorrowerHistory!]!
+}
+
+# ---------------- Client side contract calls ----------------
+
+type SystemInfo {
+  id: ID!
+  recoveryModeActive: Boolean!
+  totalCollateralRatio: bigint!
+  borrowerICR: bigint!
+  borrowerIMCR: bigint!
+  borrowingInterestRate: bigint!
+}
+
+type RedemptionOperations {
+  id: ID!
+  redemptionRateWithDecay: bigint!
+}
+
+type Query {
+  getSystemInfo: SystemInfo!
+  getRedemtionOperations: RedemptionOperations!
+}
+
+# TRADING VIEW
+
+# 1min, 10min, 1hour, 6hour, 1day, 1week
+# const CandleSizes = [1, 10, 60, 360, 1440, 10080];
+type TokenCandle {
+  id: Bytes!
+  candleSize: Int!
+  close: BigInt!
+  high: BigInt!
+  low: BigInt!
+  open: BigInt!
+  timestamp: BigInt!
+  token: Token!
+  volume: BigInt!
+}
+type TokenCandleSingleton {
+  candleSize: Int!
+  close: BigInt!
+  high: BigInt!
+  id: ID!
+  low: BigInt!
+  open: BigInt!
+  timestamp: BigInt!
+  token: Bytes!
+  volume: BigInt!
+}
+
+input TokenCandle_filter {
+  candleSize: Int
+  timestamp: Int
+  timestamp_gt: Int
+  timestamp_gte: Int
+  timestamp_in: [Int!]
+  timestamp_lt: Int
+  timestamp_lte: Int
+  timestamp_not: Int
+  timestamp_not_in: [Int!]
+  token_: Token_filter
+}
+
+input Token_filter {
+  id: Bytes
+  symbol: String
+}
+
+enum TokenCandle_orderBy {
+  candleSize
+  close
+  high
+  id
+  low
+  open
+  timestamp
+  token
+  token__address
+  token__createdAt
+  token__id
+  token__isPoolToken
+  token__priceUSD
+  token__symbol
+  volume
+}
+
+enum OrderDirection {
+  asc
+  desc
+}
+
+type Query {
+  tokenCandles(
+    orderBy: TokenCandle_orderBy
+    orderDirection: OrderDirection
+    where: TokenCandle_filter
+    first: Int = 100
+    skip: Int = 0
+  ): [TokenCandle!]!
+  tokenCandleSingleton(id: ID!): TokenCandleSingleton!
+}

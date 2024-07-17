@@ -1,0 +1,54 @@
+name: CI - Graph
+on:
+  pull_request:
+    paths:
+    # We want to run the deployment only when the subgraph code changes
+      - packages/subgraph/**
+      - packages/contracts/contracts/**
+
+jobs:
+  QualityGate:
+    runs-on: ubuntu-latest
+    env:
+      NODE_OPTIONS: '--max_old_space_size=4096'
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+
+      # Setup node to use the graph project version
+      - uses: actions/setup-node@v3
+        with:
+          node-version: 18.17.0
+          # Already optimized for caching, nice. Only caches yarn not node_modules as these could change with node version.
+          cache: yarn
+
+      - name: Log Yarn Version
+        run: yarn --version
+
+      - name: Install dependencies 📦
+        run: yarn workspace subgraph install
+
+      # Codegen types etc.
+      - name: Codegen 🧬
+        run: yarn workspace subgraph codegen
+
+      # BUILD
+      - name: Build 🔨
+        run: yarn workspace subgraph build
+
+      # # LINT
+      # - name: Linting ☕
+      #   run: yarn workspace graph lint
+
+      # PRETTIER FORMAT CHECK
+      - name: Formatting 🌹
+        run: yarn workspace subgraph prettier:check
+
+      # TEST
+      - name: Test - Unit 🧪
+        run: yarn workspace subgraph test:unit
+
+      # - name: Test - Integration 🧪
+      #   run: yarn workspace graph test:integration

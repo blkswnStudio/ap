@@ -1,0 +1,6 @@
+overwrite: true
+schema: 'http://localhost:8000/subgraphs/name/subgraph'
+generates:
+  app/generated/graph-node.schema.gql:
+    plugins:
+      - 'schema-ast'

@@ -1,0 +1,72 @@
+{
+  "data": {
+    "collateralTokenMetas": [
+      {
+        "__typename": "CollateralTokenMeta",
+        "id": "8e314178-2aeb-458b-802a-d7188bb02f81",
+        "timestamp": "1711454149",
+        "token": {
+          "id": "9ef4b5e4-50dc-45ff-9cdc-06e9db7c235a",
+          "__typename": "Token",
+          "address": "0xc5a5c42992decbae36851359345fe25997f5c42d",
+          "symbol": "USDT",
+          "createdAt": "1687570427.426",
+          "isPoolToken": false,
+          "decimals": 18
+        },
+        "totalValueLockedUSD": "24896770000000000000000",
+        "totalValueLockedUSD30dAverage": {
+          "__typename": "TotalValueLockedAverage",
+          "id": "246198c7-7f8f-453c-8f8e-eb7a27bdc55b",
+          "index": 0,
+          "value": "14714080000000000000000"
+        },
+        "supportedCollateralRatio": "100000000000000000000"
+      },
+      {
+        "__typename": "CollateralTokenMeta",
+        "id": "d5873088-5291-4324-a6b5-40f9597bed88",
+        "timestamp": "1711454149",
+        "token": {
+          "id": "d6898c51-0ab5-474c-a1a4-354c602d97a2",
+          "__typename": "Token",
+          "address": "0x67d269191c92caf3cd7723f116c85e6e9bf55933",
+          "symbol": "GOV",
+          "createdAt": "1698326236.465",
+          "isPoolToken": true,
+          "decimals": 18
+        },
+        "totalValueLockedUSD": "23673270000000000000000",
+        "totalValueLockedUSD30dAverage": {
+          "__typename": "TotalValueLockedAverage",
+          "id": "9c64a2f2-f16b-4802-963b-7a85bd88759d",
+          "index": 0,
+          "value": "31985540000000000000000"
+        },
+        "supportedCollateralRatio": 100000000000000000000
+      },
+      {
+        "__typename": "CollateralTokenMeta",
+        "id": "e440dd0f-736e-4052-ba53-043bb492cc2a",
+        "timestamp": "1711454149",
+        "token": {
+          "id": "67476dd6-071f-42e3-824b-dd78fd0e76ff",
+          "__typename": "Token",
+          "address": "0x09635f643e140090a9a8dcd712ed6285858cebef",
+          "symbol": "BTC",
+          "createdAt": "1684949585.005",
+          "isPoolToken": false,
+          "decimals": 18
+        },
+        "totalValueLockedUSD": "21662090000000000000000",
+        "totalValueLockedUSD30dAverage": {
+          "__typename": "TotalValueLockedAverage",
+          "id": "19be5a3d-a33d-46b0-8121-c430186c9471",
+          "index": 0,
+          "value": "14944400000000000000000"
+        },
+        "supportedCollateralRatio": 100000000000000000000
+      }
+    ]
+  }
+}

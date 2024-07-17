@@ -1,0 +1,31 @@
+name: CONTRACTS
+on:
+  pull_request:
+    paths:
+      - packages/contracts/**
+
+jobs:
+  QualityGate:
+    runs-on: ubuntu-latest
+    env:
+      NODE_OPTIONS: '--max_old_space_size=4096'
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v3
+        with:
+          node-version: 18.17.0
+          cache: yarn
+
+      - name: Log Yarn Version
+        run: yarn --version
+
+      - name: Install dependencies 📦
+        run: yarn workspace @liquity/contracts install
+
+      # TEST
+      - name: Testing 🧪
+        run: yarn workspace @liquity/contracts test

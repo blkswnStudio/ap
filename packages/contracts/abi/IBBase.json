@@ -1,0 +1,12 @@
+[
+    {
+        "inputs": [],
+        "name": "AlreadyInitialized",
+        "type": "error"
+    },
+    {
+        "inputs": [],
+        "name": "FeeExceedMaxPercentage",
+        "type": "error"
+    }
+]

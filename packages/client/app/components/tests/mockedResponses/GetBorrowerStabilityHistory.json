@@ -1,0 +1,576 @@
+{
+  "data": {
+    "borrowerHistories": [
+      {
+        "__typename": "BorrowerHistory",
+        "id": "48ee31ab-ec0d-4eb4-942d-0b2896855ed9",
+        "borrower": "0x526f0b0bd6b53dc4272b62ba35cbeeb4ffcdcba2",
+        "pool": "0xb36a57688eaa2a5d17eeabc0956b677cebb6f96a",
+        "timestamp": "1711281349",
+        "type": "WITHDRAWN",
+        "values": [
+          {
+            "__typename": "TokenAmount",
+            "id": "25150978-558d-4226-b020-5cb3961626ab",
+            "amount": "183883693312747170000",
+            "token": {
+              "id": "1e35ff0c-0788-4a02-bdc3-81d23e6b82cb",
+              "__typename": "Token",
+              "address": "0x559d18f2dff65a6040c238e8193c8cdeaa87ab86",
+              "symbol": "INR",
+              "createdAt": "1700934266.78",
+              "isPoolToken": false,
+              "decimals": 18
+            }
+          },
+          {
+            "__typename": "TokenAmount",
+            "id": "829ae5d7-b7b2-407b-b84d-3c3fda3de267",
+            "amount": "1022284985713053200000",
+            "token": {
+              "id": "2b8de0f9-d7a0-4c4c-9979-7eb8f87b9386",
+              "__typename": "Token",
+              "address": "0xea87ebaaa11de1eaacafc30dcebaf95b919ac211",
+              "symbol": "PEN",
+              "createdAt": "1688346251.332",
+              "isPoolToken": true,
+              "decimals": 18
+            }
+          },
+          {
+            "__typename": "TokenAmount",
+            "id": "102d7916-5216-45dc-8494-a0f413fb9c2a",
+            "amount": "29774383334203010000",
+            "token": {
+              "id": "83ea7915-274f-41d3-bca7-1972126342e3",
+              "__typename": "Token",
+              "address": "0xf5c33439afa2d7bae2ab53bcf4fdd9bafabdaaff",
+              "symbol": "CUP",
+              "createdAt": "1694926023.486",
+              "isPoolToken": true,
+              "decimals": 18
+            }
+          },
+          {
+            "__typename": "TokenAmount",
+            "id": "ec4464af-e9d0-4932-8af4-d6e69969aa66",
+            "amount": "13066800000000002000",
+            "token": {
+              "id": "a0dd024a-14ea-4f62-87dd-8ca7e40dca83",
+              "__typename": "Token",
+              "address": "0x9beeaba92bd8cdfebdc715d6ff17d3b0dce63cfe",
+              "symbol": "HUF",
+              "createdAt": "1703973837.194",
+              "isPoolToken": false,
+              "decimals": 18
+            }
+          }
+        ],
+        "claimInUSD": null,
+        "lostDepositInUSD": null
+      },
+      {
+        "__typename": "BorrowerHistory",
+        "id": "34f07e3e-b815-4615-ae75-d5f19ed07642",
+        "borrower": "0xd651a16d8659c5ef7ecc53b5fe03e5193bdcde04",
+        "pool": "0xcd0df5b0e670ec42cba0cd2e42e7df89d75ccfea",
+        "timestamp": "1710676549",
+        "type": "DEPOSITED",
+        "values": [
+          {
+            "__typename": "TokenAmount",
+            "id": "dde28d14-3c14-4f08-b31a-b1024bf00067",
+            "amount": "582040115804091800000",
+            "token": {
+              "id": "1e35ff0c-0788-4a02-bdc3-81d23e6b82cb",
+              "__typename": "Token",
+              "address": "0x559d18f2dff65a6040c238e8193c8cdeaa87ab86",
+              "symbol": "INR",
+              "createdAt": "1700934266.78",
+              "isPoolToken": false,
+              "decimals": 18
+            }
+          },
+          {
+            "__typename": "TokenAmount",
+            "id": "bf00edbc-9dc5-4787-947e-836635899f1f",
+            "amount": "336394796470684240000",
+            "token": {
+              "id": "a0dd024a-14ea-4f62-87dd-8ca7e40dca83",
+              "__typename": "Token",
+              "address": "0x9beeaba92bd8cdfebdc715d6ff17d3b0dce63cfe",
+              "symbol": "HUF",
+              "createdAt": "1703973837.194",
+              "isPoolToken": false,
+              "decimals": 18
+            }
+          },
+          {
+            "__typename": "TokenAmount",
+            "id": "b18c5388-a693-4c93-acd2-f46f66f30b97",
+            "amount": "209140699999999980000",
+            "token": {
+              "id": "26b28830-04ca-4fca-b0cb-bb37ce717ef6",
+              "__typename": "Token",
+              "address": "0xadd3b0cdb74ca16cb351e8e4c76cc4922ce1ffcf",
+              "symbol": "PHP",
+              "createdAt": "1690705343.924",
+              "isPoolToken": true,
+              "decimals": 18
+            }
+          }
+        ],
+        "claimInUSD": null,
+        "lostDepositInUSD": null
+      },
+      {
+        "__typename": "BorrowerHistory",
+        "id": "1bd7bf84-7302-4950-ac69-eea992e3f7fb",
+        "borrower": "0x82b1e30fda6ea3696d63de7d2d2fde2fb8a3c37a",
+        "pool": "0xbf24c2e6add6ed32ec8ada1acfef1b8de9f24f4c",
+        "timestamp": "1710158149",
+        "type": "CLAIMED_REWARDS",
+        "values": [
+          {
+            "__typename": "TokenAmount",
+            "id": "f16a9287-acd4-4f05-8655-5c24b9221590",
+            "amount": "-1932254795113210300000",
+            "token": {
+              "id": "b0e50bf9-6a33-41bd-93ab-3673b25d2ccf",
+              "__typename": "Token",
+              "address": "0xe1fb868ffd3ef114f2bfa8088ee1875a99cfbfcc",
+              "symbol": "MYR",
+              "createdAt": "1709686048.334",
+              "isPoolToken": false,
+              "decimals": 18
+            }
+          },
+          {
+            "__typename": "TokenAmount",
+            "id": "a2a2260d-231a-4100-ba07-5df8c3b08f1f",
+            "amount": "-327340000000000030000",
+            "token": {
+              "id": "1e35ff0c-0788-4a02-bdc3-81d23e6b82cb",
+              "__typename": "Token",
+              "address": "0x559d18f2dff65a6040c238e8193c8cdeaa87ab86",
+              "symbol": "INR",
+              "createdAt": "1700934266.78",
+              "isPoolToken": false,
+              "decimals": 18
+            }
+          },
+          {
+            "__typename": "TokenAmount",
+            "id": "b6db0376-7596-44ea-a436-082f46e94df1",
+            "amount": "1840409908898192500000",
+            "token": {
+              "id": "2b8de0f9-d7a0-4c4c-9979-7eb8f87b9386",
+              "__typename": "Token",
+              "address": "0xea87ebaaa11de1eaacafc30dcebaf95b919ac211",
+              "symbol": "PEN",
+              "createdAt": "1688346251.332",
+              "isPoolToken": true,
+              "decimals": 18
+            }
+          },
+          {
+            "__typename": "TokenAmount",
+            "id": "4a07cc5e-f10c-4cf5-8350-c73c2d2bb061",
+            "amount": "61317015456740634000",
+            "token": {
+              "id": "d02ba6ef-dfa5-4194-8d32-26a010f70359",
+              "__typename": "Token",
+              "address": "0xca0e2d4e38c7ddae74fd7b29c6f7a10226ed0d72",
+              "symbol": "MMK",
+              "createdAt": "1694955012.067",
+              "isPoolToken": true,
+              "decimals": 18
+            }
+          },
+          {
+            "__typename": "TokenAmount",
+            "id": "8edcf2c7-a0de-4bd6-b3c5-bbcd5afc9505",
+            "amount": "96293699999999990000",
+            "token": {
+              "id": "57c7003d-57a7-47b7-992a-b89e6ebf3fa1",
+              "__typename": "Token",
+              "address": "0xfc49ea213c2e4e2cbaefd0b3982cfcbdaaecfeb3",
+              "symbol": "MDL",
+              "createdAt": "1709562633.241",
+              "isPoolToken": true,
+              "decimals": 18
+            }
+          }
+        ],
+        "claimInUSD": "603863700000000000000",
+        "lostDepositInUSD": "594730000000000000000"
+      },
+      {
+        "__typename": "BorrowerHistory",
+        "id": "ebcfd137-2ec3-4f22-b9fb-f3cb9f82e664",
+        "borrower": "0xfdd33663e96218a78603bae356423ce159aa43cc",
+        "pool": "0xdafb6ccd41bfbbfc70947c0dcebf3ebd4dc7fff0",
+        "timestamp": "1710158149",
+        "type": "WITHDRAWN",
+        "values": [
+          {
+            "__typename": "TokenAmount",
+            "id": "16b0b699-eb8a-4093-8f97-73f35e47be8c",
+            "amount": "8551088013195089000000",
+            "token": {
+              "id": "26b28830-04ca-4fca-b0cb-bb37ce717ef6",
+              "__typename": "Token",
+              "address": "0xadd3b0cdb74ca16cb351e8e4c76cc4922ce1ffcf",
+              "symbol": "PHP",
+              "createdAt": "1690705343.924",
+              "isPoolToken": true,
+              "decimals": 18
+            }
+          },
+          {
+            "__typename": "TokenAmount",
+            "id": "3ef67969-4ab1-4907-b6c8-d7811a19e002",
+            "amount": "696686652568665500000",
+            "token": {
+              "id": "94ade5e6-8a4a-4098-8674-1729508efe1a",
+              "__typename": "Token",
+              "address": "0xc3e53f4d16ae77db1c982e75a937b9f60fe63690",
+              "symbol": "JUSD",
+              "createdAt": "1680656965.765",
+              "isPoolToken": false,
+              "decimals": 18
+            }
+          },
+          {
+            "__typename": "TokenAmount",
+            "id": "19811dfd-03f1-4c25-9322-165ad5f9437a",
+            "amount": "7834799999999916000",
+            "token": {
+              "id": "83ea7915-274f-41d3-bca7-1972126342e3",
+              "__typename": "Token",
+              "address": "0xf5c33439afa2d7bae2ab53bcf4fdd9bafabdaaff",
+              "symbol": "CUP",
+              "createdAt": "1694926023.486",
+              "isPoolToken": true,
+              "decimals": 18
+            }
+          }
+        ],
+        "claimInUSD": null,
+        "lostDepositInUSD": null
+      },
+      {
+        "__typename": "BorrowerHistory",
+        "id": "e9beba14-ed8c-4310-ae1b-898f29ae4f90",
+        "borrower": "0xd2e373f37baf51fa097d5ec3cacd0bc2fce7d5df",
+        "pool": "0x2be83d8b9d6ab1fdaff88beaa84ebc5e082cedef",
+        "timestamp": "1710158149",
+        "type": "WITHDRAWN",
+        "values": [
+          {
+            "__typename": "TokenAmount",
+            "id": "6e5d7f2b-fd0c-40eb-b198-c48fb4c62a16",
+            "amount": "102637261053230030000",
+            "token": {
+              "id": "1e35ff0c-0788-4a02-bdc3-81d23e6b82cb",
+              "__typename": "Token",
+              "address": "0x559d18f2dff65a6040c238e8193c8cdeaa87ab86",
+              "symbol": "INR",
+              "createdAt": "1700934266.78",
+              "isPoolToken": false,
+              "decimals": 18
+            }
+          },
+          {
+            "__typename": "TokenAmount",
+            "id": "7a93521a-23d2-4b74-b5db-ffa50a1a17c9",
+            "amount": "44644999999999996000",
+            "token": {
+              "id": "d02ba6ef-dfa5-4194-8d32-26a010f70359",
+              "__typename": "Token",
+              "address": "0xca0e2d4e38c7ddae74fd7b29c6f7a10226ed0d72",
+              "symbol": "MMK",
+              "createdAt": "1694955012.067",
+              "isPoolToken": true,
+              "decimals": 18
+            }
+          }
+        ],
+        "claimInUSD": null,
+        "lostDepositInUSD": null
+      },
+      {
+        "__typename": "BorrowerHistory",
+        "id": "246d9e19-3d8c-430e-8b97-dad97f383680",
+        "borrower": "0xcaf3cb4fafb8ef9f2db4eba7c0a1c8235b8bac8a",
+        "pool": "0x77fccec75df40fb0814948f37cf9fbcb96e0cfb9",
+        "timestamp": "1709898949",
+        "type": "DEPOSITED",
+        "values": [
+          {
+            "__typename": "TokenAmount",
+            "id": "0ca8ae25-7d6d-4b0c-9038-351bd2c33827",
+            "amount": "68443449462029200000",
+            "token": {
+              "id": "83ea7915-274f-41d3-bca7-1972126342e3",
+              "__typename": "Token",
+              "address": "0xf5c33439afa2d7bae2ab53bcf4fdd9bafabdaaff",
+              "symbol": "CUP",
+              "createdAt": "1694926023.486",
+              "isPoolToken": true,
+              "decimals": 18
+            }
+          },
+          {
+            "__typename": "TokenAmount",
+            "id": "d4c4f81b-15ce-4c70-bc42-159edd51791f",
+            "amount": "126907966115813650000",
+            "token": {
+              "id": "a0dd024a-14ea-4f62-87dd-8ca7e40dca83",
+              "__typename": "Token",
+              "address": "0x9beeaba92bd8cdfebdc715d6ff17d3b0dce63cfe",
+              "symbol": "HUF",
+              "createdAt": "1703973837.194",
+              "isPoolToken": false,
+              "decimals": 18
+            }
+          },
+          {
+            "__typename": "TokenAmount",
+            "id": "bf4b3297-eb34-42a5-95db-a10ec8a7bef7",
+            "amount": "11373225903607564000",
+            "token": {
+              "id": "6db3dc98-0954-4722-929e-b808a1f5d3fe",
+              "__typename": "Token",
+              "address": "0x5d0135d1d9210133412ce5e151a520a50fb36a0c",
+              "symbol": "BSD",
+              "createdAt": "1702112243.98",
+              "isPoolToken": true,
+              "decimals": 18
+            }
+          },
+          {
+            "__typename": "TokenAmount",
+            "id": "bda5f6a2-6707-426b-ac57-053baf21239f",
+            "amount": "1779699999999998700",
+            "token": {
+              "id": "57c7003d-57a7-47b7-992a-b89e6ebf3fa1",
+              "__typename": "Token",
+              "address": "0xfc49ea213c2e4e2cbaefd0b3982cfcbdaaecfeb3",
+              "symbol": "MDL",
+              "createdAt": "1709562633.241",
+              "isPoolToken": true,
+              "decimals": 18
+            }
+          }
+        ],
+        "claimInUSD": null,
+        "lostDepositInUSD": null
+      },
+      {
+        "__typename": "BorrowerHistory",
+        "id": "80ef747e-c36b-4510-80b3-46e98aaa1248",
+        "borrower": "0xb4a3fa1ddea8cbe096c28f3d3425bbbd87b486ee",
+        "pool": "0x01bdd0b074012179a1dab82ec506293da800d1f2",
+        "timestamp": "1709553349",
+        "type": "CLAIMED_REWARDS",
+        "values": [
+          {
+            "__typename": "TokenAmount",
+            "id": "a984b150-2be1-45de-a2ac-1e435bd06352",
+            "amount": "-19629675615112475000",
+            "token": {
+              "id": "b0e50bf9-6a33-41bd-93ab-3673b25d2ccf",
+              "__typename": "Token",
+              "address": "0xe1fb868ffd3ef114f2bfa8088ee1875a99cfbfcc",
+              "symbol": "MYR",
+              "createdAt": "1709686048.334",
+              "isPoolToken": false,
+              "decimals": 18
+            }
+          },
+          {
+            "__typename": "TokenAmount",
+            "id": "965d9d33-a88c-418a-b500-35bfad8aee11",
+            "amount": "-401393992637350200000",
+            "token": {
+              "id": "1e35ff0c-0788-4a02-bdc3-81d23e6b82cb",
+              "__typename": "Token",
+              "address": "0x559d18f2dff65a6040c238e8193c8cdeaa87ab86",
+              "symbol": "INR",
+              "createdAt": "1700934266.78",
+              "isPoolToken": false,
+              "decimals": 18
+            }
+          },
+          {
+            "__typename": "TokenAmount",
+            "id": "d80e791d-6d96-4b22-aee7-834e38b017d0",
+            "amount": "-389740000000000070000",
+            "token": {
+              "id": "2b8de0f9-d7a0-4c4c-9979-7eb8f87b9386",
+              "__typename": "Token",
+              "address": "0xea87ebaaa11de1eaacafc30dcebaf95b919ac211",
+              "symbol": "PEN",
+              "createdAt": "1688346251.332",
+              "isPoolToken": true,
+              "decimals": 18
+            }
+          },
+          {
+            "__typename": "TokenAmount",
+            "id": "a4dd3b2f-2e99-457a-803f-e2ab5b7a88e1",
+            "amount": "198386473308486160000",
+            "token": {
+              "id": "26b28830-04ca-4fca-b0cb-bb37ce717ef6",
+              "__typename": "Token",
+              "address": "0xadd3b0cdb74ca16cb351e8e4c76cc4922ce1ffcf",
+              "symbol": "PHP",
+              "createdAt": "1690705343.924",
+              "isPoolToken": true,
+              "decimals": 18
+            }
+          },
+          {
+            "__typename": "TokenAmount",
+            "id": "f570fba0-c721-46fc-9fc2-6fd47fa360cf",
+            "amount": "630159600000000000000",
+            "token": {
+              "id": "a0dd024a-14ea-4f62-87dd-8ca7e40dca83",
+              "__typename": "Token",
+              "address": "0x9beeaba92bd8cdfebdc715d6ff17d3b0dce63cfe",
+              "symbol": "HUF",
+              "createdAt": "1703973837.194",
+              "isPoolToken": false,
+              "decimals": 18
+            }
+          }
+        ],
+        "claimInUSD": "768399600000000000000",
+        "lostDepositInUSD": "717730000000000000000"
+      },
+      {
+        "__typename": "BorrowerHistory",
+        "id": "b8b6374e-8969-43b8-a248-17ab060f25d3",
+        "borrower": "0x883d0af11ae54038187bb51b5b8eafd42b7be60e",
+        "pool": "0xcb6cf85de5f3c72a2cfce6b5a1fbfdbe8f503dfc",
+        "timestamp": "1709466949",
+        "type": "WITHDRAWN",
+        "values": [
+          {
+            "__typename": "TokenAmount",
+            "id": "c935a31b-59e4-421b-a06a-e2c751cf0304",
+            "amount": "165605700000000000000",
+            "token": {
+              "id": "26b28830-04ca-4fca-b0cb-bb37ce717ef6",
+              "__typename": "Token",
+              "address": "0xadd3b0cdb74ca16cb351e8e4c76cc4922ce1ffcf",
+              "symbol": "PHP",
+              "createdAt": "1690705343.924",
+              "isPoolToken": true,
+              "decimals": 18
+            }
+          }
+        ],
+        "claimInUSD": null,
+        "lostDepositInUSD": null
+      },
+      {
+        "__typename": "BorrowerHistory",
+        "id": "200afe0c-4fcd-4531-806f-5bc146009568",
+        "borrower": "0xeae454e624422dc7abec290debfb0862eb53c9de",
+        "pool": "0xf2580f6c26fecdacb8dbddaa43fecfba19ab0836",
+        "timestamp": "1709294149",
+        "type": "CLAIMED_REWARDS",
+        "values": [
+          {
+            "__typename": "TokenAmount",
+            "id": "7fd62d6e-70ea-4999-881a-36048178c71c",
+            "amount": "-321508633573070370000",
+            "token": {
+              "id": "1e35ff0c-0788-4a02-bdc3-81d23e6b82cb",
+              "__typename": "Token",
+              "address": "0x559d18f2dff65a6040c238e8193c8cdeaa87ab86",
+              "symbol": "INR",
+              "createdAt": "1700934266.78",
+              "isPoolToken": false,
+              "decimals": 18
+            }
+          },
+          {
+            "__typename": "TokenAmount",
+            "id": "1e360341-af1e-4da5-bf40-b4edce0ab758",
+            "amount": "-45769999999999980000",
+            "token": {
+              "id": "2b8de0f9-d7a0-4c4c-9979-7eb8f87b9386",
+              "__typename": "Token",
+              "address": "0xea87ebaaa11de1eaacafc30dcebaf95b919ac211",
+              "symbol": "PEN",
+              "createdAt": "1688346251.332",
+              "isPoolToken": true,
+              "decimals": 18
+            }
+          },
+          {
+            "__typename": "TokenAmount",
+            "id": "774984a7-0a6b-47c9-94a5-9085f31787ec",
+            "amount": "463301554213225500000",
+            "token": {
+              "id": "6db3dc98-0954-4722-929e-b808a1f5d3fe",
+              "__typename": "Token",
+              "address": "0x5d0135d1d9210133412ce5e151a520a50fb36a0c",
+              "symbol": "BSD",
+              "createdAt": "1702112243.98",
+              "isPoolToken": true,
+              "decimals": 18
+            }
+          },
+          {
+            "__typename": "TokenAmount",
+            "id": "c334a428-34b4-4422-8a6e-5929ce0ff33d",
+            "amount": "138213451655290920000",
+            "token": {
+              "id": "94ade5e6-8a4a-4098-8674-1729508efe1a",
+              "__typename": "Token",
+              "address": "0xc3e53f4d16ae77db1c982e75a937b9f60fe63690",
+              "symbol": "JUSD",
+              "createdAt": "1680656965.765",
+              "isPoolToken": false,
+              "decimals": 18
+            }
+          },
+          {
+            "__typename": "TokenAmount",
+            "id": "bdf780a8-82ba-43b9-b4da-03a330004b94",
+            "amount": "680369509152692300",
+            "token": {
+              "id": "a0dd024a-14ea-4f62-87dd-8ca7e40dca83",
+              "__typename": "Token",
+              "address": "0x9beeaba92bd8cdfebdc715d6ff17d3b0dce63cfe",
+              "symbol": "HUF",
+              "createdAt": "1703973837.194",
+              "isPoolToken": false,
+              "decimals": 18
+            }
+          },
+          {
+            "__typename": "TokenAmount",
+            "id": "69a37d69-29d5-4f34-9f7b-a020b1dacfc3",
+            "amount": "7922100000000014000",
+            "token": {
+              "id": "57c7003d-57a7-47b7-992a-b89e6ebf3fa1",
+              "__typename": "Token",
+              "address": "0xfc49ea213c2e4e2cbaefd0b3982cfcbdaaecfeb3",
+              "symbol": "MDL",
+              "createdAt": "1709562633.241",
+              "isPoolToken": true,
+              "decimals": 18
+            }
+          }
+        ],
+        "claimInUSD": "365642100000000000000",
+        "lostDepositInUSD": "354570000000000000000"
+      }
+    ]
+  }
+}

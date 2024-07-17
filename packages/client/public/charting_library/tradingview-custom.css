@@ -1,0 +1,81 @@
+@import url('/fonts/@fontsource-variable/space-grotesk/index.css');
+
+:root:not(.theme-dark) {
+    /* room between toolbars */
+    --tv-color-platform-background: #F8F8F8;
+    /* overall toolbar */
+    --tv-color-pane-background: #ECECEC;
+    --tv-color-toolbar-button-background-hover: #ECECEC;
+    --tv-color-toolbar-button-background-expanded: #ECECEC;
+    --tv-color-toolbar-button-background-active: #ECECEC;
+    --tv-color-toolbar-button-background-active-hover: #ECECEC;
+    --tv-color-toolbar-button-text: #14111D;
+    --tv-color-toolbar-button-text-hover: #14111D;
+    --tv-color-toolbar-button-text-active:#14111D;
+    --tv-color-toolbar-button-text-active-hover: #14111D;
+    --tv-color-item-active-text: #14111D;
+    --tv-color-toolbar-toggle-button-background-active: #ECECEC;
+    --tv-color-toolbar-toggle-button-background-active-hover: #ECECEC;
+    /* Divider in toolbar */
+    --tv-color-toolbar-divider-background: #14111D;
+    --tv-color-toolbar-save-layout-loader: #14111D;
+
+    /* background of popup */
+    --tv-color-popup-background: #ECECEC;
+    --tv-color-popup-element-text: #14111D;
+    --tv-color-popup-element-text-hover: #14111D;
+    --tv-color-popup-element-background-hover: #ECECEC;
+    /* Divider in popup menu */
+    --tv-color-popup-element-divider-background: #14111D; 
+    --tv-color-popup-element-secondary-text: #14111D;
+    --tv-color-popup-element-hint-text: #14111D;
+    --tv-color-popup-element-text-active: #14111D;
+    --tv-color-popup-element-background-active: #ECECEC;
+    --tv-color-popup-element-toolbox-text: #14111D;
+    --tv-color-popup-element-toolbox-text-hover: #14111D;
+    --tv-color-popup-element-toolbox-text-active-hover: #14111D;
+    --tv-color-popup-element-toolbox-background-hover: #ECECEC;
+    --tv-color-popup-element-toolbox-background-active-hover: #ECECEC;
+}
+
+.theme-dark:root {
+    /* room between toolbars */
+    --tv-color-platform-background: #4a484f;
+    /* overall toolbar */
+    --tv-color-pane-background: #282531;
+    --tv-color-toolbar-button-background-hover: #282531;
+    --tv-color-toolbar-button-background-expanded: #282531;
+    --tv-color-toolbar-button-background-active: #282531;
+    --tv-color-toolbar-button-background-active-hover: #282531;
+    --tv-color-toolbar-button-text: #B4B1BD;
+    --tv-color-toolbar-button-text-hover: #B4B1BD;
+    --tv-color-toolbar-button-text-active:#B4B1BD;
+    --tv-color-toolbar-button-text-active-hover: #B4B1BD;
+    --tv-color-item-active-text: #B4B1BD;
+    --tv-color-toolbar-toggle-button-background-active: #282531;
+    --tv-color-toolbar-toggle-button-background-active-hover: #282531;
+    /* Divider in toolbar */
+    --tv-color-toolbar-divider-background: #B4B1BD;
+    --tv-color-toolbar-save-layout-loader: #B4B1BD;
+
+    /* background of popup */
+    --tv-color-popup-background: #282531;
+    --tv-color-popup-element-text: #B4B1BD;
+    --tv-color-popup-element-text-hover: #B4B1BD;
+    --tv-color-popup-element-background-hover: #282531;
+    /* Divider in popup menu */
+    --tv-color-popup-element-divider-background: #B4B1BD; 
+    --tv-color-popup-element-secondary-text: #B4B1BD;
+    --tv-color-popup-element-hint-text: #B4B1BD;
+    --tv-color-popup-element-text-active: #B4B1BD;
+    --tv-color-popup-element-background-active: #282531;
+    --tv-color-popup-element-toolbox-text: #B4B1BD;
+    --tv-color-popup-element-toolbox-text-hover: #B4B1BD;
+    --tv-color-popup-element-toolbox-text-active-hover: #B4B1BD;
+    --tv-color-popup-element-toolbox-background-hover: #282531;
+    --tv-color-popup-element-toolbox-background-active-hover: #282531;
+}
+
+.theme-dark:root body {
+    font-family: Space Grotesk Variable;
+}

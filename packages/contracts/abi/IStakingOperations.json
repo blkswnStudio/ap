@@ -1,0 +1,326 @@
+[
+    {
+        "inputs": [],
+        "name": "CallerIsNotSwapPair",
+        "type": "error"
+    },
+    {
+        "inputs": [],
+        "name": "CallerIsNotTokenManager",
+        "type": "error"
+    },
+    {
+        "inputs": [],
+        "name": "CallerIsNotTokenManagerOrSwapOperations",
+        "type": "error"
+    },
+    {
+        "inputs": [],
+        "name": "DepositZero",
+        "type": "error"
+    },
+    {
+        "inputs": [],
+        "name": "InsufficientDeposit",
+        "type": "error"
+    },
+    {
+        "inputs": [
+            {
+                "internalType": "contract ISwapPair",
+                "name": "pid",
+                "type": "address"
+            }
+        ],
+        "name": "InvalidPool",
+        "type": "error"
+    },
+    {
+        "inputs": [],
+        "name": "InvalidStakingToken",
+        "type": "error"
+    },
+    {
+        "anonymous": false,
+        "inputs": [
+            {
+                "indexed": true,
+                "internalType": "contract ISwapPair",
+                "name": "pid",
+                "type": "address"
+            }
+        ],
+        "name": "AddPool",
+        "type": "event"
+    },
+    {
+        "anonymous": false,
+        "inputs": [
+            {
+                "indexed": true,
+                "internalType": "address",
+                "name": "user",
+                "type": "address"
+            },
+            {
+                "indexed": true,
+                "internalType": "contract ISwapPair",
+                "name": "pid",
+                "type": "address"
+            },
+            {
+                "indexed": false,
+                "internalType": "uint256",
+                "name": "amount",
+                "type": "uint256"
+            }
+        ],
+        "name": "Claim",
+        "type": "event"
+    },
+    {
+        "anonymous": false,
+        "inputs": [
+            {
+                "indexed": true,
+                "internalType": "contract ISwapPair",
+                "name": "pid",
+                "type": "address"
+            },
+            {
+                "indexed": false,
+                "internalType": "uint256",
+                "name": "allocPoint",
+                "type": "uint256"
+            },
+            {
+                "indexed": false,
+                "internalType": "uint256",
+                "name": "totalAllocPoint",
+                "type": "uint256"
+            }
+        ],
+        "name": "ConfigPool",
+        "type": "event"
+    },
+    {
+        "anonymous": false,
+        "inputs": [
+            {
+                "indexed": true,
+                "internalType": "address",
+                "name": "user",
+                "type": "address"
+            },
+            {
+                "indexed": true,
+                "internalType": "contract ISwapPair",
+                "name": "pid",
+                "type": "address"
+            },
+            {
+                "indexed": false,
+                "internalType": "uint256",
+                "name": "amount",
+                "type": "uint256"
+            }
+        ],
+        "name": "Deposit",
+        "type": "event"
+    },
+    {
+        "anonymous": false,
+        "inputs": [
+            {
+                "indexed": false,
+                "internalType": "address",
+                "name": "swapOperations",
+                "type": "address"
+            },
+            {
+                "indexed": false,
+                "internalType": "address",
+                "name": "tokenManager",
+                "type": "address"
+            }
+        ],
+        "name": "StakingOperationsInitialized",
+        "type": "event"
+    },
+    {
+        "anonymous": false,
+        "inputs": [
+            {
+                "indexed": true,
+                "internalType": "address",
+                "name": "user",
+                "type": "address"
+            },
+            {
+                "indexed": true,
+                "internalType": "contract ISwapPair",
+                "name": "pid",
+                "type": "address"
+            },
+            {
+                "indexed": false,
+                "internalType": "uint256",
+                "name": "amount",
+                "type": "uint256"
+            }
+        ],
+        "name": "Withdraw",
+        "type": "event"
+    },
+    {
+        "inputs": [
+            {
+                "internalType": "contract ISwapPair",
+                "name": "_pid",
+                "type": "address"
+            },
+            {
+                "internalType": "address",
+                "name": "_user",
+                "type": "address"
+            }
+        ],
+        "name": "balanceOf",
+        "outputs": [
+            {
+                "internalType": "uint256",
+                "name": "",
+                "type": "uint256"
+            }
+        ],
+        "stateMutability": "view",
+        "type": "function"
+    },
+    {
+        "inputs": [
+            {
+                "internalType": "contract ISwapPair[]",
+                "name": "_pids",
+                "type": "address[]"
+            }
+        ],
+        "name": "batchClaim",
+        "outputs": [],
+        "stateMutability": "nonpayable",
+        "type": "function"
+    },
+    {
+        "inputs": [
+            {
+                "internalType": "contract ISwapPair",
+                "name": "_pid",
+                "type": "address"
+            }
+        ],
+        "name": "claim",
+        "outputs": [],
+        "stateMutability": "nonpayable",
+        "type": "function"
+    },
+    {
+        "inputs": [
+            {
+                "internalType": "contract ISwapPair",
+                "name": "_pid",
+                "type": "address"
+            },
+            {
+                "internalType": "address",
+                "name": "_user",
+                "type": "address"
+            },
+            {
+                "internalType": "uint256",
+                "name": "_amount",
+                "type": "uint256"
+            }
+        ],
+        "name": "depositFor",
+        "outputs": [],
+        "stateMutability": "nonpayable",
+        "type": "function"
+    },
+    {
+        "inputs": [
+            {
+                "internalType": "contract ISwapPair",
+                "name": "_pid",
+                "type": "address"
+            },
+            {
+                "internalType": "address",
+                "name": "_user",
+                "type": "address"
+            }
+        ],
+        "name": "pendingReward",
+        "outputs": [
+            {
+                "internalType": "uint256",
+                "name": "",
+                "type": "uint256"
+            }
+        ],
+        "stateMutability": "view",
+        "type": "function"
+    },
+    {
+        "inputs": [
+            {
+                "internalType": "contract ISwapPair",
+                "name": "_pid",
+                "type": "address"
+            },
+            {
+                "internalType": "uint256",
+                "name": "_allocPoint",
+                "type": "uint256"
+            }
+        ],
+        "name": "setPool",
+        "outputs": [],
+        "stateMutability": "nonpayable",
+        "type": "function"
+    },
+    {
+        "inputs": [
+            {
+                "internalType": "uint256",
+                "name": "_rewardsPerSecond",
+                "type": "uint256"
+            }
+        ],
+        "name": "setRewardsPerSecond",
+        "outputs": [],
+        "stateMutability": "nonpayable",
+        "type": "function"
+    },
+    {
+        "inputs": [
+            {
+                "internalType": "contract ISwapPair",
+                "name": "_pid",
+                "type": "address"
+            },
+            {
+                "internalType": "address",
+                "name": "_user",
+                "type": "address"
+            },
+            {
+                "internalType": "uint256",
+                "name": "_amount",
+                "type": "uint256"
+            }
+        ],
+        "name": "withdrawFor",
+        "outputs": [],
+        "stateMutability": "nonpayable",
+        "type": "function"
+    }
+]

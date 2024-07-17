@@ -1,0 +1,13 @@
+# fails in pipeline only, dont really care about it since its generated
+public/mockServiceWorker.js
+
+# generated files
+app/generated
+app/context/abis
+types/ethers-contracts
+
+types
+
+# Trading View
+
+public/charting_library

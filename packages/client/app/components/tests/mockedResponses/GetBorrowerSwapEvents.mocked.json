@@ -1,0 +1,576 @@
+{
+  "data": {
+    "swapEvents": [
+      {
+        "__typename": "SwapEvent",
+        "id": "e8138b4f-b372-4a47-be1a-bf0ffbf74eaa",
+        "timestamp": "1711006121",
+        "borrower": "0x9c807f66be6e4a10bcdf49fef82bd3bb791c9f2d",
+        "totalPriceInStable": "429124263055889700000",
+        "direction": "SHORT",
+        "size": "964228400000000000000",
+        "swapFee": "13500",
+        "token": {
+          "id": "a0dd024a-14ea-4f62-87dd-8ca7e40dca83",
+          "__typename": "Token",
+          "address": "0x9beeaba92bd8cdfebdc715d6ff17d3b0dce63cfe",
+          "symbol": "HUF",
+          "createdAt": "1703973837.194",
+          "isPoolToken": false,
+          "decimals": 18
+        }
+      },
+      {
+        "__typename": "SwapEvent",
+        "id": "c0fbe9ad-c637-4a40-8338-37b9b7912165",
+        "timestamp": "1710710459",
+        "borrower": "0x7d3fd4eeadf7e15bcbed5160b9d7369a56a0d000",
+        "totalPriceInStable": "220836035149475900000",
+        "direction": "SHORT",
+        "size": "614006500000000000000",
+        "swapFee": "63800",
+        "token": {
+          "id": "b0e50bf9-6a33-41bd-93ab-3673b25d2ccf",
+          "__typename": "Token",
+          "address": "0xe1fb868ffd3ef114f2bfa8088ee1875a99cfbfcc",
+          "symbol": "MYR",
+          "createdAt": "1709686048.334",
+          "isPoolToken": false,
+          "decimals": 18
+        }
+      },
+      {
+        "__typename": "SwapEvent",
+        "id": "6d1bf2d3-d5c0-417b-a378-21e5bc82c5e7",
+        "timestamp": "1709677571",
+        "borrower": "0xacff49bbd33ca927dcee94c107cda54dc3a2cc5a",
+        "totalPriceInStable": "95201902668486510000",
+        "direction": "LONG",
+        "size": "99014500000000000000",
+        "swapFee": "80600",
+        "token": {
+          "id": "57c7003d-57a7-47b7-992a-b89e6ebf3fa1",
+          "__typename": "Token",
+          "address": "0xfc49ea213c2e4e2cbaefd0b3982cfcbdaaecfeb3",
+          "symbol": "MDL",
+          "createdAt": "1709562633.241",
+          "isPoolToken": true,
+          "decimals": 18
+        }
+      },
+      {
+        "__typename": "SwapEvent",
+        "id": "8f7be2e1-3254-4d07-b3bf-f3ae20277e72",
+        "timestamp": "1709062732",
+        "borrower": "0xbbdfac731338bffd32e9ebfc10542f3fdac667b0",
+        "totalPriceInStable": "24658961041493340000",
+        "direction": "SHORT",
+        "size": "51123700000000000000",
+        "swapFee": "41200",
+        "token": {
+          "id": "6db3dc98-0954-4722-929e-b808a1f5d3fe",
+          "__typename": "Token",
+          "address": "0x5d0135d1d9210133412ce5e151a520a50fb36a0c",
+          "symbol": "BSD",
+          "createdAt": "1702112243.98",
+          "isPoolToken": true,
+          "decimals": 18
+        }
+      },
+      {
+        "__typename": "SwapEvent",
+        "id": "1250b01c-6b97-4c30-9e23-5f35c6726ab4",
+        "timestamp": "1708869507",
+        "borrower": "0xeef0cad5ce36c5080f5f4c28df58d91d1e87dce6",
+        "totalPriceInStable": "65617630266449640000",
+        "direction": "LONG",
+        "size": "619609000000000000000",
+        "swapFee": "39300",
+        "token": {
+          "id": "6bd8fa45-a04b-46a4-838e-ae23260e502a",
+          "__typename": "Token",
+          "address": "0xae85480efdad2339df252b2503ab38b02fd85e98",
+          "symbol": "YER",
+          "createdAt": "1686785285.658",
+          "isPoolToken": true,
+          "decimals": 18
+        }
+      },
+      {
+        "__typename": "SwapEvent",
+        "id": "78275a66-9051-4b42-a698-f56448d53257",
+        "timestamp": "1708237699",
+        "borrower": "0xa0dcbdd7d9dd13e60d1aa6454574ac61e6e8983f",
+        "totalPriceInStable": "63590388475078335000",
+        "direction": "SHORT",
+        "size": "101979300000000000000",
+        "swapFee": "87900",
+        "token": {
+          "id": "57c7003d-57a7-47b7-992a-b89e6ebf3fa1",
+          "__typename": "Token",
+          "address": "0xfc49ea213c2e4e2cbaefd0b3982cfcbdaaecfeb3",
+          "symbol": "MDL",
+          "createdAt": "1709562633.241",
+          "isPoolToken": true,
+          "decimals": 18
+        }
+      },
+      {
+        "__typename": "SwapEvent",
+        "id": "076fcda4-28ef-48c9-9c3d-c86c63510c48",
+        "timestamp": "1708109333",
+        "borrower": "0xbee32c92d58eeb2dda9d71cda3c4dc90b3e3dad4",
+        "totalPriceInStable": "211769530159960280000",
+        "direction": "LONG",
+        "size": "362873900000000000000",
+        "swapFee": "92400",
+        "token": {
+          "id": "1e35ff0c-0788-4a02-bdc3-81d23e6b82cb",
+          "__typename": "Token",
+          "address": "0x559d18f2dff65a6040c238e8193c8cdeaa87ab86",
+          "symbol": "INR",
+          "createdAt": "1700934266.78",
+          "isPoolToken": false,
+          "decimals": 18
+        }
+      },
+      {
+        "__typename": "SwapEvent",
+        "id": "bcb04e26-c73e-45a3-b165-57735f843e0b",
+        "timestamp": "1707473628",
+        "borrower": "0x3be58abca70faca36e40cdf9177f64b7202a554a",
+        "totalPriceInStable": "881432067256877100000",
+        "direction": "SHORT",
+        "size": "933664700000000000000",
+        "swapFee": "66300",
+        "token": {
+          "id": "6db3dc98-0954-4722-929e-b808a1f5d3fe",
+          "__typename": "Token",
+          "address": "0x5d0135d1d9210133412ce5e151a520a50fb36a0c",
+          "symbol": "BSD",
+          "createdAt": "1702112243.98",
+          "isPoolToken": true,
+          "decimals": 18
+        }
+      },
+      {
+        "__typename": "SwapEvent",
+        "id": "1516b859-c091-4b11-ac33-9aaef2019fa3",
+        "timestamp": "1707353180",
+        "borrower": "0x1feaa9082a693878ed971aeb2dfdaee309bf56c6",
+        "totalPriceInStable": "607000164055240000000",
+        "direction": "SHORT",
+        "size": "948253100000000000000",
+        "swapFee": "20000",
+        "token": {
+          "id": "26b28830-04ca-4fca-b0cb-bb37ce717ef6",
+          "__typename": "Token",
+          "address": "0xadd3b0cdb74ca16cb351e8e4c76cc4922ce1ffcf",
+          "symbol": "PHP",
+          "createdAt": "1690705343.924",
+          "isPoolToken": true,
+          "decimals": 18
+        }
+      },
+      {
+        "__typename": "SwapEvent",
+        "id": "3bc0357f-7694-47c8-9483-36594d511581",
+        "timestamp": "1707147073",
+        "borrower": "0xffba2b6bcb2db43ffdfcf1bb8e9e6ad88a9ecf9e",
+        "totalPriceInStable": "471624803983320500000",
+        "direction": "SHORT",
+        "size": "620775100000000000000",
+        "swapFee": "73500",
+        "token": {
+          "id": "94ade5e6-8a4a-4098-8674-1729508efe1a",
+          "__typename": "Token",
+          "address": "0xc3e53f4d16ae77db1c982e75a937b9f60fe63690",
+          "symbol": "JUSD",
+          "createdAt": "1680656965.765",
+          "isPoolToken": false,
+          "decimals": 18
+        }
+      },
+      {
+        "__typename": "SwapEvent",
+        "id": "81fbcd90-4849-462f-82fa-6f9f6bbb368a",
+        "timestamp": "1704683856",
+        "borrower": "0xc30b1dacbdbded2d7fef67b64050cca630c3cb3e",
+        "totalPriceInStable": "226649919299340500000",
+        "direction": "SHORT",
+        "size": "401295900000000000000",
+        "swapFee": "50000",
+        "token": {
+          "id": "2b8de0f9-d7a0-4c4c-9979-7eb8f87b9386",
+          "__typename": "Token",
+          "address": "0xea87ebaaa11de1eaacafc30dcebaf95b919ac211",
+          "symbol": "PEN",
+          "createdAt": "1688346251.332",
+          "isPoolToken": true,
+          "decimals": 18
+        }
+      },
+      {
+        "__typename": "SwapEvent",
+        "id": "81f5fd4d-8648-421c-bc14-206d3a26091a",
+        "timestamp": "1704580998",
+        "borrower": "0xf8ecc7aaad9eaf1b684386463dbfff75763a129d",
+        "totalPriceInStable": "171526493738456220000",
+        "direction": "LONG",
+        "size": "250592200000000000000",
+        "swapFee": "96400",
+        "token": {
+          "id": "1e35ff0c-0788-4a02-bdc3-81d23e6b82cb",
+          "__typename": "Token",
+          "address": "0x559d18f2dff65a6040c238e8193c8cdeaa87ab86",
+          "symbol": "INR",
+          "createdAt": "1700934266.78",
+          "isPoolToken": false,
+          "decimals": 18
+        }
+      },
+      {
+        "__typename": "SwapEvent",
+        "id": "2b68b10a-3cf3-4bc3-b22e-939e5ba68fcd",
+        "timestamp": "1704109088",
+        "borrower": "0x867b1bea999f3906aefedfdda02673b0dbe309e2",
+        "totalPriceInStable": "656501767261635100000",
+        "direction": "LONG",
+        "size": "714079000000000000000",
+        "swapFee": "59900",
+        "token": {
+          "id": "b0e50bf9-6a33-41bd-93ab-3673b25d2ccf",
+          "__typename": "Token",
+          "address": "0xe1fb868ffd3ef114f2bfa8088ee1875a99cfbfcc",
+          "symbol": "MYR",
+          "createdAt": "1709686048.334",
+          "isPoolToken": false,
+          "decimals": 18
+        }
+      },
+      {
+        "__typename": "SwapEvent",
+        "id": "acdb842d-1b1f-42e2-95bd-56ab1b4539a5",
+        "timestamp": "1702341367",
+        "borrower": "0xdbf0ae5bfd8afbdebcecac277d9b4d152a7befe1",
+        "totalPriceInStable": "277501945134545800000",
+        "direction": "LONG",
+        "size": "328543200000000000000",
+        "swapFee": "46000",
+        "token": {
+          "id": "1e35ff0c-0788-4a02-bdc3-81d23e6b82cb",
+          "__typename": "Token",
+          "address": "0x559d18f2dff65a6040c238e8193c8cdeaa87ab86",
+          "symbol": "INR",
+          "createdAt": "1700934266.78",
+          "isPoolToken": false,
+          "decimals": 18
+        }
+      },
+      {
+        "__typename": "SwapEvent",
+        "id": "561eb2a0-33de-45c4-9b69-6d667218b5ff",
+        "timestamp": "1702146529",
+        "borrower": "0xf13aab8b2cbd7ad6d4e69478f1ab81ba0eb12d7f",
+        "totalPriceInStable": "676704111152840700000",
+        "direction": "LONG",
+        "size": "725660400000000000000",
+        "swapFee": "67000",
+        "token": {
+          "id": "2b8de0f9-d7a0-4c4c-9979-7eb8f87b9386",
+          "__typename": "Token",
+          "address": "0xea87ebaaa11de1eaacafc30dcebaf95b919ac211",
+          "symbol": "PEN",
+          "createdAt": "1688346251.332",
+          "isPoolToken": true,
+          "decimals": 18
+        }
+      },
+      {
+        "__typename": "SwapEvent",
+        "id": "aa61102b-61ba-4564-a8aa-d1ded1d71e0c",
+        "timestamp": "1701753844",
+        "borrower": "0xfeeb6a266b3ae56647afe98da29cb4ecc65e750c",
+        "totalPriceInStable": "138129861683127670000",
+        "direction": "SHORT",
+        "size": "193261400000000000000",
+        "swapFee": "40900",
+        "token": {
+          "id": "26b28830-04ca-4fca-b0cb-bb37ce717ef6",
+          "__typename": "Token",
+          "address": "0xadd3b0cdb74ca16cb351e8e4c76cc4922ce1ffcf",
+          "symbol": "PHP",
+          "createdAt": "1690705343.924",
+          "isPoolToken": true,
+          "decimals": 18
+        }
+      },
+      {
+        "__typename": "SwapEvent",
+        "id": "9e7233f1-4357-45dc-96a0-652be132ff2a",
+        "timestamp": "1701383178",
+        "borrower": "0xbcce7eedbf4bfdf3d36ffe20b1df5cfa6c7fc036",
+        "totalPriceInStable": "194060109643602570000",
+        "direction": "LONG",
+        "size": "558319300000000000000",
+        "swapFee": "11600",
+        "token": {
+          "id": "a0dd024a-14ea-4f62-87dd-8ca7e40dca83",
+          "__typename": "Token",
+          "address": "0x9beeaba92bd8cdfebdc715d6ff17d3b0dce63cfe",
+          "symbol": "HUF",
+          "createdAt": "1703973837.194",
+          "isPoolToken": false,
+          "decimals": 18
+        }
+      },
+      {
+        "__typename": "SwapEvent",
+        "id": "441c8643-680e-408e-bca9-9e09bf9ab0f6",
+        "timestamp": "1701190446",
+        "borrower": "0xa5fcbadd8929a7e04cf3a0ba8f7eceb1ea9f572f",
+        "totalPriceInStable": "168042189474163500000",
+        "direction": "LONG",
+        "size": "299464000000000000000",
+        "swapFee": "77700",
+        "token": {
+          "id": "a0dd024a-14ea-4f62-87dd-8ca7e40dca83",
+          "__typename": "Token",
+          "address": "0x9beeaba92bd8cdfebdc715d6ff17d3b0dce63cfe",
+          "symbol": "HUF",
+          "createdAt": "1703973837.194",
+          "isPoolToken": false,
+          "decimals": 18
+        }
+      },
+      {
+        "__typename": "SwapEvent",
+        "id": "044e1712-a92c-4a4a-a039-2921d2e82f76",
+        "timestamp": "1698728328",
+        "borrower": "0x8aa089e9e6b2e4be1973bbcbfd52ad3b9b8ccbcb",
+        "totalPriceInStable": "827075933132340300000",
+        "direction": "SHORT",
+        "size": "945526700000000000000",
+        "swapFee": "83100",
+        "token": {
+          "id": "b0e50bf9-6a33-41bd-93ab-3673b25d2ccf",
+          "__typename": "Token",
+          "address": "0xe1fb868ffd3ef114f2bfa8088ee1875a99cfbfcc",
+          "symbol": "MYR",
+          "createdAt": "1709686048.334",
+          "isPoolToken": false,
+          "decimals": 18
+        }
+      },
+      {
+        "__typename": "SwapEvent",
+        "id": "078de3c9-7770-4c82-8e60-bb8b2e2fe300",
+        "timestamp": "1698488828",
+        "borrower": "0xcca64fd4a1b8f0d7ff5babc40b6afb4093feafdc",
+        "totalPriceInStable": "301745684339987100000",
+        "direction": "LONG",
+        "size": "404863100000000000000",
+        "swapFee": "30800",
+        "token": {
+          "id": "a0dd024a-14ea-4f62-87dd-8ca7e40dca83",
+          "__typename": "Token",
+          "address": "0x9beeaba92bd8cdfebdc715d6ff17d3b0dce63cfe",
+          "symbol": "HUF",
+          "createdAt": "1703973837.194",
+          "isPoolToken": false,
+          "decimals": 18
+        }
+      },
+      {
+        "__typename": "SwapEvent",
+        "id": "d2ca74a9-85dc-419d-ab02-c4ee3c2c21e2",
+        "timestamp": "1698317570",
+        "borrower": "0xca4f07919dfe0cbbcd7a1f1ec9668bfc0acc7b5c",
+        "totalPriceInStable": "396382860539617870000",
+        "direction": "LONG",
+        "size": "859634500000000000000",
+        "swapFee": "34100",
+        "token": {
+          "id": "94ade5e6-8a4a-4098-8674-1729508efe1a",
+          "__typename": "Token",
+          "address": "0xc3e53f4d16ae77db1c982e75a937b9f60fe63690",
+          "symbol": "JUSD",
+          "createdAt": "1680656965.765",
+          "isPoolToken": false,
+          "decimals": 18
+        }
+      },
+      {
+        "__typename": "SwapEvent",
+        "id": "154bbd90-1066-4960-b282-cebf0c53ac0e",
+        "timestamp": "1698202890",
+        "borrower": "0x5befe0064fb3e7efaeda29dacdc2a3f0b0efdfb1",
+        "totalPriceInStable": "181129151193232220000",
+        "direction": "LONG",
+        "size": "272440500000000000000",
+        "swapFee": "28600",
+        "token": {
+          "id": "b0e50bf9-6a33-41bd-93ab-3673b25d2ccf",
+          "__typename": "Token",
+          "address": "0xe1fb868ffd3ef114f2bfa8088ee1875a99cfbfcc",
+          "symbol": "MYR",
+          "createdAt": "1709686048.334",
+          "isPoolToken": false,
+          "decimals": 18
+        }
+      },
+      {
+        "__typename": "SwapEvent",
+        "id": "ff55c3a3-a694-40e1-a9d7-86cc5f731b5e",
+        "timestamp": "1698191362",
+        "borrower": "0x4daa97f62a3bbd920d3f5ddd23d97aed4ecf9fc4",
+        "totalPriceInStable": "504203404497241100000",
+        "direction": "SHORT",
+        "size": "975351100000000000000",
+        "swapFee": "30800",
+        "token": {
+          "id": "b0e50bf9-6a33-41bd-93ab-3673b25d2ccf",
+          "__typename": "Token",
+          "address": "0xe1fb868ffd3ef114f2bfa8088ee1875a99cfbfcc",
+          "symbol": "MYR",
+          "createdAt": "1709686048.334",
+          "isPoolToken": false,
+          "decimals": 18
+        }
+      },
+      {
+        "__typename": "SwapEvent",
+        "id": "7720543c-23a1-4c01-abdb-d8e024953f09",
+        "timestamp": "1697898941",
+        "borrower": "0xd8fdccc7b595ab2d7f276ae3ba4fcc6e9ac3ddc6",
+        "totalPriceInStable": "231619903036835200000",
+        "direction": "SHORT",
+        "size": "275173900000000000000",
+        "swapFee": "57300",
+        "token": {
+          "id": "2b8de0f9-d7a0-4c4c-9979-7eb8f87b9386",
+          "__typename": "Token",
+          "address": "0xea87ebaaa11de1eaacafc30dcebaf95b919ac211",
+          "symbol": "PEN",
+          "createdAt": "1688346251.332",
+          "isPoolToken": true,
+          "decimals": 18
+        }
+      },
+      {
+        "__typename": "SwapEvent",
+        "id": "26b1d03b-8d8e-4f76-b3e7-e8fb9647ad34",
+        "timestamp": "1697847813",
+        "borrower": "0xc197946d6e5dffd345ebdddf8b5bdcabed4eddb7",
+        "totalPriceInStable": "25601523612457832000",
+        "direction": "LONG",
+        "size": "54243000000000000000",
+        "swapFee": "46000",
+        "token": {
+          "id": "26b28830-04ca-4fca-b0cb-bb37ce717ef6",
+          "__typename": "Token",
+          "address": "0xadd3b0cdb74ca16cb351e8e4c76cc4922ce1ffcf",
+          "symbol": "PHP",
+          "createdAt": "1690705343.924",
+          "isPoolToken": true,
+          "decimals": 18
+        }
+      },
+      {
+        "__typename": "SwapEvent",
+        "id": "eae56960-9730-4f5b-8884-e8c7bb6a235d",
+        "timestamp": "1697570017",
+        "borrower": "0xa2984bfc9571d7fdfc31afcb397b36ec82bf4fde",
+        "totalPriceInStable": "429955891021948000000",
+        "direction": "LONG",
+        "size": "829296700000000000000",
+        "swapFee": "24000",
+        "token": {
+          "id": "6bd8fa45-a04b-46a4-838e-ae23260e502a",
+          "__typename": "Token",
+          "address": "0xae85480efdad2339df252b2503ab38b02fd85e98",
+          "symbol": "YER",
+          "createdAt": "1686785285.658",
+          "isPoolToken": true,
+          "decimals": 18
+        }
+      },
+      {
+        "__typename": "SwapEvent",
+        "id": "1cdd8e1b-3c12-421c-9d3d-01ae912953ad",
+        "timestamp": "1697033653",
+        "borrower": "0x08e9ddff84da04b0e1da428d7b208a0ada4ef4e5",
+        "totalPriceInStable": "193504565998039400000",
+        "direction": "SHORT",
+        "size": "570070900000000000000",
+        "swapFee": "63300",
+        "token": {
+          "id": "b0e50bf9-6a33-41bd-93ab-3673b25d2ccf",
+          "__typename": "Token",
+          "address": "0xe1fb868ffd3ef114f2bfa8088ee1875a99cfbfcc",
+          "symbol": "MYR",
+          "createdAt": "1709686048.334",
+          "isPoolToken": false,
+          "decimals": 18
+        }
+      },
+      {
+        "__typename": "SwapEvent",
+        "id": "f07ddbe0-322d-408f-8c76-b4b0e18304b7",
+        "timestamp": "1696502326",
+        "borrower": "0xd17cea5653a1ef5eef7dfcdc6a4ecfcce2831c22",
+        "totalPriceInStable": "391651788168670200000",
+        "direction": "SHORT",
+        "size": "517088000000000000000",
+        "swapFee": "78600",
+        "token": {
+          "id": "2b8de0f9-d7a0-4c4c-9979-7eb8f87b9386",
+          "__typename": "Token",
+          "address": "0xea87ebaaa11de1eaacafc30dcebaf95b919ac211",
+          "symbol": "PEN",
+          "createdAt": "1688346251.332",
+          "isPoolToken": true,
+          "decimals": 18
+        }
+      },
+      {
+        "__typename": "SwapEvent",
+        "id": "733a8717-9882-4c3a-8396-89949369723b",
+        "timestamp": "1695823410",
+        "borrower": "0x2aa194c6ab873dee29e93ab9c4f8e4bdabaa6ad9",
+        "totalPriceInStable": "99400604494028760000",
+        "direction": "LONG",
+        "size": "461023100000000000000",
+        "swapFee": "77600",
+        "token": {
+          "id": "d02ba6ef-dfa5-4194-8d32-26a010f70359",
+          "__typename": "Token",
+          "address": "0xca0e2d4e38c7ddae74fd7b29c6f7a10226ed0d72",
+          "symbol": "MMK",
+          "createdAt": "1694955012.067",
+          "isPoolToken": true,
+          "decimals": 18
+        }
+      },
+      {
+        "__typename": "SwapEvent",
+        "id": "141f7081-53ff-47bf-b2c3-f89ebf885383",
+        "timestamp": "1695489351",
+        "borrower": "0x437c34e6f0f791892ecbfbabfd7ccceef86851c8",
+        "totalPriceInStable": "639941153519650800000",
+        "direction": "SHORT",
+        "size": "853795600000000000000",
+        "swapFee": "65300",
+        "token": {
+          "id": "d02ba6ef-dfa5-4194-8d32-26a010f70359",
+          "__typename": "Token",
+          "address": "0xca0e2d4e38c7ddae74fd7b29c6f7a10226ed0d72",
+          "symbol": "MMK",
+          "createdAt": "1694955012.067",
+          "isPoolToken": true,
+          "decimals": 18
+        }
+      }
+    ]
+  }
+}

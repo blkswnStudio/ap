@@ -1,0 +1,14 @@
+overwrite: true
+schema: 'mocks/schema.gql'
+documents: 'app/queries.ts'
+generates:
+  app/generated/gql-types.ts:
+    plugins:
+      - 'typescript'
+      - 'typescript-operations'
+    config:
+      nonOptionalTypename: true
+      scalars:
+        BigInt: string
+        Bytes: string
+        bigint: bigint
