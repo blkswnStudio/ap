@@ -2,11 +2,10 @@
 
 pragma solidity ^0.8.9;
 
-import '@openzeppelin/contracts/token/ERC20/IERC20.sol';
-import '@openzeppelin/contracts/token/ERC20/extensions/IERC20Permit.sol';
 import '@openzeppelin/contracts/access/Ownable.sol';
 import './Interfaces/ISwapPair.sol';
 import './Dependencies/LiquityBase.sol';
+import './Dependencies/TrustlessPermit.sol';
 import './Interfaces/ISwapOperations.sol';
 import './Interfaces/IBorrowerOperations.sol';
 import './Interfaces/ITokenManager.sol';
@@ -78,6 +77,7 @@ contract SwapOperations is ISwapOperations, Ownable(msg.sender), CheckContract, 
     if (tokenA == tokenB) revert IdenticalAddresses();
     if (tokenA != address(tokenManager.getStableCoin()) && tokenB != address(tokenManager.getStableCoin()))
       revert PairRequiresStable();
+    if (allPairs.length >= SWAP_POOL_AMOUNT_CAP) revert ReachedPoolLimit();
 
     (address token0, address token1) = sortTokens(tokenA, tokenB);
     if (token0 == address(0)) revert ZeroAddress();
@@ -102,7 +102,7 @@ contract SwapOperations is ISwapOperations, Ownable(msg.sender), CheckContract, 
   }
 
   function setSwapBaseFee(uint _swapBaseFee) external onlyOwner {
-    if (_swapBaseFee > DECIMAL_PRECISION) revert FeeExceedMaxPercentage();
+    if (_swapBaseFee > 0.1e18) revert FeeExceedMaxPercentage(); // capped at 10%
     swapBaseFee = _swapBaseFee;
   }
 
@@ -235,6 +235,11 @@ contract SwapOperations is ISwapOperations, Ownable(msg.sender), CheckContract, 
     PriceUpdateAndMintMeta memory _priceAndMintMeta,
     uint deadline
   ) public payable virtual override ensure(deadline) returns (uint amountA, uint amountB, uint liquidity) {
+    if (amountADesired < amountAMin) revert InsufficientAmountADesired();
+    if (amountBDesired < amountBMin) revert InsufficientAmountBDesired();
+
+    priceFeed.updatePythPrices{ value: msg.value }(_priceAndMintMeta.priceUpdateData);
+
     ProvidingVars memory vars;
     vars.pair = getPair[tokenA][tokenB];
     if (vars.pair == address(0)) revert PairDoesNotExist();
@@ -283,13 +288,7 @@ contract SwapOperations is ISwapOperations, Ownable(msg.sender), CheckContract, 
             : TokenAmount(tokenB, vars.fromMintB) // mint B
         );
       }
-      borrowerOperations.increaseDebt{ value: msg.value }(
-        msg.sender,
-        vars.pair,
-        debtsToMint,
-        _priceAndMintMeta.meta,
-        _priceAndMintMeta.priceUpdateData
-      );
+      borrowerOperations.increaseDebt(msg.sender, vars.pair, debtsToMint, _priceAndMintMeta.meta);
     }
 
     // transfer tokens sourced from senders balance
@@ -313,8 +312,9 @@ contract SwapOperations is ISwapOperations, Ownable(msg.sender), CheckContract, 
     bytes32[] memory r,
     bytes32[] memory s
   ) external payable returns (uint amountA, uint amountB, uint liquidity) {
-    IERC20Permit(tokenA).permit(msg.sender, address(this), amountADesired, deadline, v[0], r[0], s[0]);
-    IERC20Permit(tokenB).permit(msg.sender, address(this), amountBDesired, deadline, v[1], r[1], s[1]);
+    TrustlessPermit.trustlessPermit(tokenA, msg.sender, address(this), amountADesired, deadline, v[0], r[0], s[0]);
+    TrustlessPermit.trustlessPermit(tokenB, msg.sender, address(this), amountBDesired, deadline, v[1], r[1], s[1]);
+
     return
       addLiquidity(tokenA, tokenB, amountADesired, amountBDesired, amountAMin, amountBMin, _priceAndMintMeta, deadline);
   }
@@ -431,16 +431,7 @@ contract SwapOperations is ISwapOperations, Ownable(msg.sender), CheckContract, 
   }
 
   // requires the initial amount to have already been sent to the first pair
-  function _swap(
-    SwapAmount[] memory amounts,
-    address[] memory path,
-    address _to,
-    bytes[] memory _priceUpdateData,
-    bool _skipUpdate
-  ) internal virtual {
-    // update prices
-    if (!_skipUpdate) priceFeed.updatePythPrices{ value: msg.value }(_priceUpdateData);
-
+  function _swap(SwapAmount[] memory amounts, address[] memory path, address _to) internal virtual {
     SwapVars memory vars;
     for (uint i; i < path.length - 1; i++) {
       (vars.input, vars.output) = (path[i], path[i + 1]);
@@ -474,11 +465,13 @@ contract SwapOperations is ISwapOperations, Ownable(msg.sender), CheckContract, 
     uint deadline,
     bytes[] memory _priceUpdateData
   ) public payable virtual override ensure(deadline) returns (SwapAmount[] memory amounts) {
+    priceFeed.updatePythPrices{ value: msg.value }(_priceUpdateData);
+
     amounts = getAmountsOut(amountIn, path);
     if (amounts[amounts.length - 1].amount < amountOutMin) revert InsufficientOutputAmount();
 
     safeTransferFrom(path[0], msg.sender, getPair[path[0]][path[1]], amounts[0].amount);
-    _swap(amounts, path, to, _priceUpdateData, false);
+    _swap(amounts, path, to);
   }
 
   function swapTokensForExactTokens(
@@ -489,11 +482,13 @@ contract SwapOperations is ISwapOperations, Ownable(msg.sender), CheckContract, 
     uint deadline,
     bytes[] memory _priceUpdateData
   ) public payable virtual override ensure(deadline) returns (SwapAmount[] memory amounts) {
+    priceFeed.updatePythPrices{ value: msg.value }(_priceUpdateData);
+
     amounts = getAmountsIn(amountOut, path);
     if (amounts[0].amount > amountInMax) revert ExcessiveInputAmount();
 
     safeTransferFrom(path[0], msg.sender, getPair[path[0]][path[1]], amounts[0].amount);
-    _swap(amounts, path, to, _priceUpdateData, false);
+    _swap(amounts, path, to);
   }
 
   function swapExactTokensForTokensWithPermit(
@@ -507,7 +502,8 @@ contract SwapOperations is ISwapOperations, Ownable(msg.sender), CheckContract, 
     bytes32 s,
     bytes[] memory _priceUpdateData
   ) external payable returns (SwapAmount[] memory amounts) {
-    IERC20Permit(path[0]).permit(msg.sender, address(this), amountIn, deadline, v, r, s);
+    TrustlessPermit.trustlessPermit(path[0], msg.sender, address(this), amountIn, deadline, v, r, s);
+
     return swapExactTokensForTokens(amountIn, amountOutMin, path, to, deadline, _priceUpdateData);
   }
 
@@ -553,6 +549,8 @@ contract SwapOperations is ISwapOperations, Ownable(msg.sender), CheckContract, 
     MintMeta memory _mintMeta,
     bytes[] memory _priceUpdateData
   ) internal returns (SwapAmount[] memory amounts) {
+    priceFeed.updatePythPrices{ value: msg.value }(_priceUpdateData);
+
     address pair = getPair[path[0]][path[1]];
     if (pair == address(0)) revert PairDoesNotExist();
 
@@ -564,10 +562,10 @@ contract SwapOperations is ISwapOperations, Ownable(msg.sender), CheckContract, 
     // mint the debt token and transfer it to the pair
     TokenAmount[] memory debtsToMint = new TokenAmount[](1);
     debtsToMint[0] = TokenAmount(path[0], amounts[0].amount);
-    borrowerOperations.increaseDebt{ value: msg.value }(msg.sender, pair, debtsToMint, _mintMeta, _priceUpdateData);
+    borrowerOperations.increaseDebt(msg.sender, pair, debtsToMint, _mintMeta);
 
-    // execute the swap (skip update, because increase debt already updated)
-    _swap(amounts, path, to, _priceUpdateData, true);
+    // execute the swap
+    _swap(amounts, path, to);
 
     return amounts;
   }

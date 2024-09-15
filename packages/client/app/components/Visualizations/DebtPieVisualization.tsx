@@ -81,9 +81,6 @@ function DebtPieVisualization({ borrowerDebtTokens }: Props) {
         if (token.percentage < 0.15) {
           acc.others.troveMintedAmount += token.troveMintedAmount;
           acc.others.troveMintedUSD += token.troveMintedUSD;
-          if (acc.others.chartColor === '') {
-            acc.others.chartColor = token.chartColor!;
-          }
         } else {
           acc.tokens.push(token);
         }
@@ -92,19 +89,25 @@ function DebtPieVisualization({ borrowerDebtTokens }: Props) {
       },
       {
         tokens: [] as typeof borrowerDebtTokens,
-        others: { troveMintedUSD: 0, troveMintedAmount: 0n, chartColor: '', token: { symbol: 'Other' } },
+        others: {
+          troveMintedUSD: 0,
+          troveMintedAmount: 0n,
+          chartColor: theme.palette.text.secondary,
+          token: { symbol: 'Other' },
+        },
       },
     );
+
+  const data =
+    visualizationDataGrouped.others.troveMintedUSD > 0
+      ? [...visualizationDataGrouped.tokens, visualizationDataGrouped.others]
+      : visualizationDataGrouped.tokens;
 
   return (
     <PieChart width={430} height={280} margin={{ top: 0, right: 0, bottom: 0, left: 0 }}>
       <Pie
         isAnimationActive={false}
-        data={
-          visualizationDataGrouped.others.troveMintedUSD > 0
-            ? [...visualizationDataGrouped.tokens, visualizationDataGrouped.others]
-            : visualizationDataGrouped.tokens
-        }
+        data={data}
         dataKey="troveMintedUSD"
         nameKey="token.symbol"
         innerRadius={90}
@@ -113,8 +116,8 @@ function DebtPieVisualization({ borrowerDebtTokens }: Props) {
         label={renderCustomizedLabel}
         labelLine={{ stroke: isDarkMode ? '#504D59' : '#939393', strokeWidth: 2 }}
       >
-        {borrowerDebtTokens.map(({ token, chartColor }) => (
-          <Cell stroke="transparent" key={token.address} fill={chartColor} />
+        {data.map(({ token, chartColor }) => (
+          <Cell stroke="transparent" key={token.symbol} fill={chartColor} />
         ))}
       </Pie>
     </PieChart>

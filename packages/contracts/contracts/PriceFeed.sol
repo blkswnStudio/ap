@@ -5,6 +5,7 @@ pragma solidity ^0.8.9;
 import '@openzeppelin/contracts/access/Ownable.sol';
 import '@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol';
 import './Interfaces/IPriceFeed.sol';
+import './Interfaces/IAlternativePriceFeed.sol';
 import './Dependencies/CheckContract.sol';
 import './Dependencies/LiquityMath.sol';
 import './Dependencies/LiquityBase.sol';
@@ -16,14 +17,16 @@ import '@pythnetwork/pyth-sdk-solidity/PythStructs.sol';
 contract PriceFeed is Ownable(msg.sender), CheckContract, LiquityBase, IPriceFeed {
   string public constant NAME = 'PriceFeed';
 
-  uint public constant ORACLE_AS_TRUSTED_TIMEOUT = 60 * 5; // 5 minutes, Maximum time period allowed since latest round data timestamp.
+  uint public constant ORACLE_AS_TRUSTED_TIMEOUT = 5 minutes; // 5 minutes, Maximum time period allowed since latest round data timestamp.
+  uint public constant OLD_PYTH_PRICE_TIMEOUT = 1 minutes;
 
+  IAlternativePriceFeed public altFeed;
   IPyth public pyth;
   ITokenManager public tokenManager;
 
   bool private initialized;
   mapping(address => bytes32) public tokenToOracleId;
-  mapping(address => PriceTime) public fallbackPrices; // token => price
+  mapping(bytes32 => address) public oracleIdToToken;
 
   struct PriceTime {
     uint price;
@@ -54,14 +57,15 @@ contract PriceFeed is Ownable(msg.sender), CheckContract, LiquityBase, IPriceFee
   function initiateNewOracleId(address _tokenAddress, bytes32 _oracleId) external override {
     if (msg.sender != address(tokenManager)) revert NotFromTokenManager();
     tokenToOracleId[_tokenAddress] = _oracleId;
+    if (uint(_oracleId) != 0) oracleIdToToken[_oracleId] = _tokenAddress;
   }
 
-  function setFallbackPrices(TokenAmount[] memory tokenPrices) external override onlyOwner {
-    uint time = block.timestamp;
-    for (uint i = 0; i < tokenPrices.length; i++)
-      fallbackPrices[tokenPrices[i].tokenAddress] = PriceTime(tokenPrices[i].amount, time);
+  // --- Admin Functions ---
 
-    emit FallbackPriceChanged(tokenPrices);
+  function setAlternativePriceFeed(address _altFeed) external onlyOwner {
+    checkContract(_altFeed);
+    altFeed = IAlternativePriceFeed(_altFeed);
+    emit SetAltPriceFeed(_altFeed);
   }
 
   // --- Functions ---
@@ -72,20 +76,44 @@ contract PriceFeed is Ownable(msg.sender), CheckContract, LiquityBase, IPriceFee
 
   // --- build session price cache ---
 
+  function isSomePriceUntrusted(PriceCache memory _priceCache) external view override returns (bool) {
+    for (uint i = 0; i < _priceCache.collPrices.length; i++)
+      if (_isSomePriceUntrusted(_priceCache.collPrices[i])) return true;
+    for (uint i = 0; i < _priceCache.debtPrices.length; i++)
+      if (_isSomePriceUntrusted(_priceCache.debtPrices[i])) return true;
+
+    return false;
+  }
+
+  function _isSomePriceUntrusted(TokenPrice memory _tokenPrice) internal view returns (bool) {
+    return !checkPriceUsable(_tokenPrice.tokenAddress, _tokenPrice.isPriceTrusted);
+  }
+
+  function checkPriceUsable(address _token, bool _trusted) public view override returns (bool) {
+    if (_trusted) return true;
+    return tokenManager.disableDebtMinting(_token); // if minting is disabled, price still is trusted
+  }
+
   function buildPriceCache() external view override returns (PriceCache memory cache) {
-    cache.collPrices = _getTokenPrices(tokenManager.getCollTokenAddresses());
-    cache.debtPrices = _getTokenPrices(tokenManager.getDebtTokenAddresses());
+    cache.collPrices = _getTokenPrices(tokenManager.getCollTokenAddresses(), true);
+    cache.debtPrices = _getTokenPrices(tokenManager.getDebtTokenAddresses(), true);
     return cache;
   }
 
-  function _getTokenPrices(address[] memory tokens) internal view returns (TokenPrice[] memory) {
+  function buildPriceCacheOnlyPrimary() external view override returns (PriceCache memory cache) {
+    cache.collPrices = _getTokenPrices(tokenManager.getCollTokenAddresses(), false);
+    cache.debtPrices = _getTokenPrices(tokenManager.getDebtTokenAddresses(), false);
+    return cache;
+  }
+
+  function _getTokenPrices(address[] memory tokens, bool _allowSecondary) internal view returns (TokenPrice[] memory) {
     TokenPrice[] memory tokenPrices = new TokenPrice[](tokens.length);
-    for (uint i = 0; i < tokens.length; i++) tokenPrices[i] = _buildTokenPrice(tokens[i]);
+    for (uint i = 0; i < tokens.length; i++) tokenPrices[i] = _buildTokenPrice(tokens[i], _allowSecondary);
     return tokenPrices;
   }
 
-  function _buildTokenPrice(address _tokenAddress) internal view returns (TokenPrice memory) {
-    (uint price, bool isTrusted) = getPrice(_tokenAddress);
+  function _buildTokenPrice(address _tokenAddress, bool _allowSecondary) internal view returns (TokenPrice memory) {
+    (uint price, bool isTrusted, ) = getPriceFromSource(_tokenAddress, _allowSecondary);
     uint8 decimals = IERC20Metadata(_tokenAddress).decimals();
     return
       TokenPrice(
@@ -104,45 +132,58 @@ contract PriceFeed is Ownable(msg.sender), CheckContract, LiquityBase, IPriceFee
     pyth.updatePriceFeeds{ value: feeAmount }(_priceUpdateData);
   }
 
-  function getPrice(address _tokenAddress) public view override returns (uint price, bool isTrusted) {
+  function getPrice(
+    address _tokenAddress
+  ) public view override returns (uint price, bool isTrusted, bool secondarySource) {
+    return getPriceFromSource(_tokenAddress, true);
+  }
+
+  function getPriceFromSource(
+    address _tokenAddress,
+    bool _allowSecondary
+  ) public view override returns (uint price, bool isTrusted, bool secondarySource) {
     address stableAddress = address(tokenManager.getStableCoin());
-    if (_tokenAddress == stableAddress) return (DECIMAL_PRECISION, true); // stable is always trusted and at fixed price at 1$
+    if (_tokenAddress == stableAddress) return (DECIMAL_PRECISION, true, false); // stable is always trusted and at fixed price at 1$
 
     // map token to oracle id
+    uint priceTime;
     bytes32 oracleId = tokenToOracleId[_tokenAddress];
-    if (oracleId == 0) revert UnknownOracleId();
+    if (oracleId != 0) {
+      // fetch price
+      PythResponse memory latestResponse = _getCurrentPythResponse(oracleId);
+      price = latestResponse.price;
+      priceTime = latestResponse.timestamp;
+      isTrusted = latestResponse.success && latestResponse.isTrusted;
+    }
 
-    // fetch price
-    PythResponse memory latestResponse = _getCurrentPythResponse(oracleId);
-    price = latestResponse.price;
-    isTrusted = latestResponse.success && latestResponse.isTrusted;
-
-    // check for fallback price is pyth is untrusted, price will remain untrusted anyway
-    if (!isTrusted) {
-      PriceTime memory fallbackPrice = fallbackPrices[_tokenAddress];
-      if (fallbackPrice.price > 0) price = fallbackPrice.price;
+    // check for alternative price feed
+    if (
+      _allowSecondary &&
+      (!isTrusted || priceTime < block.timestamp - OLD_PYTH_PRICE_TIMEOUT) &&
+      address(altFeed) != address(0)
+    ) {
+      (uint altPrice, bool altIsTrusted, uint altTimestamp) = altFeed.getPrice(_tokenAddress);
+      if (altPrice != 0 && altTimestamp >= priceTime && (altIsTrusted || !isTrusted)) {
+        // take trusted or newer
+        secondarySource = true;
+        price = altPrice;
+        isTrusted = altIsTrusted && altTimestamp >= block.timestamp - ORACLE_AS_TRUSTED_TIMEOUT; // trusted state might be changed by alt price feed
+      } else if (oracleId == 0) revert UnknownOracleId();
     }
 
     // multiply with stock split/exchange if debt token
     if (tokenManager.isDebtToken(_tokenAddress)) {
       IDebtToken debtToken = tokenManager.getDebtToken(_tokenAddress);
-      price = _getPriceAfterStockSplitAndExchange(debtToken, latestResponse.price);
+      price = _getPriceAfterStockSplitAndExchange(debtToken, price);
     }
 
-    return (price, isTrusted);
+    return (price, isTrusted, secondarySource);
   }
 
   // --- get usd/amount functions ---
 
-  function isSomePriceUntrusted(PriceCache memory _priceCache) external view override returns (bool) {
-    for (uint i = 0; i < _priceCache.collPrices.length; i++) if (!_priceCache.collPrices[i].isPriceTrusted) return true;
-    for (uint i = 0; i < _priceCache.debtPrices.length; i++) if (!_priceCache.debtPrices[i].isPriceTrusted) return true;
-
-    return false;
-  }
-
   function getUSDValue(address _tokenAddress, uint256 _amount) external view override returns (uint usdValue) {
-    TokenPrice memory _tokenPrice = _buildTokenPrice(_tokenAddress);
+    TokenPrice memory _tokenPrice = _buildTokenPrice(_tokenAddress, true);
     return _getUSDValue(_tokenPrice, _amount);
   }
 
@@ -166,7 +207,7 @@ contract PriceFeed is Ownable(msg.sender), CheckContract, LiquityBase, IPriceFee
     address _tokenAddress,
     uint256 _usdValue
   ) external view override returns (uint amount) {
-    TokenPrice memory tokenPrice = _buildTokenPrice(_tokenAddress);
+    TokenPrice memory tokenPrice = _buildTokenPrice(_tokenAddress, true);
     return _getAmountFromUSDValue(tokenPrice, _usdValue);
   }
 
@@ -249,7 +290,7 @@ contract PriceFeed is Ownable(msg.sender), CheckContract, LiquityBase, IPriceFee
     address exchangeStock = _debtToken.exchangeStock();
     if (splitRate != 0 && exchangeStock != address(0)) {
       // get price of exchange stock
-      (currentPrice, ) = getPrice(exchangeStock);
+      (currentPrice, , ) = getPrice(exchangeStock);
     } else {
       // get effective stock split
       splitRate = _debtToken.currentStockSplit();

@@ -49,44 +49,16 @@ export function handleSwap(event: SwapEvent): void {
   const stableCoin = Address.fromBytes(systemInfo.stableCoin); // This is of type Bytes, so I convert it to Address
   const nonStableCoin = token0 == stableCoin ? token1 : token0;
 
-  const direction =
-    token0 == stableCoin
-      ? event.params.amount0In.equals(BigInt.fromI32(0))
-        ? 'SHORT'
-        : 'LONG'
-      : event.params.amount1In.equals(BigInt.fromI32(0))
-        ? 'SHORT'
-        : 'LONG';
+  const direction = event.params.amount0In.equals(BigInt.fromI32(0)) ? 'SHORT' : 'LONG';
 
-  const stableSize =
-    direction === 'LONG'
-      ? token0 == stableCoin
-        ? event.params.amount0In
-        : event.params.amount1In
-      : token0 == stableCoin
-        ? event.params.amount0Out
-        : event.params.amount1Out;
-  const debtTokenSize =
-    direction === 'SHORT'
-      ? token0 == stableCoin
-        ? event.params.amount1In
-        : event.params.amount0In
-      : token0 == stableCoin
-        ? event.params.amount1Out
-        : event.params.amount0Out;
+  const stableSize = direction === 'LONG' ? event.params.amount0In : event.params.amount0Out;
+  const debtTokenSize = direction === 'SHORT' ? event.params.amount1In : event.params.amount1Out;
 
-  const swapFee =
-    token0 == stableCoin
-      ? direction === 'LONG'
-        ? event.params.amount0InFee
-        : event.params.amount1InFee
-      : direction === 'LONG'
-        ? event.params.amount1InFee
-        : event.params.amount0InFee;
+  const swapFee = direction === 'LONG' ? event.params.amount0InFee : event.params.amount1InFee;
 
   handleCreateSwapEvent(event, nonStableCoin, event.params.to, direction, debtTokenSize, stableSize, swapFee);
 
-  handleUpdateTokenCandle_volume(event, event.address, token0 == stableCoin ? 1 : 0, nonStableCoin, stableSize);
+  handleUpdateTokenCandle_volume(event, event.address, nonStableCoin, stableSize);
 
   let feeUSD = BigInt.fromI32(0);
   if (direction === 'LONG') {
@@ -116,19 +88,12 @@ export function handleSync(event: SyncEvent): void {
   const token1 = swapPairContract.token1();
   const systemInfo = SystemInfo.load(`SystemInfo`)!;
   const stableCoin = Address.fromBytes(systemInfo.stableCoin); // This is of type Bytes, so I convert it to Address
-  const nonStableCoin = token0 == stableCoin ? token1 : token0;
 
   // Because Reserves change
-  handleUpdateLiquidity_totalAmount(
-    event,
-    stableCoin,
-    nonStableCoin,
-    token0 == stableCoin ? event.params.reserve0 : event.params.reserve1,
-    token0 == stableCoin ? event.params.reserve1 : event.params.reserve0,
-  );
-  handleUpdatePool_liquidityDepositAPY(event, stableCoin, nonStableCoin);
+  handleUpdateLiquidity_totalAmount(event, stableCoin, token1, event.params.reserve0, event.params.reserve1);
+  handleUpdatePool_liquidityDepositAPY(event, stableCoin, token1);
 
-  handleUpdateTokenCandle_low_high(event, event.address, token0 == stableCoin ? 0 : 1, nonStableCoin);
+  handleUpdateTokenCandle_low_high(event, event.address, token1);
 }
 
 export function handleTransfer(event: TransferEvent): void {

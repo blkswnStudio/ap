@@ -73,7 +73,6 @@ function CollateralTable() {
         .filter(({ troveLockedAmount, walletAmount }) => walletAmount! > 0 || troveLockedAmount! > 0)
         .map((token) => ({
           ...token,
-          chartColor: colorPalette.shift() as string,
           troveValueUSD: token.troveLockedAmount
             ? roundNumber(
                 dangerouslyConvertBigIntToNumber(
@@ -84,7 +83,12 @@ function CollateralTable() {
               )
             : 0,
         }))
-        .sort((a, b) => b.troveValueUSD - a.troveValueUSD) ?? []
+        .sort((a, b) => b.troveValueUSD - a.troveValueUSD)
+        // need to assign the color after sorting
+        .map((token) => ({
+          ...token,
+          chartColor: colorPalette.shift() as string,
+        })) ?? []
     );
   }, [data]);
 

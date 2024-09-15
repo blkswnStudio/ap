@@ -1,7 +1,7 @@
 import { SignerWithAddress } from '@nomicfoundation/hardhat-ethers/signers';
 import { expect } from 'chai';
 import { ethers } from 'hardhat';
-import { MockDebtToken, MockERC20, StabilityPoolManager, StoragePool, TroveManager } from '../typechain';
+import { MockDebtToken, MockERC20, MockTroveManager, StabilityPoolManager, StoragePool } from '../typechain';
 import { buildPriceCache, deployTesting } from '../utils/testHelper';
 import { Contracts } from '../utils/deployTestBase';
 
@@ -10,7 +10,7 @@ describe('Access Control: Apollon functions with the caller restricted to Apollo
   let bob: SignerWithAddress;
 
   let contracts: Contracts;
-  let troveManager: TroveManager;
+  let troveManager: MockTroveManager;
   let storagePool: StoragePool;
   let stabilityPoolManager: StabilityPoolManager;
   let BTC: MockERC20;

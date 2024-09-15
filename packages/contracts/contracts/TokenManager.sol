@@ -36,6 +36,7 @@ contract TokenManager is LiquityBase, Ownable(msg.sender), CheckContract, IToken
   address public govPayoutAddress;
 
   bool public override enableMinting = true; // Is token minting enabled or frozen
+  mapping(address => bool) public override disableDebtMinting;
 
   // --- Dependency setter ---
 
@@ -112,6 +113,11 @@ contract TokenManager is LiquityBase, Ownable(msg.sender), CheckContract, IToken
     emit SetEnableMinting(enableMinting);
   }
 
+  function setDisableDebtMinting(address _token, bool _disable) external onlyOwner {
+    disableDebtMinting[_token] = _disable;
+    emit SetDisableDebtMinting(_token, _disable);
+  }
+
   function setSymbolAndName(address _debtTokenAddress, string memory _symbol, string memory _name) external onlyOwner {
     this.getDebtToken(_debtTokenAddress).setSymbolAndName(_symbol, _name);
   }
@@ -128,7 +134,15 @@ contract TokenManager is LiquityBase, Ownable(msg.sender), CheckContract, IToken
     return this.getDebtToken(_debtTokenAddress).setStockExchange(_exchangeForStock, _exchangeRate);
   }
 
-  function addDebtToken(address _debtTokenAddress, bytes32 _oracleId) external override onlyOwner {
+  function setOracleId(address _token, bytes32 _oracleId) external onlyOwner {
+    priceFeed.initiateNewOracleId(_token, _oracleId);
+  }
+
+  function addDebtTokenWithoutOracleId(address _debtTokenAddress) external onlyOwner {
+    addDebtToken(_debtTokenAddress, 0);
+  }
+
+  function addDebtToken(address _debtTokenAddress, bytes32 _oracleId) public override onlyOwner {
     checkContract(_debtTokenAddress);
 
     IDebtToken debtToken = IDebtToken(_debtTokenAddress);
@@ -150,12 +164,20 @@ contract TokenManager is LiquityBase, Ownable(msg.sender), CheckContract, IToken
     emit DebtTokenAdded(_debtTokenAddress, _oracleId);
   }
 
+  function addCollTokenWithoutOracleId(
+    address _tokenAddress,
+    uint _supportedCollateralRatio,
+    bool _isGovToken
+  ) external onlyOwner {
+    addCollToken(_tokenAddress, _supportedCollateralRatio, 0, _isGovToken);
+  }
+
   function addCollToken(
     address _tokenAddress,
     uint _supportedCollateralRatio,
     bytes32 _oracleId,
     bool _isGovToken
-  ) external override onlyOwner {
+  ) public override onlyOwner {
     if (_supportedCollateralRatio < MCR) revert SupportedRatioUnderMCR();
     if (_isGovToken && govTokenAddress != address(0)) revert GovTokenAlreadyDefined();
 

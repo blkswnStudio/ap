@@ -78,6 +78,7 @@ const buildTheme = (mode: PaletteOptions['mode']) =>
       },
       h6: {
         //styleName: Title/Title 1;
+        color: mode === 'dark' ? DARK_PRIMARY_TEXT : LIGHT_PRIMARY_TEXT,
         fontFamily: 'Space Grotesk Variable',
         fontSize: '19.5px',
         fontWeight: '700',

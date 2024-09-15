@@ -1,0 +1,86 @@
+[
+    {
+        "inputs": [
+            {
+                "internalType": "bytes32",
+                "name": "_poolId",
+                "type": "bytes32"
+            }
+        ],
+        "name": "getPoolTokens",
+        "outputs": [
+            {
+                "internalType": "address[]",
+                "name": "tokens",
+                "type": "address[]"
+            },
+            {
+                "internalType": "uint256[]",
+                "name": "balances",
+                "type": "uint256[]"
+            },
+            {
+                "internalType": "uint256",
+                "name": "lastChangeBlock",
+                "type": "uint256"
+            }
+        ],
+        "stateMutability": "view",
+        "type": "function"
+    },
+    {
+        "inputs": [
+            {
+                "internalType": "bytes32",
+                "name": "_poolId",
+                "type": "bytes32"
+            },
+            {
+                "internalType": "address[]",
+                "name": "_tokens",
+                "type": "address[]"
+            }
+        ],
+        "name": "initPool",
+        "outputs": [],
+        "stateMutability": "nonpayable",
+        "type": "function"
+    },
+    {
+        "inputs": [
+            {
+                "internalType": "bytes32",
+                "name": "_poolId",
+                "type": "bytes32"
+            },
+            {
+                "internalType": "uint256[]",
+                "name": "_balances",
+                "type": "uint256[]"
+            }
+        ],
+        "name": "mockBalances",
+        "outputs": [],
+        "stateMutability": "nonpayable",
+        "type": "function"
+    },
+    {
+        "inputs": [
+            {
+                "internalType": "bytes32",
+                "name": "",
+                "type": "bytes32"
+            }
+        ],
+        "name": "poolInfo",
+        "outputs": [
+            {
+                "internalType": "uint256",
+                "name": "lastChange",
+                "type": "uint256"
+            }
+        ],
+        "stateMutability": "view",
+        "type": "function"
+    }
+]

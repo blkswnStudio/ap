@@ -10,6 +10,7 @@ interface ITokenManager is IBase {
   // --- Events ---
 
   event SetEnableMinting(bool enable);
+  event SetDisableDebtMinting(address indexed token, bool disable);
   event TokenManagerInitialized(
     address _stabilityPoolManagerAddress,
     address _stakingOperations,
@@ -35,6 +36,8 @@ interface ITokenManager is IBase {
   function govPayoutAddress() external view returns (address);
 
   function enableMinting() external view returns (bool);
+
+  function disableDebtMinting(address _debtToken) external view returns (bool);
 
   function getStableCoin() external view returns (IDebtToken);
 

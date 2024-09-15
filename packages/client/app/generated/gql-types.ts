@@ -93,6 +93,8 @@ export type Pool = {
   id: Scalars['ID']['output'];
   liquidity: Array<PoolLiquidity>;
   liquidityDepositAPY: Scalars['BigInt']['output'];
+  pendingRewards: Scalars['bigint']['output'];
+  stakingPool?: Maybe<StakingPool>;
   swapFee: Scalars['bigint']['output'];
   totalSupply: Scalars['BigInt']['output'];
   volume30dUSD: PoolVolume30d;
@@ -235,6 +237,31 @@ export type StabilityDepositApy = {
   volume: Scalars['BigInt']['output'];
 };
 
+export type Staking = {
+  __typename: 'Staking';
+  id: Scalars['String']['output'];
+  pools: Array<StakingPool>;
+  rewardsPerSecond: Scalars['BigInt']['output'];
+  rewardsPerYearUSD: Scalars['BigInt']['output'];
+  totalAllocPoints: Scalars['BigInt']['output'];
+};
+
+
+export type StakingPoolsArgs = {
+  first?: InputMaybe<Scalars['Int']['input']>;
+};
+
+export type StakingPool = {
+  __typename: 'StakingPool';
+  allocPoints: Scalars['BigInt']['output'];
+  id: Scalars['Bytes']['output'];
+  liquidityPool: Pool;
+  stakingAPR: Scalars['BigInt']['output'];
+  totalDeposit: Scalars['BigInt']['output'];
+  totalDepositUSD: Scalars['BigInt']['output'];
+  totalRewardUSD: Scalars['BigInt']['output'];
+};
+
 export type SwapEvent = {
   __typename: 'SwapEvent';
   borrower: Scalars['Bytes']['output'];
@@ -289,10 +316,14 @@ export type TokenCandle = {
   __typename: 'TokenCandle';
   candleSize: Scalars['Int']['output'];
   close: Scalars['BigInt']['output'];
+  closeOracle: Scalars['BigInt']['output'];
   high: Scalars['BigInt']['output'];
-  id: Scalars['Bytes']['output'];
+  highOracle: Scalars['BigInt']['output'];
+  id: Scalars['String']['output'];
   low: Scalars['BigInt']['output'];
+  lowOracle: Scalars['BigInt']['output'];
   open: Scalars['BigInt']['output'];
+  openOracle: Scalars['BigInt']['output'];
   timestamp: Scalars['BigInt']['output'];
   token: Token;
   volume: Scalars['BigInt']['output'];
@@ -302,12 +333,16 @@ export type TokenCandleSingleton = {
   __typename: 'TokenCandleSingleton';
   candleSize: Scalars['Int']['output'];
   close: Scalars['BigInt']['output'];
+  closeOracle: Scalars['BigInt']['output'];
   high: Scalars['BigInt']['output'];
-  id: Scalars['ID']['output'];
+  highOracle: Scalars['BigInt']['output'];
+  id: Scalars['String']['output'];
   low: Scalars['BigInt']['output'];
+  lowOracle: Scalars['BigInt']['output'];
   open: Scalars['BigInt']['output'];
+  openOracle: Scalars['BigInt']['output'];
   timestamp: Scalars['BigInt']['output'];
-  token: Scalars['Bytes']['output'];
+  token: Token;
   volume: Scalars['BigInt']['output'];
 };
 
@@ -421,6 +456,13 @@ export type GetBorrowerDebtTokensQueryVariables = Exact<{
 
 export type GetBorrowerDebtTokensQuery = { __typename: 'Query', debtTokenMetas: Array<{ __typename: 'DebtTokenMeta', id: string, troveMintedAmount: bigint, walletAmount: bigint, providedStability: bigint, compoundedDeposit: bigint, troveRepableDebtAmount: bigint, troveDebtAmount: bigint, totalDepositedStability: string, totalSupplyUSD: string, stabilityDepositAPY: { __typename: 'StabilityDepositAPY', id: string, profit: string, volume: string }, totalSupplyUSD30dAverage: { __typename: 'TotalSupplyAverage', id: string, value: string }, token: { __typename: 'Token', id: string, address: string, symbol: string, isPoolToken: boolean, borrowingRate: bigint, priceUSDOracle: bigint, decimals: number } }> };
 
+export type GetBorrowerLiquidityPoolsQueryVariables = Exact<{
+  borrower?: InputMaybe<Scalars['String']['input']>;
+}>;
+
+
+export type GetBorrowerLiquidityPoolsQuery = { __typename: 'Query', pools: Array<{ __typename: 'Pool', id: string, address: string, liquidityDepositAPY: string, totalSupply: string, borrowerAmount: bigint, pendingRewards: bigint, liquidity: Array<{ __typename: 'PoolLiquidity', id: string, totalAmount: string, token: { __typename: 'Token', id: string, address: string, symbol: string, priceUSDOracle: bigint, decimals: number } }>, volume30dUSD: { __typename: 'PoolVolume30d', value: string }, volume30dUSD30dAgo: { __typename: 'PoolVolume30d', value: string }, stakingPool?: { __typename: 'StakingPool', id: string, stakingAPR: string } | null }> };
+
 export type GetBorrowerSwapEventsQueryVariables = Exact<{
   where: SwapEvent_Filter;
   first?: InputMaybe<Scalars['Int']['input']>;
@@ -429,13 +471,6 @@ export type GetBorrowerSwapEventsQueryVariables = Exact<{
 
 
 export type GetBorrowerSwapEventsQuery = { __typename: 'Query', swapEvents: Array<{ __typename: 'SwapEvent', id: string, timestamp: string, direction: LongShortDirection, size: string, totalPriceInStable: string, swapFee: string, token: { __typename: 'Token', id: string, address: string, symbol: string, priceUSDOracle: bigint, decimals: number } }> };
-
-export type GetBorrowerLiquidityPoolsQueryVariables = Exact<{
-  borrower?: InputMaybe<Scalars['String']['input']>;
-}>;
-
-
-export type GetBorrowerLiquidityPoolsQuery = { __typename: 'Query', pools: Array<{ __typename: 'Pool', id: string, address: string, liquidityDepositAPY: string, totalSupply: string, borrowerAmount: bigint, liquidity: Array<{ __typename: 'PoolLiquidity', id: string, totalAmount: string, token: { __typename: 'Token', id: string, address: string, symbol: string, priceUSDOracle: bigint, decimals: number } }>, volume30dUSD: { __typename: 'PoolVolume30d', value: string }, volume30dUSD30dAgo: { __typename: 'PoolVolume30d', value: string } }> };
 
 export type GetBorrowerCollateralTokensQueryVariables = Exact<{
   borrower: Scalars['String']['input'];
@@ -474,14 +509,14 @@ export type GetTradingViewCandlesQueryVariables = Exact<{
 }>;
 
 
-export type GetTradingViewCandlesQuery = { __typename: 'Query', tokenCandles: Array<{ __typename: 'TokenCandle', id: string, timestamp: string, open: string, high: string, low: string, close: string, volume: string }> };
+export type GetTradingViewCandlesQuery = { __typename: 'Query', tokenCandles: Array<{ __typename: 'TokenCandle', id: string, timestamp: string, open: string, openOracle: string, high: string, highOracle: string, low: string, lowOracle: string, close: string, closeOracle: string, volume: string }> };
 
 export type GetTradingViewLatestCandleQueryVariables = Exact<{
   id: Scalars['ID']['input'];
 }>;
 
 
-export type GetTradingViewLatestCandleQuery = { __typename: 'Query', tokenCandleSingleton: { __typename: 'TokenCandleSingleton', id: string, timestamp: string, open: string, high: string, low: string, close: string, volume: string } };
+export type GetTradingViewLatestCandleQuery = { __typename: 'Query', tokenCandleSingleton: { __typename: 'TokenCandleSingleton', id: string, timestamp: string, open: string, openOracle: string, high: string, highOracle: string, low: string, lowOracle: string, close: string, closeOracle: string, volume: string } };
 
 export type GetPastTokenPricesQueryVariables = Exact<{ [key: string]: never; }>;
 

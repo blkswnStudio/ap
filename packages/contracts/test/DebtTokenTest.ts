@@ -1,9 +1,9 @@
 import { ethers } from 'hardhat';
-import { MockDebtToken, TroveManager, MockBorrowerOperations, MockStabilityPoolManager } from '../typechain';
+import { MockDebtToken, MockBorrowerOperations, MockStabilityPoolManager, MockTroveManager } from '../typechain';
 import { SignerWithAddress } from '@nomicfoundation/hardhat-ethers/signers';
 import { assertRevert, deployTesting } from '../utils/testHelper';
 import { assert, expect } from 'chai';
-import { AbiCoder, Signature, keccak256, solidityPacked, toUtf8Bytes } from 'ethers';
+import { AbiCoder, Signature, keccak256, toUtf8Bytes } from 'ethers';
 
 const PERMIT_TYPEHASH = keccak256(
   toUtf8Bytes('Permit(address owner,address spender,uint256 value,uint256 nonce,uint256 deadline)')
@@ -18,7 +18,7 @@ describe('DebtToken', () => {
   let STABLE: MockDebtToken;
   let STOCK: MockDebtToken;
 
-  let troveManager: TroveManager;
+  let troveManager: MockTroveManager;
   let borrowerOperations: MockBorrowerOperations;
   let stabilityPoolManager: MockStabilityPoolManager;
 
@@ -53,9 +53,10 @@ describe('DebtToken', () => {
     );
   };
 
-  const getPermitDigest = (
+  const signPermit = async (
+    signer: SignerWithAddress,
     name: string,
-    address: string,
+    contractAddress: string,
     chainId: bigint,
     version: string,
     owner: string,
@@ -64,23 +65,29 @@ describe('DebtToken', () => {
     nonce: bigint,
     deadline: bigint | number
   ) => {
-    const abiCoder = AbiCoder.defaultAbiCoder();
-    const DOMAIN_SEPARATOR = getDomainSeparator(name, address, chainId, version);
-
-    return keccak256(
-      solidityPacked(
-        ['bytes2', 'bytes32', 'bytes32'],
-        [
-          '0x1901',
-          DOMAIN_SEPARATOR,
-          keccak256(
-            abiCoder.encode(
-              ['bytes32', 'address', 'address', 'uint256', 'uint256', 'uint256'],
-              [PERMIT_TYPEHASH, owner, spender, value, nonce, deadline]
-            )
-          ),
-        ]
-      )
+    return await signer.signTypedData(
+      {
+        name: name,
+        version: version,
+        chainId: chainId,
+        verifyingContract: contractAddress,
+      },
+      {
+        Permit: [
+          { name: 'owner', type: 'address' },
+          { name: 'spender', type: 'address' },
+          { name: 'value', type: 'uint256' },
+          { name: 'nonce', type: 'uint256' },
+          { name: 'deadline', type: 'uint256' },
+        ],
+      },
+      {
+        owner,
+        spender,
+        value,
+        nonce,
+        deadline,
+      }
     );
   };
 
@@ -425,7 +432,8 @@ describe('DebtToken', () => {
       const deadline = 100000000000000;
       const value = 1n;
 
-      const digest = getPermitDigest(
+      const signature = await signPermit(
+        alice,
         tokenName,
         STABLE.target.toString(),
         chainId,
@@ -436,11 +444,9 @@ describe('DebtToken', () => {
         nonce,
         deadline
       );
-
-      const signature = await alice.signMessage(ethers.toBeArray(digest));
       const { v, r, s } = Signature.from(signature);
 
-      await STABLE.permit(alice, bob, value, deadline, v, r, s);
+      await STABLE.connect(alice).permit(alice, bob, value, deadline, v, r, s);
 
       const allowance = await STABLE.allowance(alice, bob);
       assert.equal(allowance, value);
@@ -454,7 +460,8 @@ describe('DebtToken', () => {
       const deadline = 100000000000000;
       const value = 1n;
 
-      const digest = getPermitDigest(
+      const signature = await signPermit(
+        alice,
         tokenName,
         STABLE.target.toString(),
         chainId,
@@ -465,8 +472,6 @@ describe('DebtToken', () => {
         nonce,
         deadline
       );
-
-      const signature = await alice.signMessage(ethers.toBeArray(digest));
       const { v, r, s } = Signature.from(signature);
 
       const tx = STABLE.permit(alice, bob, value, deadline, v, r, s);
@@ -483,7 +488,8 @@ describe('DebtToken', () => {
       const deadline = 1698383579;
       const value = 1n;
 
-      const digest = getPermitDigest(
+      const signature = await signPermit(
+        alice,
         tokenName,
         STABLE.target.toString(),
         chainId,
@@ -494,8 +500,6 @@ describe('DebtToken', () => {
         nonce,
         deadline
       );
-
-      const signature = await alice.signMessage(ethers.toBeArray(digest));
       const { v, r, s } = Signature.from(signature);
 
       const tx = STABLE.permit(alice, bob, value, deadline, v, r, s);

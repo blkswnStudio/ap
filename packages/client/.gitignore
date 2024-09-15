@@ -28,6 +28,8 @@ yarn-error.log*
 # FIXME: TO START THE DEV SERVER PUBLICLY THIS IS COMMENTED OUT.
 # FIXME: SET THE ENV ON THE PROJECT INSTEAD.
 # .env*.local
+.env.development
+.env.production
 
 # vercel
 .vercel

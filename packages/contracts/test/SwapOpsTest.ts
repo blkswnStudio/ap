@@ -4,12 +4,12 @@ import {
   MockBorrowerOperations,
   MockDebtToken,
   MockERC20,
-  TroveManager,
   SwapPair,
   SwapOperations,
   TokenManager,
   MockPyth,
   StakingOperations,
+  MockTroveManager,
 } from '../typechain';
 import { expect } from 'chai';
 import { openTrove, getLatestBlockTimestamp, setPrice, deployTesting, createPoolPair } from '../utils/testHelper';
@@ -19,7 +19,6 @@ import { OracleUpdateDataAndFee, generatePriceUpdateData, generatePriceUpdateDat
 
 describe('SwapOperations', () => {
   let signers: SignerWithAddress[];
-  let owner: SignerWithAddress;
   let alice: SignerWithAddress;
   let bob: SignerWithAddress;
 
@@ -29,7 +28,7 @@ describe('SwapOperations', () => {
   let ETH: MockERC20;
 
   let contracts: Contracts;
-  let troveManager: TroveManager;
+  let troveManager: MockTroveManager;
   let borrowerOperations: MockBorrowerOperations;
   let swapOperations: SwapOperations;
   let tokenManager: TokenManager;
@@ -75,7 +74,9 @@ describe('SwapOperations', () => {
     //add liquidty to pair
     await swapOperations
       .connect(user)
-      .addLiquidity(STABLE, tokenB, amountA, amountB, 0, 0, await priceUpdateAndMintMeta(), await deadline());
+      .addLiquidity(STABLE, tokenB, amountA, amountB, 0, 0, await priceUpdateAndMintMeta(), await deadline(), {
+        value: oracleData.fee,
+      });
 
     //get pair
     const pairAddress = await swapOperations.getPair(STABLE, tokenB);
@@ -121,7 +122,7 @@ describe('SwapOperations', () => {
 
   before(async () => {
     signers = await ethers.getSigners();
-    [owner, alice, bob] = signers;
+    [, alice, bob] = signers;
   });
 
   beforeEach(async () => {
@@ -161,7 +162,8 @@ describe('SwapOperations', () => {
         0,
         0,
         await priceUpdateAndMintMeta(),
-        await deadline()
+        await deadline(),
+        { value: oracleData.fee }
       );
   });
 
@@ -175,7 +177,6 @@ describe('SwapOperations', () => {
           alice.getAddress(),
           [tokenAmount(STABLE, parseUnits('100'))],
           await mintMeta(),
-          oracleData.data,
           { value: oracleData.fee }
         )
     ).to.be.revertedWithCustomError(borrowerOperations, 'NotFromSwapOps');
@@ -658,8 +659,8 @@ describe('SwapOperations', () => {
       await add(alice, STOCK, parseUnits('150'), parseUnits('1'), true, true);
       const swapAmounts = await contracts.swapOperations.getAmountsOut(parseUnits('1'), [STABLE, STOCK]);
       expect(swapAmounts[0][0]).to.be.equal(parseUnits('1'));
-      expect(swapAmounts[0][1]).to.be.equal(1e18 * 0.003);
-      expect(swapAmounts[1][0]).to.be.equal(6602780187685848n);
+      expect(swapAmounts[0][1]).to.be.equal(1e18 * 0.0031);
+      expect(swapAmounts[1][0]).to.be.equal(6602122295225928n);
       expect(swapAmounts[1][1]).to.be.equal(0);
     });
 
@@ -667,16 +668,16 @@ describe('SwapOperations', () => {
       await add(alice, STOCK, parseUnits('150'), parseUnits('1'), true, true);
       const swapAmounts = await contracts.swapOperations.getAmountsOut(parseUnits('0.01'), [STOCK, STABLE]);
       expect(swapAmounts[0][0]).to.be.equal(parseUnits('0.01'));
-      expect(swapAmounts[0][1]).to.be.equal(0.01e18 * 0.003);
-      expect(swapAmounts[1][0]).to.be.equal(1480737051595591948n);
+      expect(swapAmounts[0][1]).to.be.equal(0.01e18 * 0.0031);
+      expect(swapAmounts[1][0]).to.be.equal(1480589998306878725n);
       expect(swapAmounts[1][1]).to.be.equal(0);
     });
 
     it('getAmountsIn, STABLE-STOCK', async () => {
       await add(alice, STOCK, parseUnits('150'), parseUnits('1'), true, true);
       const swapAmounts = await contracts.swapOperations.getAmountsIn(parseUnits('0.01'), [STABLE, STOCK]);
-      expect(swapAmounts[0][0]).to.be.equal(1519696969696969697n);
-      expect(swapAmounts[0][1]).to.be.equal(4545454545454545n);
+      expect(swapAmounts[0][0]).to.be.equal(1519848484848484848n);
+      expect(swapAmounts[0][1]).to.be.equal(4696969696969696n);
       expect(swapAmounts[1][0]).to.be.equal(parseUnits('0.01'));
       expect(swapAmounts[1][1]).to.be.equal(0);
     });
@@ -684,8 +685,8 @@ describe('SwapOperations', () => {
     it('getAmountsIn, STOCK-STABLE', async () => {
       await add(alice, STOCK, parseUnits('150'), parseUnits('1'), true, true);
       const swapAmounts = await contracts.swapOperations.getAmountsIn(parseUnits('1'), [STOCK, STABLE]);
-      expect(swapAmounts[0][0]).to.be.equal(6731543624161074n);
-      expect(swapAmounts[0][1]).to.be.equal(20134228187919n);
+      expect(swapAmounts[0][0]).to.be.equal(6732214765100671n);
+      expect(swapAmounts[0][1]).to.be.equal(20805369127516n);
       expect(swapAmounts[1][0]).to.be.equal(parseUnits('1'));
       expect(swapAmounts[1][1]).to.be.equal(0);
     });

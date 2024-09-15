@@ -21,6 +21,7 @@ import FeatureBox from '../../../FeatureBox/FeatureBox';
 import DirectionIcon from '../../../Icons/DirectionIcon';
 import Label from '../../../Label/Label';
 import HeaderCell from '../../../Table/HeaderCell';
+import MintStableDialog from '../../Debt/MintStableDialog';
 import RedemptionDialog from '../../Debt/RedemptionDialog';
 import RepayDebtDialog from '../../Debt/RepayDebtDialog';
 import DebtTokenTableLoader from './DebtTokenTableLoader';
@@ -66,7 +67,7 @@ function DebtTokenTable() {
                 title="Rewards"
                 cellProps={{ align: 'right' }}
                 tooltipProps={{
-                  title: 'APY based on the last 30 days liquidations.',
+                  title: 'APR based on the last 30 days liquidations.',
                   arrow: true,
                   placement: 'bottom',
                 }}
@@ -108,40 +109,19 @@ function DebtTokenTable() {
                   index,
                 ) => (
                   <TableRow hover key={token.address}>
-                    <TableCell
-                      align="right"
-                      sx={{ borderBottom: index === data.debtTokenMetas.length - 1 ? 'none' : '' }}
-                    >
-                      {roundCurrency(walletAmount, 5, 5)}
-                    </TableCell>
+                    <TableCell align="right">{roundCurrency(walletAmount, 5, 5)}</TableCell>
+                    <TableCell align="right">{roundCurrency(troveDebtAmount, 5, 5)}</TableCell>
                     <TableCell
                       align="right"
                       sx={{
-                        borderBottom: index === data.debtTokenMetas.length - 1 ? 'none' : '',
-                      }}
-                    >
-                      {roundCurrency(troveDebtAmount, 5, 5)}
-                    </TableCell>
-                    <TableCell
-                      align="right"
-                      sx={{
-                        borderBottom: index === data.debtTokenMetas.length - 1 ? 'none' : '',
                         borderRight: '1px solid',
                         borderColor: 'table.border',
                       }}
                     >
                       <Label variant="none">{token.symbol}</Label>
                     </TableCell>
-                    <TableCell
-                      align="right"
-                      sx={{ borderBottom: index === data.debtTokenMetas.length - 1 ? 'none' : '', pr: 0 }}
-                    >
-                      {stdFormatter.format(totalSupplyUSD)}
-                    </TableCell>
-                    <TableCell
-                      width={125}
-                      sx={{ borderBottom: index === data.debtTokenMetas.length - 1 ? 'none' : '' }}
-                    >
+                    <TableCell align="right">{stdFormatter.format(totalSupplyUSD)}</TableCell>
+                    <TableCell width={125}>
                       <div
                         style={{
                           display: 'flex',
@@ -168,20 +148,8 @@ function DebtTokenTable() {
                         />
                       </div>
                     </TableCell>
-                    <TableCell
-                      align="right"
-                      sx={{ borderBottom: index === data.debtTokenMetas.length - 1 ? 'none' : '' }}
-                    >
-                      {roundCurrency(totalDepositedStability)}
-                    </TableCell>
-                    <TableCell
-                      align="right"
-                      sx={{
-                        borderBottom: index === data.debtTokenMetas.length - 1 ? 'none' : '',
-                      }}
-                    >
-                      {displayPercentage(stabilityDepositAPY.value)}
-                    </TableCell>
+                    <TableCell align="right">{roundCurrency(totalDepositedStability)}</TableCell>
+                    <TableCell align="right">{displayPercentage(stabilityDepositAPY.value)}</TableCell>
                   </TableRow>
                 ),
               )}
@@ -193,7 +161,13 @@ function DebtTokenTable() {
               >
                 <RepayDebtDialog buttonVariant="text" buttonSx={{ p: '6px 8px', width: '100%' }} />
               </TableCell>
-              <TableCell style={{ borderBottom: 'none', padding: '2px' }} colSpan={4} align="center">
+              <TableCell
+                colSpan={2}
+                sx={{ borderBottom: 'none', borderRight: '1px solid', borderColor: 'table.border', padding: '2px' }}
+              >
+                <MintStableDialog buttonVariant="text" buttonSx={{ p: '6px 8px', width: '100%' }} />
+              </TableCell>
+              <TableCell style={{ borderBottom: 'none', padding: '2px' }} colSpan={2} align="center">
                 <RedemptionDialog buttonVariant="text" buttonSx={{ p: '6px 8px', width: '100%' }} />
               </TableCell>
             </TableRow>

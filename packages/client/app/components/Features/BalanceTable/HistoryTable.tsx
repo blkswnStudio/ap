@@ -135,12 +135,12 @@ function HistoryTable() {
                 <TableCell align="right">
                   {direction === LongShortDirection.Long
                     ? `${roundCurrency(
-                        dangerouslyConvertBigIntToNumber(BigInt(swapFee) * BigInt(totalPriceInStable), 18 + 18 - 6, 6),
+                        dangerouslyConvertBigIntToNumber(BigInt(swapFee), 9, 9),
                         5,
                         5,
                       )} ${JUSDToken?.symbol ?? ''}`
                     : `${roundCurrency(
-                        dangerouslyConvertBigIntToNumber(BigInt(swapFee) * BigInt(size), 18 + 18 - 6, 6),
+                        dangerouslyConvertBigIntToNumber(BigInt(swapFee), token.decimals - 6, 6),
                         5,
                         5,
                       )} ${token.symbol}`}
@@ -148,6 +148,14 @@ function HistoryTable() {
               </TableRow>
             );
           })}
+
+          {data.swapEvents.length === 0 && (
+            <TableRow>
+              <TableCell colSpan={7} align="center">
+                No swaps made yet
+              </TableCell>
+            </TableRow>
+          )}
         </TableBody>
       </Table>
     </TableContainer>

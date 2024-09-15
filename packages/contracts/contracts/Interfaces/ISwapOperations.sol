@@ -7,6 +7,7 @@ import './IBBase.sol';
 interface ISwapOperations is IBBase {
   error Forbidden();
   error IdenticalAddresses();
+  error ReachedPoolLimit();
   error PairExists();
   error Expired();
   error PairDoesNotExist();
@@ -14,6 +15,8 @@ interface ISwapOperations is IBBase {
   error InsufficientBAmount();
   error InsufficientInputAmount();
   error InsufficientOutputAmount();
+  error InsufficientAmountADesired();
+  error InsufficientAmountBDesired();
   error ExcessiveInputAmount();
   error InsufficientLiquidity();
   error InsufficientAmount();

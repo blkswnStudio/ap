@@ -32,7 +32,9 @@ const ERC20_STOCK_1 = {
       fetch: async (troveManagerContract: TroveManager) => {
         SchemaDataFreshnessManager_ATC.ERC20[Contracts_ATC.ERC20.STOCK_1].borrowingRate.lastFetched = Date.now();
 
-        const borrowingRate = await troveManagerContract.getBorrowingRate(isStableCoinAddress(Contracts_ATC.ERC20.STOCK_1));
+        const borrowingRate = await troveManagerContract.getBorrowingRate(
+          isStableCoinAddress(Contracts_ATC.ERC20.STOCK_1),
+        );
 
         SchemaDataFreshnessManager_ATC.ERC20[Contracts_ATC.ERC20.STOCK_1].borrowingRate.value(borrowingRate);
       },
@@ -82,7 +84,8 @@ const ERC20_STOCK_1 = {
 
     stabilityGainedAmount: {
       fetch: async (fetchSource?: { stabilityPoolManagerContract: StabilityPoolManager; depositor: AddressLike }) => {
-        SchemaDataFreshnessManager_ATC.ERC20[Contracts_ATC.ERC20.STOCK_1].stabilityGainedAmount.lastFetched = Date.now();
+        SchemaDataFreshnessManager_ATC.ERC20[Contracts_ATC.ERC20.STOCK_1].stabilityGainedAmount.lastFetched =
+          Date.now();
 
         if (fetchSource) {
           await ContractDataFreshnessManager_ATC.StabilityPoolManager.getDepositorCollGains.fetch(

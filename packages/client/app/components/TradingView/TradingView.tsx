@@ -8,9 +8,11 @@ import { useSelectedToken } from '../../context/SelectedTokenProvider';
 import '../../external/charting_library/charting_library';
 import {
   DatafeedConfiguration,
+  EntityId,
   IChartingLibraryWidget,
   LibrarySymbolInfo,
   ResolutionString,
+  SearchSymbolResultItem,
 } from '../../external/charting_library/charting_library';
 import { UDFCompatibleDatafeed } from '../../external/datafeeds/udf/src/udf-compatible-datafeed';
 import {
@@ -25,9 +27,22 @@ import { GET_ALL_POOLS, GET_TRADING_VIEW_CANDLES, GET_TRADING_VIEW_LATEST_CANDLE
 import { bigIntStringToFloat } from '../../utils/math';
 import TradingViewHeader from './TradingViewHeader';
 
+// 1min, 10min, 1hour, 6hour, 1day, 1week
+// const CandleSizes = [1, 10, 60, 360, 1440, 10080];
+const resolutionMapper: Record<string, number> = {
+  '1': 1,
+  '10': 10,
+  '60': 60,
+  '360': 360,
+  '1D': 1440,
+  '1W': 10080,
+};
+
 // const devMode = process.env.NEXT_PUBLIC_API_MOCKING === 'enabled';
 const devMode = false;
-let priceUpdateIntervall: NodeJS.Timer;
+let priceUpdateIntervall: Record<string, NodeJS.Timer> = {};
+let latestListenerGuids: string[] = [];
+let tradingViewOracleStudies: EntityId[] = [];
 
 function TradingViewComponent() {
   const { Sentry } = useErrorMonitoring();
@@ -43,15 +58,71 @@ function TradingViewComponent() {
   const { data: pools } = useQuery<GetAllPoolsQuery, GetAllPoolsQueryVariables>(GET_ALL_POOLS);
 
   const getSelectedTokenFromQueryData = (symbol: string) => {
+    // Remove prefix "Oracle " if it exists
+    symbol = symbol.replace('Oracle ', '');
+
     return (
       pools?.pools.find((pool) => pool.liquidity[1].token.symbol === symbol)?.liquidity[1].token ??
       pools?.pools.find((pool) => pool.liquidity[0].token.symbol === symbol)?.liquidity[0].token
     );
   };
 
+  const getSymbolsFromQueryData = (search: string): SearchSymbolResultItem[] => {
+    const matches =
+      pools?.pools.filter(
+        ({ liquidity }) =>
+          liquidity[0].token.symbol.toLowerCase().includes(search) ||
+          liquidity[1].token.symbol.toLowerCase().includes(search),
+      ) ?? [];
+    return matches.map(({ liquidity }) => ({
+      full_name: liquidity[1].token.symbol,
+      symbol: liquidity[1].token.symbol,
+      description: '',
+      type: 'stock',
+      exchange: '',
+    }));
+  };
+
   useEffect(() => {
     if (currentChart.current && selectedToken && !devMode) {
-      currentChart.current.setSymbol(selectedToken.symbol, '1' as ResolutionString, () => {});
+      const castTimeout = () => {
+        // get current interval of chart
+        const interval = currentChart.current!.activeChart().resolution();
+        currentChart.current!.setSymbol(selectedToken.symbol, interval, () => {});
+        // Remove previous oracles
+        tradingViewOracleStudies.forEach((study) => {
+          currentChart.current!.activeChart().removeEntity(study, { disableUndo: true });
+          tradingViewOracleStudies.splice(tradingViewOracleStudies.indexOf(study), 1);
+        });
+        // Add oracle programmatically
+        currentChart
+          .current!.activeChart()
+          .createStudy('Compare', false, false, { source: 'open', symbol: `Oracle ${selectedToken.symbol}` })
+          .then((study) => {
+            tradingViewOracleStudies.push(study!);
+
+            // If only the respective oracle is displayed then show a absolute scala
+            const priceScale = currentChart.current!.activeChart().getPanes()[0].getRightPriceScales()[0];
+            if (
+              currentChart
+                .current!.activeChart()
+                .getAllStudies()
+                .filter((study) => study.name === 'Compare' || study.name === 'Overlay')
+                .every((studyId) => tradingViewOracleStudies.includes(studyId.id))
+            ) {
+              priceScale.setMode(0);
+            } else {
+              priceScale.setMode(2);
+            }
+          });
+      };
+
+      // Active chart is not available immediately, on initial load delay
+      if (currentChart.current!.activeChart()) {
+        castTimeout();
+      } else {
+        currentChart.current!.onChartReady(castTimeout);
+      }
     }
   }, [selectedToken]);
 
@@ -60,7 +131,7 @@ function TradingViewComponent() {
       // seems to fix this._iFrame.contentWindow; is undefined
       setTimeout(() => {
         // @ts-ignore
-        currentChart.current = new TradingView.widget({
+        const chart = new TradingView.widget({
           container: 'apollon-trading-view',
           locale: 'en',
           library_path: 'charting_library/',
@@ -72,62 +143,112 @@ function TradingViewComponent() {
                   console.log('Quotes', symbols);
                 },
                 searchSymbols(userInput, exchange, symbolType, onResult) {
-                  console.log('Search Symbols', userInput, exchange, symbolType);
+                  console.log('selectedToken INNER: ', selectedToken);
+                  onResult(getSymbolsFromQueryData(userInput.toLowerCase()));
                 },
-                subscribeBars(symbolInfo, resolution, onTick, listenerGuid, onResetCacheNeededCallback) {
+
+                subscribeBars(
+                  symbolInfo,
+                  resolution: ResolutionString,
+                  onTick,
+                  listenerGuid,
+                  onResetCacheNeededCallback,
+                ) {
                   const token = getSelectedTokenFromQueryData(symbolInfo.name)!;
                   apolloClient
                     .query<GetTradingViewLatestCandleQuery, GetTradingViewLatestCandleQueryVariables>({
                       query: GET_TRADING_VIEW_LATEST_CANDLE,
                       variables: {
-                        id: `TokenCandleSingleton-${token.address}-${resolution}`,
+                        id: `TokenCandleSingleton-${token.address}-${resolutionMapper[resolution]}`,
                       },
                       fetchPolicy: 'network-only',
                     })
                     .then(({ data }) => {
                       if (data.tokenCandleSingleton) {
                         const {
-                          tokenCandleSingleton: { close, high, low, open, timestamp, volume },
+                          tokenCandleSingleton: {
+                            close,
+                            high,
+                            low,
+                            open,
+                            timestamp,
+                            volume,
+                            closeOracle,
+                            highOracle,
+                            lowOracle,
+                            openOracle,
+                          },
                         } = data;
-                        onTick({
-                          time: Number(timestamp) * 1000,
-                          open: bigIntStringToFloat(open),
-                          high: bigIntStringToFloat(high),
-                          low: bigIntStringToFloat(low),
-                          close: bigIntStringToFloat(close),
-                          volume: bigIntStringToFloat(volume),
-                        });
+                        symbolInfo.name.startsWith('Oracle')
+                          ? onTick({
+                              time: Number(timestamp) * 1000,
+                              open: bigIntStringToFloat(openOracle),
+                              high: bigIntStringToFloat(highOracle),
+                              low: bigIntStringToFloat(lowOracle),
+                              close: bigIntStringToFloat(closeOracle),
+                              volume: bigIntStringToFloat(volume),
+                            })
+                          : onTick({
+                              time: Number(timestamp) * 1000,
+                              open: bigIntStringToFloat(open),
+                              high: bigIntStringToFloat(high),
+                              low: bigIntStringToFloat(low),
+                              close: bigIntStringToFloat(close),
+                              volume: bigIntStringToFloat(volume),
+                            });
                       }
                     });
 
-                  priceUpdateIntervall = setInterval(() => {
+                  latestListenerGuids.push(listenerGuid);
+                  priceUpdateIntervall[listenerGuid] = setInterval(() => {
                     apolloClient
                       .query<GetTradingViewLatestCandleQuery, GetTradingViewLatestCandleQueryVariables>({
                         query: GET_TRADING_VIEW_LATEST_CANDLE,
                         variables: {
-                          id: `TokenCandleSingleton-${token.address}-${resolution}`,
+                          id: `TokenCandleSingleton-${token.address}-${resolutionMapper[resolution]}`,
                         },
                         fetchPolicy: 'network-only',
                       })
                       .then(({ data }) => {
-                        if (data.tokenCandleSingleton) {
+                        if (data.tokenCandleSingleton && latestListenerGuids.includes(listenerGuid)) {
                           const {
-                            tokenCandleSingleton: { close, high, low, open, timestamp, volume },
+                            tokenCandleSingleton: {
+                              close,
+                              high,
+                              low,
+                              open,
+                              timestamp,
+                              volume,
+                              closeOracle,
+                              highOracle,
+                              lowOracle,
+                              openOracle,
+                            },
                           } = data;
-                          onTick({
-                            time: Number(timestamp) * 1000,
-                            open: bigIntStringToFloat(open),
-                            high: bigIntStringToFloat(high),
-                            low: bigIntStringToFloat(low),
-                            close: bigIntStringToFloat(close),
-                            volume: bigIntStringToFloat(volume),
-                          });
+                          symbolInfo.name.startsWith('Oracle')
+                            ? onTick({
+                                time: Number(timestamp) * 1000,
+                                open: bigIntStringToFloat(openOracle),
+                                high: bigIntStringToFloat(highOracle),
+                                low: bigIntStringToFloat(lowOracle),
+                                close: bigIntStringToFloat(closeOracle),
+                                volume: bigIntStringToFloat(volume),
+                              })
+                            : onTick({
+                                time: Number(timestamp) * 1000,
+                                open: bigIntStringToFloat(open),
+                                high: bigIntStringToFloat(high),
+                                low: bigIntStringToFloat(low),
+                                close: bigIntStringToFloat(close),
+                                volume: bigIntStringToFloat(volume),
+                              });
                         }
                       });
                   }, 5000);
                 },
                 unsubscribeBars(listenerGuid) {
-                  clearInterval(priceUpdateIntervall);
+                  latestListenerGuids.splice(latestListenerGuids.indexOf(listenerGuid), 1);
+                  clearInterval(priceUpdateIntervall[listenerGuid]);
                 },
                 subscribeQuotes(symbols, fastSymbols, onRealtimeCallback, listenerGUID) {
                   console.log('Subscribe Quotes', symbols, fastSymbols, listenerGUID);
@@ -149,9 +270,6 @@ function TradingViewComponent() {
                     callback(config);
                   }, 0);
                 },
-                // Not enabled yet
-                // searchSymbols()
-
                 resolveSymbol: async (symbol, onSymbolResolvedCallback, onResolveErrorCallback, extension) => {
                   setTimeout(() => {
                     try {
@@ -183,19 +301,7 @@ function TradingViewComponent() {
                 },
 
                 getBars(symbolInfo, resolution, periodParams, onHistoryCallback, onErrorCallback) {
-                  // 1min, 10min, 1hour, 6hour, 1day, 1week
-                  // const CandleSizes = [1, 10, 60, 360, 1440, 10080];
-                  const resolutionMapper = {
-                    '1': 1,
-                    '10': 10,
-                    '60': 60,
-                    '360': 360,
-                    '1D': 1440,
-                    '1W': 10080,
-                  };
-
                   const token = getSelectedTokenFromQueryData(symbolInfo.name)!;
-
                   client
                     .query<GetTradingViewCandlesQuery, GetTradingViewCandlesQueryVariables>({
                       query: GET_TRADING_VIEW_CANDLES,
@@ -212,14 +318,25 @@ function TradingViewComponent() {
                       },
                     })
                     .then((res) => {
-                      const bars = res.data.tokenCandles.map(({ close, high, low, open, timestamp, volume }) => ({
-                        close: bigIntStringToFloat(close),
-                        high: bigIntStringToFloat(high),
-                        low: bigIntStringToFloat(low),
-                        open: bigIntStringToFloat(open),
-                        time: Number(timestamp) * 1000,
-                        volume: bigIntStringToFloat(volume),
-                      }));
+                      const bars = symbolInfo.name.startsWith('Oracle')
+                        ? res.data.tokenCandles.map(
+                            ({ timestamp, closeOracle, highOracle, lowOracle, openOracle, volume }) => ({
+                              close: bigIntStringToFloat(closeOracle),
+                              high: bigIntStringToFloat(highOracle),
+                              low: bigIntStringToFloat(lowOracle),
+                              open: bigIntStringToFloat(openOracle),
+                              time: Number(timestamp) * 1000,
+                              volume: bigIntStringToFloat(volume),
+                            }),
+                          )
+                        : res.data.tokenCandles.map(({ timestamp, close, high, low, open, volume }) => ({
+                            close: bigIntStringToFloat(close),
+                            high: bigIntStringToFloat(high),
+                            low: bigIntStringToFloat(low),
+                            open: bigIntStringToFloat(open),
+                            time: Number(timestamp) * 1000,
+                            volume: bigIntStringToFloat(volume),
+                          }));
 
                       onHistoryCallback(bars, { noData: bars.length === 0 });
                     })
@@ -241,7 +358,7 @@ function TradingViewComponent() {
           debug: devMode,
           theme: isDarkMode ? 'dark' : 'light',
           // TODO: Maybe implement later for diffing
-          disabled_features: ['header_symbol_search', 'header_compare'],
+          disabled_features: ['header_symbol_search'],
 
           // Must set font and toolbar styles
           custom_css_url: '/charting_library/tradingview-custom.css',
@@ -267,6 +384,21 @@ function TradingViewComponent() {
             'linetoolorder.quantityFontFamily': 'Space Grotesk Variable',
             'linetoolposition.quantityFontFamily': 'Space Grotesk Variable',
           },
+        });
+
+        chart.onChartReady(() => {
+          currentChart.current = chart;
+
+          // Add oracle programmatically
+          currentChart
+            .current!.activeChart()
+            .createStudy('Compare', false, false, { source: 'open', symbol: `Oracle ${selectedToken.symbol}` })
+            .then((study) => {
+              tradingViewOracleStudies.push(study!);
+              // show a absolute scala
+              const priceScale = currentChart.current!.activeChart().getPanes()[0].getRightPriceScales()[0];
+              priceScale.setMode(0);
+            });
         });
       });
     }

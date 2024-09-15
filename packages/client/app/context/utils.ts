@@ -15,7 +15,7 @@ export const getActiveDataManger = (network: (typeof NETWORKS)[number]) => {
   }
 };
 
-export const evictCacheTimoutForObject = (
+export const evictCacheTimeoutForObject = (
   currentNetwork: (typeof NETWORKS)[number],
   path: string[],
   fields?: string[],

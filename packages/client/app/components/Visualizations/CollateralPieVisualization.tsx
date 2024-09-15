@@ -84,9 +84,6 @@ function CollateralPieVisualization({ borrowerCollateralTokens }: Props) {
           const normalizedTroveLockedAmount = token.troveLockedAmount * BigInt(10) ** BigInt(18 - token.token.decimals);
           acc.others.troveLockedAmount += normalizedTroveLockedAmount;
           acc.others.troveValueUSD += token.troveValueUSD;
-          if (acc.others.chartColor === '') {
-            acc.others.chartColor = token.chartColor;
-          }
         } else {
           acc.tokens.push(token);
         }
@@ -95,19 +92,25 @@ function CollateralPieVisualization({ borrowerCollateralTokens }: Props) {
       },
       {
         tokens: [] as typeof borrowerCollateralTokens,
-        others: { troveValueUSD: 0, troveLockedAmount: 0n, chartColor: '', token: { decimals: 18, symbol: 'Other' } },
+        others: {
+          troveValueUSD: 0,
+          troveLockedAmount: 0n,
+          chartColor: theme.palette.text.secondary,
+          token: { decimals: 18, symbol: 'Other' },
+        },
       },
     );
+
+  const data =
+    visualizationDataGrouped.others.troveValueUSD > 0
+      ? [...visualizationDataGrouped.tokens, visualizationDataGrouped.others]
+      : visualizationDataGrouped.tokens;
 
   return (
     <PieChart width={430} height={280} margin={{ top: 0, right: 0, bottom: 0, left: 0 }}>
       <Pie
         isAnimationActive={false}
-        data={
-          visualizationDataGrouped.others.troveValueUSD > 0
-            ? [...visualizationDataGrouped.tokens, visualizationDataGrouped.others]
-            : visualizationDataGrouped.tokens
-        }
+        data={data}
         dataKey="troveValueUSD"
         nameKey="token.symbol"
         innerRadius={90}
@@ -116,8 +119,8 @@ function CollateralPieVisualization({ borrowerCollateralTokens }: Props) {
         label={renderCustomizedLabel}
         labelLine={{ stroke: isDarkMode ? '#504D59' : '#939393', strokeWidth: 2 }}
       >
-        {borrowerCollateralTokens.map(({ token, chartColor }) => (
-          <Cell stroke="transparent" key={token.address} fill={chartColor} />
+        {data.map(({ token, chartColor }) => (
+          <Cell stroke="transparent" key={token.symbol} fill={chartColor as string} />
         ))}
       </Pie>
     </PieChart>

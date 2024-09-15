@@ -6,7 +6,8 @@ import Button from '@mui/material/Button';
 import Tab from '@mui/material/Tab';
 import Tabs from '@mui/material/Tabs';
 import Typography from '@mui/material/Typography';
-import { SyntheticEvent, useCallback, useEffect, useState } from 'react';
+import { parseUnits } from 'ethers';
+import { SyntheticEvent, useCallback, useEffect, useRef, useState } from 'react';
 import { FormProvider, useForm } from 'react-hook-form';
 import { isCollateralTokenAddress, isDebtTokenAddress, isStableCoinAddress } from '../../../../config';
 import { IBase } from '../../../../generated/types/TroveManager';
@@ -15,7 +16,7 @@ import { useEthers } from '../../../context/EthersProvider';
 import { usePriceFeedData } from '../../../context/PriceFeedDataProvider';
 import { useTransactionDialog } from '../../../context/TransactionDialogProvider';
 import { useUtilities } from '../../../context/UtilityProvider';
-import { evictCacheTimoutForObject } from '../../../context/utils';
+import { evictCacheTimeoutForObject } from '../../../context/utils';
 import {
   DebtTokenMeta,
   GetBorrowerCollateralTokensQuery,
@@ -29,8 +30,9 @@ import {
   GET_BORROWER_COLLATERAL_TOKENS,
   GET_BORROWER_DEBT_TOKENS,
   GET_BORROWER_LIQUIDITY_POOLS,
+  GET_SYSTEMINFO,
 } from '../../../queries';
-import { manualSubgraphSyncTimeout, standardDataPollInterval } from '../../../utils/contants';
+import { standardDataPollInterval } from '../../../utils/contants';
 import { getHints } from '../../../utils/crypto';
 import {
   bigIntStringToFloat,
@@ -45,12 +47,12 @@ import FeatureBox from '../../FeatureBox/FeatureBox';
 import NumberInput from '../../FormControls/NumberInput';
 import ForwardIcon from '../../Icons/ForwardIcon';
 import Label from '../../Label/Label';
-import CollateralRatioVisualization, { CRIT_RATIO } from '../../Visualizations/CollateralRatioVisualization';
+import CollateralRatioVisualization from '../../Visualizations/CollateralRatioVisualization';
 
 const SLIPPAGE = 0.02;
 
 type Props = {
-  selectedPoolId: string | null;
+  selectedPoolAddress: string | null;
 };
 
 type FieldValues = {
@@ -58,14 +60,13 @@ type FieldValues = {
   tokenBAmount: string;
 };
 
-function LiquidityDepositWithdraw({ selectedPoolId }: Props) {
+function LiquidityDepositWithdraw({ selectedPoolAddress }: Props) {
   const {
     address,
     contracts: {
       swapOperationsContract,
       debtTokenContracts,
       collateralTokenContracts,
-      troveManagerContract,
       sortedTrovesContract,
       hintHelpersContract,
     },
@@ -83,6 +84,8 @@ function LiquidityDepositWithdraw({ selectedPoolId }: Props) {
   const [currentDebtValueUSD, setCurrentDebtValueUSD] = useState<number | null>(null);
   const [currentCollateralValueUSD, setCurrentCollateralValueUSD] = useState<number | null>(null);
   const [oldCriticalRatio, setOldCriticalRatio] = useState<number | null>(null);
+
+  const latestUserInput = useRef<null | { address: string; amount: string }>(null);
 
   const { data: debtTokenData } = useQuery<GetBorrowerDebtTokensQuery, GetBorrowerDebtTokensQueryVariables>(
     GET_BORROWER_DEBT_TOKENS,
@@ -105,7 +108,7 @@ function LiquidityDepositWithdraw({ selectedPoolId }: Props) {
     GET_BORROWER_LIQUIDITY_POOLS,
     { variables: { borrower: address } },
   );
-  const selectedPool = borrowerPoolsData?.pools.find(({ id }) => id === selectedPoolId);
+  const selectedPool = borrowerPoolsData?.pools.find(({ address }) => address === selectedPoolAddress);
 
   const methods = useForm<FieldValues>({
     defaultValues: {
@@ -147,15 +150,16 @@ function LiquidityDepositWithdraw({ selectedPoolId }: Props) {
   if (!selectedPool) return null;
 
   const { liquidity, borrowerAmount, totalSupply } = selectedPool;
-  const [tokenA, tokenB] = liquidity.map((liquidity) => ({
+  const liquidityData = liquidity.map((liquidity) => ({
     ...liquidity,
     token: { ...liquidity.token, priceUSD: dangerouslyConvertBigIntToNumber(liquidity.token.priceUSDOracle, 9, 9) },
   }));
+  // Subgraph has wrong order
+  const tokenA = liquidityData.find(({ token }) => isStableCoinAddress(token.address))!;
+  const tokenB = liquidityData.find(({ token }) => !isStableCoinAddress(token.address))!;
 
-  const pairHasCollateral =
-    isCollateralTokenAddress(tokenA.token.address) || isCollateralTokenAddress(tokenB.token.address);
-  const isCollateralPair =
-    isCollateralTokenAddress(tokenA.token.address) && isCollateralTokenAddress(tokenB.token.address);
+  const pairHasCollateral = !isDebtTokenAddress(tokenA.token.address) || !isDebtTokenAddress(tokenB.token.address);
+  const isCollateralPair = !isDebtTokenAddress(tokenA.token.address) && !isDebtTokenAddress(tokenB.token.address);
 
   const foundTokenA = (isDebtTokenAddress(tokenA.token.address)
     ? debtTokenData?.debtTokenMetas.find(({ token }) => token.address === tokenA.token.address) ?? {
@@ -197,21 +201,24 @@ function LiquidityDepositWithdraw({ selectedPoolId }: Props) {
       },
     });
 
-    const tokenAAmount = data.tokenAAmount ? parseFloat(data.tokenAAmount) : 0;
-    const tokenBAmount = data.tokenBAmount ? parseFloat(data.tokenBAmount) : 0;
-    const deadline = new Date().getTime() + 1000 * 60 * 2; // 2 minutes
-    const _maxMintFeePercentage = floatToBigInt(0.02);
+    if (latestUserInput.current === null) {
+      console.error('latestUserInput.current is null');
+      Sentry.captureMessage('latestUserInput.current is null');
+      return;
+    }
 
-    const collAmounts: IBase.TokenAmountStruct[] = [
-      {
-        tokenAddress: tokenA.token.address,
-        amount: floatToBigInt(tokenAAmount),
-      },
-      {
-        tokenAddress: tokenB.token.address,
-        amount: floatToBigInt(tokenBAmount, tokenB.token.decimals),
-      },
-    ].filter(({ tokenAddress }) => isCollateralTokenAddress(tokenAddress));
+    const tokenAAmount =
+      latestUserInput.current?.address === tokenA.token.address
+        ? parseUnits(latestUserInput.current.amount, tokenA.token.decimals)
+        : (parseUnits(latestUserInput.current.amount, tokenB.token.decimals) * BigInt(tokenA.totalAmount)) /
+          BigInt(tokenB.totalAmount);
+    const tokenBAmount =
+      latestUserInput.current?.address === tokenB.token.address
+        ? parseUnits(latestUserInput.current.amount, tokenB.token.decimals)
+        : (parseUnits(latestUserInput.current.amount, tokenA.token.decimals) * BigInt(tokenB.totalAmount)) /
+          BigInt(tokenA.totalAmount);
+    const deadline = new Date().getTime() + 1000 * 60 * 2; // 2 minutes
+    const _maxMintFeePercentage = floatToBigInt(SLIPPAGE);
 
     if (tabValue === 'DEPOSIT') {
       const currentAllowanceTokenA = isDebtTokenAddress(tokenA.token.address)
@@ -220,26 +227,27 @@ function LiquidityDepositWithdraw({ selectedPoolId }: Props) {
           ? await getAllowance(collateralTokenContracts[tokenA.token.address], address, swapOperationsContract.target)
           : 0n;
       const amountAToApprove = isDebtTokenAddress(tokenA.token.address)
-        ? tokenAAmount > dangerouslyConvertBigIntToNumber(foundTokenA.walletAmount, 9, 9)
+        ? tokenAAmount > foundTokenA.walletAmount
           ? foundTokenA.walletAmount
-          : floatToBigInt(tokenAAmount)
+          : tokenAAmount
         : isCollateralTokenAddress(tokenA.token.address)
-          ? floatToBigInt(tokenAAmount, tokenA.token.decimals)
+          ? tokenAAmount
           : 0n;
       const tokenAApprovalNecessary = amountAToApprove > currentAllowanceTokenA;
 
-      const currentAllowanceTokenB = isDebtTokenAddress(tokenA.token.address)
-        ? await getAllowance(debtTokenContracts[tokenA.token.address], address, swapOperationsContract.target)
-        : isCollateralTokenAddress(tokenA.token.address)
-          ? await getAllowance(collateralTokenContracts[tokenA.token.address], address, swapOperationsContract.target)
+      const currentAllowanceTokenB = isDebtTokenAddress(tokenB.token.address)
+        ? await getAllowance(debtTokenContracts[tokenB.token.address], address, swapOperationsContract.target)
+        : isCollateralTokenAddress(tokenB.token.address)
+          ? await getAllowance(collateralTokenContracts[tokenB.token.address], address, swapOperationsContract.target)
           : 0n;
       const amountBToApprove = isDebtTokenAddress(tokenB.token.address)
-        ? tokenBAmount > dangerouslyConvertBigIntToNumber(foundTokenB.walletAmount, 9, 9)
+        ? tokenBAmount > foundTokenB.walletAmount
           ? foundTokenB.walletAmount
-          : floatToBigInt(tokenBAmount)
+          : tokenBAmount
         : isCollateralTokenAddress(tokenB.token.address)
-          ? floatToBigInt(tokenBAmount, tokenB.token.decimals)
+          ? tokenBAmount
           : 0n;
+
       const tokenBApprovalNecessary = amountBToApprove > currentAllowanceTokenB;
 
       setSteps([
@@ -301,23 +309,16 @@ function LiquidityDepositWithdraw({ selectedPoolId }: Props) {
               const debtAmounts: IBase.TokenAmountStruct[] = [
                 {
                   tokenAddress: tokenA.token.address,
-                  amount:
-                    floatToBigInt(tokenAAmount) > foundTokenA.walletAmount
-                      ? floatToBigInt(tokenAAmount) - foundTokenA.walletAmount
-                      : BigInt(0),
+                  amount: tokenAAmount > foundTokenA.walletAmount ? tokenAAmount - foundTokenA.walletAmount : BigInt(0),
                 },
                 {
                   tokenAddress: tokenB.token.address,
-                  amount:
-                    floatToBigInt(tokenBAmount) > foundTokenB.walletAmount
-                      ? floatToBigInt(tokenBAmount) - foundTokenB.walletAmount
-                      : BigInt(0),
+                  amount: tokenBAmount > foundTokenB.walletAmount ? tokenBAmount - foundTokenB.walletAmount : BigInt(0),
                 },
               ].filter(({ tokenAddress, amount }) => isDebtTokenAddress(tokenAddress) && amount > 0);
-
               const [upperHint, lowerHint] = await getHints(sortedTrovesContract, hintHelpersContract, {
                 borrower: address,
-                addedColl: collAmounts,
+                addedColl: [],
                 addedDebt: debtAmounts,
                 removedColl: [],
                 removedDebt: [],
@@ -328,10 +329,10 @@ function LiquidityDepositWithdraw({ selectedPoolId }: Props) {
                 .addLiquidity(
                   tokenA.token.address,
                   tokenB.token.address,
-                  floatToBigInt(tokenAAmount, tokenA.token.decimals),
-                  floatToBigInt(tokenBAmount, tokenB.token.decimals),
-                  floatToBigInt(tokenAAmount * (1 - SLIPPAGE), tokenA.token.decimals),
-                  floatToBigInt(tokenBAmount * (1 - SLIPPAGE), tokenB.token.decimals),
+                  tokenAAmount,
+                  tokenBAmount,
+                  (tokenAAmount * floatToBigInt(1 - SLIPPAGE)) / floatToBigInt(1),
+                  (tokenBAmount * floatToBigInt(1 - SLIPPAGE)) / floatToBigInt(1),
                   {
                     priceUpdateData: updateDataInBytes,
                     meta: {
@@ -353,46 +354,61 @@ function LiquidityDepositWithdraw({ selectedPoolId }: Props) {
                 : tokenAApprovalNecessary || tokenBApprovalNecessary
                   ? [0]
                   : [],
-            reloadQueriesAferMined: [
+            reloadQueriesAfterMined: [
               GET_BORROWER_COLLATERAL_TOKENS,
               GET_BORROWER_DEBT_TOKENS,
               GET_BORROWER_LIQUIDITY_POOLS,
+              GET_SYSTEMINFO,
             ],
             actionAfterMined: (client) => {
-              setTimeout(() => {
-                // Manually waits for subgraph sync
-                client.refetchQueries({ include: [GET_BORROWER_LIQUIDITY_POOLS] });
-              }, manualSubgraphSyncTimeout);
+              // In case debt is minted by deposit
+              if (!isCollateralPair) {
+                client.cache.evict({ fieldName: 'getSystemInfo' });
+                client.cache.gc();
+                evictCacheTimeoutForObject(currentNetwork!, ['TroveManager']);
+              }
+
+              // Instantly update the borrower amount after deposit
+              evictCacheTimeoutForObject(
+                currentNetwork!,
+                ['SwapPairs', selectedPoolAddress as string],
+                ['borrowerAmount'],
+              );
             },
           },
         },
       ]);
     } else {
-      const percentageFromPool = tokenAAmount / bigIntStringToFloat(totalSupply);
-      const tokenAAmountForWithdraw =
-        percentageFromPool * bigIntStringToFloat(tokenA.totalAmount, tokenA.token.decimals);
-      const tokenBAmountForWithdraw =
-        percentageFromPool * bigIntStringToFloat(tokenB.totalAmount, tokenB.token.decimals);
+      const percentageFromPool = (tokenAAmount * floatToBigInt(1, tokenA.token.decimals)) / BigInt(totalSupply);
+      const tokenAAmountForWithdraw = (percentageFromPool * BigInt(tokenA.totalAmount)) / floatToBigInt(1);
+      const tokenBAmountForWithdraw = (percentageFromPool * BigInt(tokenB.totalAmount)) / floatToBigInt(1);
 
       // Only consider troveRepableDebtAmount
       const debtAmounts: IBase.TokenAmountStruct[] = [
         {
           tokenAddress: tokenA.token.address,
           amount: (foundTokenA as DebtTokenMeta).troveRepableDebtAmount
-            ? floatToBigInt(tokenAAmountForWithdraw) > (foundTokenA as DebtTokenMeta).troveRepableDebtAmount
+            ? tokenAAmountForWithdraw > (foundTokenA as DebtTokenMeta).troveRepableDebtAmount
               ? (foundTokenA as DebtTokenMeta).troveRepableDebtAmount
-              : floatToBigInt(tokenAAmountForWithdraw)
-            : BigInt(0),
+              : tokenAAmountForWithdraw
+            : (0n as bigint),
         },
         {
           tokenAddress: tokenB.token.address,
           amount: (foundTokenB as DebtTokenMeta).troveRepableDebtAmount
-            ? floatToBigInt(tokenBAmountForWithdraw) > (foundTokenB as DebtTokenMeta).troveRepableDebtAmount
+            ? tokenBAmountForWithdraw > (foundTokenB as DebtTokenMeta).troveRepableDebtAmount
               ? (foundTokenB as DebtTokenMeta).troveRepableDebtAmount
-              : floatToBigInt(tokenBAmountForWithdraw)
-            : BigInt(0),
+              : tokenBAmountForWithdraw
+            : (0n as bigint),
         },
       ].filter(({ tokenAddress, amount }) => isDebtTokenAddress(tokenAddress) && amount > 0);
+
+      const tokenAAmountAfterDebt =
+        tokenAAmountForWithdraw -
+        ((debtAmounts.find(({ tokenAddress }) => tokenAddress === tokenA.token.address)?.amount as bigint) ?? 0n);
+      const tokenBAmountAfterDebt =
+        tokenBAmountForWithdraw -
+        ((debtAmounts.find(({ tokenAddress }) => tokenAddress === tokenB.token.address)?.amount as bigint) ?? 0n);
 
       setSteps([
         {
@@ -403,7 +419,7 @@ function LiquidityDepositWithdraw({ selectedPoolId }: Props) {
                 borrower: address,
                 addedColl: [],
                 addedDebt: [],
-                removedColl: collAmounts,
+                removedColl: [],
                 removedDebt: debtAmounts,
               });
               const { updateDataInBytes, priceUpdateFee } = await getPythUpdateData();
@@ -412,9 +428,9 @@ function LiquidityDepositWithdraw({ selectedPoolId }: Props) {
                 .removeLiquidity(
                   tokenA.token.address,
                   tokenB.token.address,
-                  floatToBigInt(tokenAAmount),
-                  floatToBigInt(tokenAAmountForWithdraw * (1 - SLIPPAGE)),
-                  floatToBigInt(tokenBAmountForWithdraw * (1 - SLIPPAGE)),
+                  tokenAAmount,
+                  (tokenAAmountAfterDebt * floatToBigInt(1 - SLIPPAGE)) / floatToBigInt(1),
+                  (tokenBAmountAfterDebt * floatToBigInt(1 - SLIPPAGE)) / floatToBigInt(1),
                   upperHint,
                   lowerHint,
                   deadline,
@@ -426,19 +442,34 @@ function LiquidityDepositWithdraw({ selectedPoolId }: Props) {
                 });
             },
             waitForResponseOf: [],
-            reloadQueriesAferMined: [
+            reloadQueriesAfterMined: [
               GET_BORROWER_COLLATERAL_TOKENS,
               GET_BORROWER_DEBT_TOKENS,
               GET_BORROWER_LIQUIDITY_POOLS,
+              GET_SYSTEMINFO,
             ],
-            actionAfterMined: () => {
+            actionAfterMined: (client) => {
               debtAmounts.forEach(({ tokenAddress }) => {
-                evictCacheTimoutForObject(
+                evictCacheTimeoutForObject(
                   currentNetwork!,
                   ['DebtToken', tokenAddress as string],
                   ['troveRepableDebtAmount'],
                 );
               });
+
+              // In case debt is payed of by withdrawal
+              if (!isCollateralPair) {
+                client.cache.evict({ fieldName: 'getSystemInfo' });
+                client.cache.gc();
+                evictCacheTimeoutForObject(currentNetwork!, ['TroveManager']);
+              }
+
+              // Instantly update the borrower amount after deposit
+              evictCacheTimeoutForObject(
+                currentNetwork!,
+                ['SwapPairs', selectedPoolAddress as string],
+                ['borrowerAmount'],
+              );
             },
           },
         },
@@ -476,8 +507,12 @@ function LiquidityDepositWithdraw({ selectedPoolId }: Props) {
           shouldDirty: true,
         });
       }
-    } else {
     }
+
+    latestUserInput.current = {
+      address: fieldName === 'tokenAAmount' ? tokenA.token.address : tokenB.token.address,
+      amount: value,
+    };
   };
 
   const fillMaxInputValue = (fieldName: keyof FieldValues) => {
@@ -574,6 +609,10 @@ function LiquidityDepositWithdraw({ selectedPoolId }: Props) {
           shouldValidate: true,
           shouldDirty: true,
         });
+        latestUserInput.current = {
+          address: tokenA.token.address,
+          amount: dangerouslyConvertBigIntToNumber(borrowerAmount, 9, 9).toString(),
+        };
       }
     }
     // New token can be minted, just fill the walletAmount
@@ -597,36 +636,11 @@ function LiquidityDepositWithdraw({ selectedPoolId }: Props) {
           shouldValidate: true,
           shouldDirty: true,
         });
+        latestUserInput.current = {
+          address: tokenA.token.address,
+          amount: dangerouslyConvertBigIntToNumber(borrowerAmount, 9, 9).toString(),
+        };
       }
-    }
-  };
-
-  /**
-   * Can only be called is the pair is a DebtTokenPair
-   */
-  const fill150PercentInputValue = () => {
-    // Check if current collateral is less than 150% of current debt
-    if (currentDebtValueUSD && currentCollateralValueUSD) {
-      const tokenAAmount = calculate150PercentTokenValue(
-        currentDebtValueUSD,
-        currentCollateralValueUSD,
-        {
-          totalAmount: bigIntStringToFloat(tokenA.totalAmount, tokenA.token.decimals),
-          priceUSD: dangerouslyConvertBigIntToNumber(tokenA.token.priceUSDOracle, 9, 9),
-        },
-        {
-          totalAmount: bigIntStringToFloat(tokenB.totalAmount, tokenB.token.decimals),
-          priceUSD: dangerouslyConvertBigIntToNumber(tokenB.token.priceUSDOracle, 9, 9),
-        },
-        foundTokenA,
-        foundTokenB,
-      );
-
-      setValue('tokenAAmount', tokenAAmount.toString(), {
-        shouldValidate: true,
-        shouldDirty: true,
-      });
-      handleInput('tokenAAmount', tokenAAmount.toString());
     }
   };
 
@@ -737,7 +751,7 @@ function LiquidityDepositWithdraw({ selectedPoolId }: Props) {
                     }}
                     rules={{
                       min: { value: 0, message: 'You can only invest positive amounts.' },
-                      max: isCollateralTokenAddress(tokenA.token.address)
+                      max: !isDebtTokenAddress(tokenA.token.address)
                         ? {
                             value: dangerouslyConvertBigIntToNumber(
                               foundTokenA.walletAmount,
@@ -752,7 +766,7 @@ function LiquidityDepositWithdraw({ selectedPoolId }: Props) {
                   />
 
                   <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                    {isCollateralTokenAddress(tokenA.token.address) ? (
+                    {!isDebtTokenAddress(tokenA.token.address) ? (
                       <div>
                         <Typography
                           variant="caption"
@@ -888,7 +902,7 @@ function LiquidityDepositWithdraw({ selectedPoolId }: Props) {
                     rules={{
                       min: { value: 0, message: 'You can only invest positive amounts.' },
                       // Make sure coll data is already loaded.
-                      max: isCollateralTokenAddress(tokenB.token.address)
+                      max: !isDebtTokenAddress(tokenB.token.address)
                         ? {
                             value: dangerouslyConvertBigIntToNumber(
                               foundTokenB.walletAmount,
@@ -903,7 +917,7 @@ function LiquidityDepositWithdraw({ selectedPoolId }: Props) {
                   />
 
                   <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                    {isCollateralTokenAddress(tokenB.token.address) ? (
+                    {!isDebtTokenAddress(tokenB.token.address) ? (
                       <div>
                         <Typography
                           variant="caption"
@@ -1032,6 +1046,15 @@ function LiquidityDepositWithdraw({ selectedPoolId }: Props) {
                         message: 'This amount is greater than your deposited amount.',
                       },
                       required: 'This field is required.',
+                    }}
+                    onChange={(event) => {
+                      const value = event.target.value;
+                      setValue('tokenAAmount', value);
+                      latestUserInput.current = {
+                        // address just a placeholder to share code
+                        address: tokenA.token.address,
+                        amount: value,
+                      };
                     }}
                   />
                   <div style={{ display: 'flex', justifyContent: 'space-between' }}>
@@ -1249,7 +1272,7 @@ function LiquidityDepositWithdraw({ selectedPoolId }: Props) {
                 variant="outlined"
                 disabled={
                   (getAddedDebtUSD() > 0 && !oldRatio) ||
-                  (newRatio && newRatio < CRIT_RATIO && tabValue === 'DEPOSIT') ||
+                  (tabValue === 'DEPOSIT' && newRatio && oldCriticalRatio && newRatio <= oldCriticalRatio) ||
                   !address
                 }
               >

@@ -74,8 +74,7 @@ function TradingViewHeader() {
             {data?.token.priceUSDOracle !== undefined && JUSDToken && selectedToken
               ? displayPercentage(
                   percentageChange(
-                    dangerouslyConvertBigIntToNumber(tokenRatio, 9, 9) -
-                      dangerouslyConvertBigIntToNumber(data.token.priceUSDOracle, 9, 9),
+                    dangerouslyConvertBigIntToNumber(tokenRatio, 9, 9),
                     dangerouslyConvertBigIntToNumber(data.token.priceUSDOracle, 9, 9),
                   ),
                   'omit',

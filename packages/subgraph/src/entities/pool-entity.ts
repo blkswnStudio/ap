@@ -21,6 +21,7 @@ export function handleCreateUpdatePool(
   if (poolEntity === null) {
     poolEntity = new Pool(`Pool-${stableCoin.toHexString()}-${nonStableCoin.toHexString()}`);
     poolEntity.address = swapPair;
+    poolEntity.stakingPool = swapPair;
 
     //   Aggregator for recent Volume
     const poolVolume = new PoolVolume30d(`PoolVolume30d-${swapPair.toHexString()}`);
@@ -60,6 +61,7 @@ export function handleCreateUpdatePool(
     liquidity1.save();
 
     poolEntity.liquidityDepositAPY = BigInt.fromI32(0);
+    poolEntity.totalValueUSD = BigInt.fromI32(0);
 
     poolEntity.liquidity = [liquidity0.id, liquidity1.id];
   }
@@ -183,6 +185,7 @@ export function handleUpdatePool_liquidityDepositAPY(
   // scale one Month to a year
   const apy = recentVolume.feeUSD.times(oneEther).times(BigInt.fromI32(12)).div(totalValueUSD);
 
+  poolEntity.totalValueUSD = totalValueUSD;
   poolEntity.liquidityDepositAPY = apy;
   poolEntity.save();
 }

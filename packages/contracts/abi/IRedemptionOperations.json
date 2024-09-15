@@ -51,6 +51,11 @@
     },
     {
         "inputs": [],
+        "name": "LessThanMinRedemption",
+        "type": "error"
+    },
+    {
+        "inputs": [],
         "name": "NoRedeems",
         "type": "error"
     },

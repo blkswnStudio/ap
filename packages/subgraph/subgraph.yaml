@@ -24,6 +24,12 @@ dataSources:
           file: ./abis/ReservePool.json
         - name: PriceFeed
           file: ./abis/PriceFeed.json
+        - name: DebtToken
+          file: ./abis/DebtToken.json
+        - name: StabilityPoolManager
+          file: ./abis/StabilityPoolManager.json
+        - name: StabilityPool
+          file: ./abis/StabilityPool.json
       eventHandlers:
         - event: TroveCollChanged(address,address[])
           handler: handleCollChanged
@@ -131,7 +137,7 @@ dataSources:
     name: SwapOperations
     network: localhost
     source:
-      address: '0xA51c1fc2f0D1a1b8494Ed1FE312d7C3a78Ed91C0'
+      address: '0x0DCd1Bf9A1b36cE34237eEaFef220932846BCD82'
       abi: SwapOperations
       startBlock: 0
     mapping:
@@ -225,6 +231,40 @@ dataSources:
         - event: DebtTokenAdded(address,bytes32)
           handler: handleDebtTokenAdded
       file: ./src/token-manager.ts
+  - kind: ethereum
+    name: StakingOperations
+    network: localhost
+    source:
+      address: '0x9A676e781A523b5d0C0e43731313A708CB607508'
+      abi: StakingOperations
+      startBlock: 0
+    mapping:
+      kind: ethereum/events
+      apiVersion: 0.0.7
+      language: wasm/assemblyscript
+      entities:
+        - Placeholder
+      abis:
+        - name: StakingOperations
+          file: ./abis/StakingOperations.json
+        - name: PriceFeed
+          file: ./abis/PriceFeed.json
+        - name: SwapPair
+          file: ./abis/SwapPair.json
+      eventHandlers:
+        - event: StakingOperationsInitialized(address,address)
+          handler: handleInit
+        - event: AddPool(indexed address)
+          handler: handleAddPool
+        - event: ConfigPool(indexed address,uint256,uint256)
+          handler: handleConfigPool
+        - event: RewardsPerSecondChanged(uint256)
+          handler: handleRewardsChanged
+        - event: Deposit(indexed address,indexed address,uint256)
+          handler: handleDeposit
+        - event: Withdraw(indexed address,indexed address,uint256)
+          handler: handleWithdraw
+      file: ./src/staking-operations.ts
 templates:
   - kind: ethereum/contract
     name: SwapPairTemplate
@@ -249,7 +289,7 @@ templates:
       eventHandlers:
         - event: Approval(indexed address,indexed address,uint256)
           handler: handleApproval
-        - event: Burn(indexed address,uint256,uint256,indexed address)
+        - event: Burn(indexed address,uint256,uint256)
           handler: handleBurn
         - event: Mint(indexed address,uint256,uint256)
           handler: handleMint

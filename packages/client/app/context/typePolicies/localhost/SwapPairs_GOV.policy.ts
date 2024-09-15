@@ -24,7 +24,24 @@ const SwapPairs_GOV = {
       timeout: 1000 * 2,
       periodic: 1000 * 30,
     },
-    // FIXME: Must make swap fee in swap dynamic
+    pendingRewards: {
+      fetch: async (stakingOperationsContract: StakingOperations, address: string) => {
+        SchemaDataFreshnessManager_LOCALHOST.SwapPairs[Contracts_Localhost.SwapPairs.GOV].pendingRewards.lastFetched =
+          Date.now();
+
+        const pendingRewards = await stakingOperationsContract.pendingReward(
+          Contracts_Localhost.SwapPairs.GOV,
+          address,
+        );
+
+        SchemaDataFreshnessManager_LOCALHOST.SwapPairs[Contracts_Localhost.SwapPairs.GOV].pendingRewards.value(
+          pendingRewards,
+        );
+      },
+      value: makeVar(defaultFieldValue),
+      lastFetched: 0,
+      timeout: 1000 * 2,
+    },
     swapFee: {
       fetch: async (swapPairContract: SwapPair, reserve0: bigint, reserve1: bigint) => {
         SchemaDataFreshnessManager_LOCALHOST.SwapPairs[Contracts_Localhost.SwapPairs.GOV].swapFee.lastFetched =

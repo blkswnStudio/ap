@@ -11,6 +11,11 @@
     },
     {
         "inputs": [],
+        "name": "InvalidParameter",
+        "type": "error"
+    },
+    {
+        "inputs": [],
         "name": "InvalidTrove",
         "type": "error"
     },
@@ -149,7 +154,20 @@
                 "type": "bool"
             }
         ],
-        "name": "SetEnableLiquidationAndRedeeming",
+        "name": "SetEnableLiquidation",
+        "type": "event"
+    },
+    {
+        "anonymous": false,
+        "inputs": [
+            {
+                "indexed": false,
+                "internalType": "bool",
+                "name": "enable",
+                "type": "bool"
+            }
+        ],
+        "name": "SetEnableRedeeming",
         "type": "event"
     },
     {
@@ -493,6 +511,19 @@
     },
     {
         "inputs": [],
+        "name": "MIN_REDEMPTION",
+        "outputs": [
+            {
+                "internalType": "uint256",
+                "name": "",
+                "type": "uint256"
+            }
+        ],
+        "stateMutability": "view",
+        "type": "function"
+    },
+    {
+        "inputs": [],
         "name": "NAME",
         "outputs": [
             {
@@ -533,6 +564,19 @@
     {
         "inputs": [],
         "name": "STABLE_COIN_GAS_COMPENSATION",
+        "outputs": [
+            {
+                "internalType": "uint256",
+                "name": "",
+                "type": "uint256"
+            }
+        ],
+        "stateMutability": "view",
+        "type": "function"
+    },
+    {
+        "inputs": [],
+        "name": "SWAP_POOL_AMOUNT_CAP",
         "outputs": [
             {
                 "internalType": "uint256",
@@ -968,7 +1012,20 @@
     },
     {
         "inputs": [],
-        "name": "enableLiquidationAndRedeeming",
+        "name": "enableLiquidation",
+        "outputs": [
+            {
+                "internalType": "bool",
+                "name": "",
+                "type": "bool"
+            }
+        ],
+        "stateMutability": "view",
+        "type": "function"
+    },
+    {
+        "inputs": [],
+        "name": "enableRedeeming",
         "outputs": [
             {
                 "internalType": "bool",
@@ -2248,7 +2305,20 @@
                 "type": "bool"
             }
         ],
-        "name": "setEnableLiquidationAndRedeeming",
+        "name": "setEnableLiquidation",
+        "outputs": [],
+        "stateMutability": "nonpayable",
+        "type": "function"
+    },
+    {
+        "inputs": [
+            {
+                "internalType": "bool",
+                "name": "_enable",
+                "type": "bool"
+            }
+        ],
+        "name": "setEnableRedeeming",
         "outputs": [],
         "stateMutability": "nonpayable",
         "type": "function"

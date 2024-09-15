@@ -1,11 +1,15 @@
 import { useApolloClient } from '@apollo/client';
-import { Button } from '@mui/material';
+import { Alert, AlertTitle, Button } from '@mui/material';
 import { isCollateralTokenAddress, seedCollateralTokensAmount } from '../../../../config';
 import { useEthers } from '../../../context/EthersProvider';
 import { useTransactionDialog } from '../../../context/TransactionDialogProvider';
 import { GET_BORROWER_COLLATERAL_TOKENS } from '../../../queries';
 
-function SeedCollateral() {
+type Props = {
+  isAlert?: boolean;
+};
+
+function SeedCollateral({ isAlert = false }: Props) {
   const {
     address,
     contracts: { borrowerOperationsContract, collateralTokenContracts },
@@ -34,7 +38,7 @@ function SeedCollateral() {
             return null as any;
           },
           waitForResponseOf: [],
-          reloadQueriesAferMined: [],
+          reloadQueriesAfterMined: [],
         },
       })),
       () => {
@@ -45,7 +49,28 @@ function SeedCollateral() {
     );
   };
 
-  return (
+  return isAlert ? (
+    <Alert
+      variant="outlined"
+      severity="info"
+      sx={{ width: 'calc(100% - 32px)', fontSize: '20px', mx: 2 }}
+      action={
+        <Button
+          sx={{
+            width: '100%',
+          }}
+          variant="outlined"
+          onClick={handleSeedCollateral}
+          disabled={!address}
+        >
+          Seed Collateral
+        </Button>
+      }
+    >
+      <AlertTitle>Development: Seed Collateral</AlertTitle>
+      Seeding collateral will mint new collateral tokens into your wallet. This feature is only available on testnet.
+    </Alert>
+  ) : (
     <Button
       variant="text"
       sx={{

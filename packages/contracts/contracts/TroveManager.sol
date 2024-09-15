@@ -50,7 +50,8 @@ contract TroveManager is LiquityBase, Ownable(msg.sender), CheckContract, ITrove
   uint public lastFeeOperationTime; // The timestamp of the latest fee operation (redemption or new dToken issuance)
   uint public override borrowingFeeFloor = 0.005e18; // 0.5%
   uint public override borrowingInterestRate = 0; // 0% annual
-  bool public override enableLiquidationAndRedeeming = true; // Is Liquidation and Redeeming enabled or frozen
+  bool public override enableLiquidation = true; // Is Liquidation enabled or frozen
+  bool public override enableRedeeming = true; // Is Redeeming enabled or frozen
 
   // Store the necessary data for a trove
   struct Trove {
@@ -129,9 +130,14 @@ contract TroveManager is LiquityBase, Ownable(msg.sender), CheckContract, ITrove
     );
   }
 
-  function setEnableLiquidationAndRedeeming(bool _enable) external onlyOwner {
-    enableLiquidationAndRedeeming = _enable;
-    emit SetEnableLiquidationAndRedeeming(enableLiquidationAndRedeeming);
+  function setEnableLiquidation(bool _enable) external onlyOwner {
+    enableLiquidation = _enable;
+    emit SetEnableLiquidation(enableLiquidation);
+  }
+
+  function setEnableRedeeming(bool _enable) external onlyOwner {
+    enableRedeeming = _enable;
+    emit SetEnableRedeeming(enableRedeeming);
   }
 
   function setBorrowingFeeFloor(uint _borrowingFeeFloor) external onlyOwner {
@@ -280,6 +286,8 @@ contract TroveManager is LiquityBase, Ownable(msg.sender), CheckContract, ITrove
    * Used in a liquidation sequence.
    */
   function updateSystemSnapshots_excludeCollRemainder(TokenAmount[] memory totalCollGasCompensation) external override {
+    _requireCallerIsBorrowerOpsOrRedemptionOpsOrLiquidationOps();
+
     TokenAmount[] memory _totalStakesSnapshot = new TokenAmount[](totalCollGasCompensation.length);
     TokenAmount[] memory _totalCollateralSnapshots = new TokenAmount[](totalCollGasCompensation.length);
 
@@ -456,10 +464,10 @@ contract TroveManager is LiquityBase, Ownable(msg.sender), CheckContract, ITrove
       uint debtTokenAmount = _trove.debts[debtToken];
       if (debtTokenAmount == 0) continue;
 
-      stableInterest +=
-        (((_priceFeed.getUSDValue(_priceCache, address(debtToken), debtTokenAmount) * borrowingInterestRate) /
-          DECIMAL_PRECISION) * timePassed) /
-        SECONDS_PER_YEAR;
+      stableInterest += (((_priceFeed.getUSDValue(_priceCache, address(debtToken), debtTokenAmount) *
+        borrowingInterestRate) * timePassed) /
+        DECIMAL_PRECISION /
+        SECONDS_PER_YEAR);
     }
 
     return stableInterest;
@@ -608,24 +616,10 @@ contract TroveManager is LiquityBase, Ownable(msg.sender), CheckContract, ITrove
    *
    **/
 
-  // Return the Troves entire debt and coll,
-  // including pending rewards from redistributions and borrowing interests.
-  // used for liquidations to check on ICR without the need of applying the rewards
   function getEntireDebtAndColl(
     PriceCache memory _priceCache,
     address _borrower
-  )
-    external
-    view
-    override
-    returns (
-      RAmount[] memory amounts,
-      uint IMCR,
-      uint troveCollInUSD,
-      uint troveDebtInUSD,
-      uint troveDebtInUSDWithoutGasCompensation
-    )
-  {
+  ) external view override returns (RAmount[] memory amounts, uint debtTokenLength, uint stableCoinIndex) {
     Trove storage trove = Troves[_borrower];
     amounts = new RAmount[](trove.debtTokens.length + _priceCache.collPrices.length);
 
@@ -662,42 +656,7 @@ contract TroveManager is LiquityBase, Ownable(msg.sender), CheckContract, ITrove
         amounts[ii].pendingReward += _getPendingDebtReward(_borrower, collToken, address(trove.debtTokens[ii]));
     }
 
-    // adding missing amount meta data
-    uint maxDebtInUSD;
-    for (uint i = 0; i < amounts.length; i++) {
-      RAmount memory amountEntry = amounts[i];
-
-      uint totalAmount = amountEntry.amount + amountEntry.pendingReward + amountEntry.pendingInterest;
-      uint inUSD = priceFeed.getUSDValue(_priceCache, amountEntry.tokenAddress, totalAmount);
-
-      if (amountEntry.isColl) {
-        amountEntry.gasCompensation = _getCollGasCompensation(totalAmount);
-        amountEntry.toLiquidate = totalAmount - amountEntry.gasCompensation;
-        troveCollInUSD += inUSD;
-        maxDebtInUSD += LiquityMath._computeMaxDebtValue(
-          inUSD,
-          _priceCache.collPrices[i - trove.debtTokens.length].supportedCollateralRatio
-        );
-      } else {
-        if (i == stableCoinIndex) {
-          // stable coin gas compensation should not be liquidated, it will be paid out as reward for the liquidator
-          amountEntry.toLiquidate = totalAmount - STABLE_COIN_GAS_COMPENSATION;
-          troveDebtInUSDWithoutGasCompensation += priceFeed.getUSDValue(
-            _priceCache,
-            amountEntry.tokenAddress,
-            amountEntry.toLiquidate
-          );
-        } else {
-          amountEntry.toLiquidate = totalAmount;
-          troveDebtInUSDWithoutGasCompensation += inUSD;
-        }
-
-        troveDebtInUSD += inUSD;
-      }
-    }
-
-    IMCR = LiquityMath._computeIMCR(maxDebtInUSD, troveCollInUSD);
-    return (amounts, IMCR, troveCollInUSD, troveDebtInUSD, troveDebtInUSDWithoutGasCompensation);
+    return (amounts, trove.debtTokens.length, stableCoinIndex);
   }
 
   function getTroveDebt(address _borrower) public view override returns (TokenAmount[] memory) {
@@ -906,7 +865,7 @@ contract TroveManager is LiquityBase, Ownable(msg.sender), CheckContract, ITrove
   }
 
   function _calcBorrowingRate(uint _stableCoinBaseRate) internal view returns (uint) {
-    return LiquityMath._min(borrowingFeeFloor + _stableCoinBaseRate, borrowingFeeFloor);
+    return LiquityMath._min(borrowingFeeFloor + _stableCoinBaseRate, MAX_BORROWING_FEE);
   }
 
   function getBorrowingFee(uint _debtValue, bool isStableCoin) external view override returns (uint) {
@@ -979,7 +938,7 @@ contract TroveManager is LiquityBase, Ownable(msg.sender), CheckContract, ITrove
 
     uint timePassed = block.timestamp - lastFeeOperationTime;
     if (timePassed >= 1 minutes) {
-      lastFeeOperationTime = block.timestamp;
+      lastFeeOperationTime += _minutesPassedSinceLastFeeOp() * 1 minutes;
       emit LastFeeOpTimeUpdated(block.timestamp);
     }
   }

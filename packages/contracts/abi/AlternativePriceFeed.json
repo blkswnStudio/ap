@@ -11,7 +11,7 @@
     },
     {
         "inputs": [],
-        "name": "InvalidRewardDistribution",
+        "name": "InvalidBalancerPool",
         "type": "error"
     },
     {
@@ -52,23 +52,55 @@
             {
                 "indexed": false,
                 "internalType": "address",
-                "name": "_stabilityPoolManager",
-                "type": "address"
-            },
-            {
-                "indexed": false,
-                "internalType": "address",
-                "name": "_reservePool",
-                "type": "address"
-            },
-            {
-                "indexed": false,
-                "internalType": "address",
-                "name": "_swapOperations",
+                "name": "priceFeed",
                 "type": "address"
             }
         ],
-        "name": "GovSubsidyInitialized",
+        "name": "AlternativePriceFeedInitialized",
+        "type": "event"
+    },
+    {
+        "anonymous": false,
+        "inputs": [
+            {
+                "components": [
+                    {
+                        "internalType": "address",
+                        "name": "tokenAddress",
+                        "type": "address"
+                    },
+                    {
+                        "internalType": "uint256",
+                        "name": "amount",
+                        "type": "uint256"
+                    }
+                ],
+                "indexed": false,
+                "internalType": "struct IBase.TokenAmount[]",
+                "name": "tokenPrices",
+                "type": "tuple[]"
+            }
+        ],
+        "name": "FallbackPriceChanged",
+        "type": "event"
+    },
+    {
+        "anonymous": false,
+        "inputs": [
+            {
+                "indexed": false,
+                "internalType": "address",
+                "name": "token",
+                "type": "address"
+            },
+            {
+                "indexed": false,
+                "internalType": "uint32",
+                "name": "trustedTimespan",
+                "type": "uint32"
+            }
+        ],
+        "name": "FallbackTrustedTimespanChanged",
         "type": "event"
     },
     {
@@ -88,6 +120,25 @@
             }
         ],
         "name": "OwnershipTransferred",
+        "type": "event"
+    },
+    {
+        "anonymous": false,
+        "inputs": [
+            {
+                "indexed": true,
+                "internalType": "address",
+                "name": "token",
+                "type": "address"
+            },
+            {
+                "indexed": false,
+                "internalType": "address",
+                "name": "pool",
+                "type": "address"
+            }
+        ],
+        "name": "SetBalancerPricePool",
         "type": "event"
     },
     {
@@ -157,6 +208,19 @@
     },
     {
         "inputs": [],
+        "name": "MIN_REDEMPTION",
+        "outputs": [
+            {
+                "internalType": "uint256",
+                "name": "",
+                "type": "uint256"
+            }
+        ],
+        "stateMutability": "view",
+        "type": "function"
+    },
+    {
+        "inputs": [],
         "name": "NAME",
         "outputs": [
             {
@@ -196,9 +260,92 @@
     },
     {
         "inputs": [],
-        "name": "distribute",
-        "outputs": [],
-        "stateMutability": "nonpayable",
+        "name": "SWAP_POOL_AMOUNT_CAP",
+        "outputs": [
+            {
+                "internalType": "uint256",
+                "name": "",
+                "type": "uint256"
+            }
+        ],
+        "stateMutability": "view",
+        "type": "function"
+    },
+    {
+        "inputs": [
+            {
+                "internalType": "address",
+                "name": "",
+                "type": "address"
+            }
+        ],
+        "name": "balancerPricePool",
+        "outputs": [
+            {
+                "internalType": "contract IBalancerV2Pool",
+                "name": "",
+                "type": "address"
+            }
+        ],
+        "stateMutability": "view",
+        "type": "function"
+    },
+    {
+        "inputs": [
+            {
+                "internalType": "address",
+                "name": "",
+                "type": "address"
+            }
+        ],
+        "name": "fallbackPrices",
+        "outputs": [
+            {
+                "internalType": "uint256",
+                "name": "price",
+                "type": "uint256"
+            },
+            {
+                "internalType": "uint32",
+                "name": "lastUpdateTime",
+                "type": "uint32"
+            },
+            {
+                "internalType": "uint32",
+                "name": "trustedTimespan",
+                "type": "uint32"
+            }
+        ],
+        "stateMutability": "view",
+        "type": "function"
+    },
+    {
+        "inputs": [
+            {
+                "internalType": "address",
+                "name": "_tokenAddress",
+                "type": "address"
+            }
+        ],
+        "name": "getPrice",
+        "outputs": [
+            {
+                "internalType": "uint256",
+                "name": "price",
+                "type": "uint256"
+            },
+            {
+                "internalType": "bool",
+                "name": "isTrusted",
+                "type": "bool"
+            },
+            {
+                "internalType": "uint256",
+                "name": "timestamp",
+                "type": "uint256"
+            }
+        ],
+        "stateMutability": "view",
         "type": "function"
     },
     {
@@ -216,38 +363,12 @@
     },
     {
         "inputs": [],
-        "name": "relativeReservePool",
+        "name": "priceFeed",
         "outputs": [
             {
-                "internalType": "uint256",
+                "internalType": "contract IPriceFeed",
                 "name": "",
-                "type": "uint256"
-            }
-        ],
-        "stateMutability": "view",
-        "type": "function"
-    },
-    {
-        "inputs": [],
-        "name": "relativeStabilityPoolManager",
-        "outputs": [
-            {
-                "internalType": "uint256",
-                "name": "",
-                "type": "uint256"
-            }
-        ],
-        "stateMutability": "view",
-        "type": "function"
-    },
-    {
-        "inputs": [],
-        "name": "relativeSwapOperations",
-        "outputs": [
-            {
-                "internalType": "uint256",
-                "name": "",
-                "type": "uint256"
+                "type": "address"
             }
         ],
         "stateMutability": "view",
@@ -261,33 +382,10 @@
         "type": "function"
     },
     {
-        "inputs": [],
-        "name": "reservePool",
-        "outputs": [
-            {
-                "internalType": "contract IReservePool",
-                "name": "",
-                "type": "address"
-            }
-        ],
-        "stateMutability": "view",
-        "type": "function"
-    },
-    {
         "inputs": [
             {
                 "internalType": "address",
-                "name": "_stabilityPoolManager",
-                "type": "address"
-            },
-            {
-                "internalType": "address",
-                "name": "_reservePool",
-                "type": "address"
-            },
-            {
-                "internalType": "address",
-                "name": "_swapOperations",
+                "name": "_priceFeed",
                 "type": "address"
             }
         ],
@@ -297,29 +395,64 @@
         "type": "function"
     },
     {
-        "inputs": [],
-        "name": "stabilityPoolManager",
-        "outputs": [
+        "inputs": [
             {
-                "internalType": "contract IStabilityPoolManager",
-                "name": "",
+                "internalType": "address",
+                "name": "_token",
+                "type": "address"
+            },
+            {
+                "internalType": "contract IBalancerV2Pool",
+                "name": "_pool",
                 "type": "address"
             }
         ],
-        "stateMutability": "view",
+        "name": "setBalancerPricePool",
+        "outputs": [],
+        "stateMutability": "nonpayable",
         "type": "function"
     },
     {
-        "inputs": [],
-        "name": "swapOperations",
-        "outputs": [
+        "inputs": [
             {
-                "internalType": "contract ISwapOperations",
-                "name": "",
-                "type": "address"
+                "components": [
+                    {
+                        "internalType": "address",
+                        "name": "tokenAddress",
+                        "type": "address"
+                    },
+                    {
+                        "internalType": "uint256",
+                        "name": "amount",
+                        "type": "uint256"
+                    }
+                ],
+                "internalType": "struct IBase.TokenAmount[]",
+                "name": "tokenPrices",
+                "type": "tuple[]"
             }
         ],
-        "stateMutability": "view",
+        "name": "setFallbackPrices",
+        "outputs": [],
+        "stateMutability": "nonpayable",
+        "type": "function"
+    },
+    {
+        "inputs": [
+            {
+                "internalType": "address",
+                "name": "_token",
+                "type": "address"
+            },
+            {
+                "internalType": "uint32",
+                "name": "_trustedTimespan",
+                "type": "uint32"
+            }
+        ],
+        "name": "setFallbackTrustedTimespan",
+        "outputs": [],
+        "stateMutability": "nonpayable",
         "type": "function"
     },
     {
@@ -331,29 +464,6 @@
             }
         ],
         "name": "transferOwnership",
-        "outputs": [],
-        "stateMutability": "nonpayable",
-        "type": "function"
-    },
-    {
-        "inputs": [
-            {
-                "internalType": "uint256",
-                "name": "_relativeStabilityPoolManager",
-                "type": "uint256"
-            },
-            {
-                "internalType": "uint256",
-                "name": "_relativeReservePool",
-                "type": "uint256"
-            },
-            {
-                "internalType": "uint256",
-                "name": "_relativeSwapOperations",
-                "type": "uint256"
-            }
-        ],
-        "name": "updateRewardDistribution",
         "outputs": [],
         "stateMutability": "nonpayable",
         "type": "function"

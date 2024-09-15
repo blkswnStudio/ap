@@ -95,7 +95,7 @@ describe('LiquidityPool', () => {
           } as any
         }
       >
-        <LiquidityDepositWithdraw selectedPoolId={mockedPool.id} />
+        <LiquidityDepositWithdraw selectedPoolAddress={mockedPool.id} />
       </IntegrationWrapper>,
     );
 
@@ -177,7 +177,7 @@ describe('LiquidityPool', () => {
           } as any
         }
       >
-        <LiquidityDepositWithdraw selectedPoolId={mockedPool.id} />
+        <LiquidityDepositWithdraw selectedPoolAddress={mockedPool.id} />
       </IntegrationWrapper>,
     );
 

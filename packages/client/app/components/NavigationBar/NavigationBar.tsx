@@ -5,8 +5,7 @@ import AppBar from '@mui/material/AppBar';
 import Toolbar from '@mui/material/Toolbar';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { SyntheticEvent, useEffect, useState } from 'react';
-import NetworkSwitch from '../Buttons/NetworkSwitch';
+import { SyntheticEvent, useState } from 'react';
 import ThemeSwitch from '../Buttons/ThemeSwitch';
 import ApollonLogo from '../Icons/ApollonLogo';
 import EthersAddressLabel from '../Label/EthersAddressLabel/EthersAddressLabel';
@@ -29,12 +28,6 @@ function NavigationBar({ themeMode, setThemeMode }: Props) {
   const handleChange = (_: SyntheticEvent, newValue: '/balance' | '/spot' | '/pools') => {
     setTabValue(newValue);
   };
-
-  useEffect(() => {
-    if (pathname === '/') {
-      setTabValue('/spot');
-    }
-  }, [pathname, setTabValue]);
 
   return (
     <AppBar sx={{ height: 48, boxShadow: 'none' }} position="sticky">
@@ -62,45 +55,54 @@ function NavigationBar({ themeMode, setThemeMode }: Props) {
             >
               <Tab
                 sx={{ p: 0 }}
+                LinkComponent={Link}
+                href="/balance"
                 label={
-                  <Link href="/balance" style={{ padding: '12px 16px' }}>
-                    <Typography
-                      variant={pathname === '/balance' ? 'body1' : 'subtitle2'}
-                      fontFamily="Space Grotesk Variable"
-                    >
-                      Balance
-                    </Typography>
-                  </Link>
+                  <Typography
+                    sx={{
+                      padding: '12px 16px',
+                    }}
+                    variant={pathname === '/balance' ? 'body1' : 'subtitle2'}
+                    fontFamily="Space Grotesk Variable"
+                  >
+                    Balance
+                  </Typography>
                 }
                 value="/balance"
                 disableRipple
               />
               <Tab
                 sx={{ p: 0 }}
+                LinkComponent={Link}
+                href="/spot"
                 label={
-                  <Link href="/spot" style={{ padding: '12px 16px' }}>
-                    <Typography
-                      variant={pathname === '/spot' ? 'body1' : 'subtitle2'}
-                      fontFamily="Space Grotesk Variable"
-                    >
-                      Spot
-                    </Typography>
-                  </Link>
+                  <Typography
+                    variant={pathname === '/spot' ? 'body1' : 'subtitle2'}
+                    fontFamily="Space Grotesk Variable"
+                    sx={{
+                      padding: '12px 16px',
+                    }}
+                  >
+                    Spot
+                  </Typography>
                 }
                 value="/spot"
                 disableRipple
               />
               <Tab
+                LinkComponent={Link}
+                href="/pools"
                 sx={{ p: 0 }}
                 label={
-                  <Link href="/pools" style={{ padding: '12px 16px' }}>
-                    <Typography
-                      variant={pathname === '/pools' ? 'body1' : 'subtitle2'}
-                      fontFamily="Space Grotesk Variable"
-                    >
-                      Pools
-                    </Typography>
-                  </Link>
+                  <Typography
+                    sx={{
+                      padding: '12px 16px',
+                    }}
+                    variant={pathname === '/pools' ? 'body1' : 'subtitle2'}
+                    fontFamily="Space Grotesk Variable"
+                  >
+                    Pools
+                  </Typography>
                 }
                 value="/pools"
                 disableRipple
@@ -115,7 +117,8 @@ function NavigationBar({ themeMode, setThemeMode }: Props) {
 
             <TCRChip />
 
-            <NetworkSwitch />
+            {/* Moved to Web3Modal instead */}
+            {/* <NetworkSwitch /> */}
 
             <ThemeSwitch themeMode={themeMode} setThemeMode={setThemeMode} />
           </div>

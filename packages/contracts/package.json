@@ -15,10 +15,9 @@
     "testGas": "hardhat test gasTest/**/*.ts",
     "coverage": "hardhat coverage",
     "coveralls": "cat coverage/lcov.info | coveralls",
-    "deploy:local:testing": "hardhat run utils/deployLocal.ts --network localhost",
-    "deploy:remote:testing": "hardhat run utils/deployLocal.ts --network remote",
-    "seed:local:swaps": "hardhat run utils/seedSwapHistory.ts --network localhost",
-    "seed:remote:swaps": "hardhat run utils/seedSwapHistory.ts --network remote"
+    "deploy:test:local": "hardhat deployCore --network localhost --test true",
+    "deploy:test:local:pools": "hardhat run utils/deploySwapPools.ts --network localhost",
+    "deploy:release:seiTest": "hardhat deployCore --network seiTest --pyth 0x2880aB155794e7179c9eE2e38200202908C17B43"
   },
   "keywords": [],
   "author": "",

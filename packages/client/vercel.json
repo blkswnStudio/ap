@@ -1,4 +1,11 @@
 {
+  "redirects": [
+    {
+      "source": "/",
+      "destination": "/spot",
+      "permanent": true
+    }
+  ],
   "headers": [
     {
       "source": "/charting_library/(.*)",

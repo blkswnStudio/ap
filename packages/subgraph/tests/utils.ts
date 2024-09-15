@@ -21,6 +21,7 @@ export const MockStoragePoolAddress = EventAddress.fromString('0x000000000000000
 export const MockReservePoolAddress = EventAddress.fromString('0x0000000000000000000000000000000000000800');
 export const MockSwapOperationsAddress = EventAddress.fromString('0x0000000000000000000000000000000000000900');
 export const MockTokenManagerAddress = EventAddress.fromString('0x0000000000000000000000000000000000001000');
+export const MockStakingOperationsAddress = EventAddress.fromString('0x0000000000000000000000000000000000001100');
 
 export const MockUserAddress = EventAddress.fromString('0x1000000000000000000000000000000000000000');
 export const MockSecondUserAddress = EventAddress.fromString('0x2000000000000000000000000000000000000000');
@@ -32,6 +33,7 @@ export const initSystemInfo = (): void => {
   systemInfo.priceFeed = MockPriceFeedAddress;
   systemInfo.reservePool = MockReservePoolAddress;
   systemInfo.stableCoin = MockDebtToken_STABLE_Address;
+  systemInfo.stakingOps = MockStakingOperationsAddress;
   systemInfo.totalValueLockedUSDHistoryIndex = 0;
   systemInfo.totalValueMintedUSDHistoryIndex = 0;
   systemInfo.reservePoolUSDHistoryIndex = 0;

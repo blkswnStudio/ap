@@ -111,7 +111,7 @@ const RepayDebtDialog = ({ buttonSx = {}, buttonVariant = 'outlined' }: Props) =
               });
           },
           waitForResponseOf: [],
-          reloadQueriesAferMined: [GET_BORROWER_DEBT_TOKENS, GET_BORROWER_COLLATERAL_TOKENS],
+          reloadQueriesAfterMined: [GET_BORROWER_DEBT_TOKENS, GET_BORROWER_COLLATERAL_TOKENS],
         },
       },
     ]);
@@ -156,6 +156,8 @@ const RepayDebtDialog = ({ buttonSx = {}, buttonVariant = 'outlined' }: Props) =
             border: '1px solid',
             borderColor: 'background.paper',
             borderBottom: 'none',
+            borderTopLeftRadius: '4px',
+            borderTopRightRadius: '4px',
           }}
         >
           <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
@@ -179,7 +181,7 @@ const RepayDebtDialog = ({ buttonSx = {}, buttonVariant = 'outlined' }: Props) =
                 borderBottom: 'none',
               }}
             >
-              <div style={{ overflowY: 'scroll', maxHeight: 'calc(100vh - 73px - 102px - 10px)' }}>
+              <div style={{ overflowY: 'scroll', maxHeight: 'calc(100vh - 64px - 73px - 102px - 10px)' }}>
                 {data?.debtTokenMetas
                   .filter(({ troveRepableDebtAmount }) => troveRepableDebtAmount > 0)
                   .map(({ token, walletAmount, troveRepableDebtAmount }, index) => (
@@ -263,6 +265,8 @@ const RepayDebtDialog = ({ buttonSx = {}, buttonVariant = 'outlined' }: Props) =
               sx={{
                 border: '1px solid',
                 borderColor: 'background.paper',
+                borderBottomLeftRadius: '4px',
+                borderBottomRightRadius: '4px',
                 backgroundColor: 'background.default',
                 p: '30px 20px',
               }}

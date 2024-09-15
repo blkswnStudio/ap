@@ -76,6 +76,19 @@
     },
     {
         "inputs": [],
+        "name": "MIN_REDEMPTION",
+        "outputs": [
+            {
+                "internalType": "uint256",
+                "name": "",
+                "type": "uint256"
+            }
+        ],
+        "stateMutability": "view",
+        "type": "function"
+    },
+    {
+        "inputs": [],
         "name": "REDEMPTION_FEE_FLOOR",
         "outputs": [
             {
@@ -90,6 +103,19 @@
     {
         "inputs": [],
         "name": "STABLE_COIN_GAS_COMPENSATION",
+        "outputs": [
+            {
+                "internalType": "uint256",
+                "name": "",
+                "type": "uint256"
+            }
+        ],
+        "stateMutability": "view",
+        "type": "function"
+    },
+    {
+        "inputs": [],
+        "name": "SWAP_POOL_AMOUNT_CAP",
         "outputs": [
             {
                 "internalType": "uint256",

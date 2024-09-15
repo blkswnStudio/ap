@@ -1,5 +1,6 @@
 import ArrowDropDownRoundedIcon from '@mui/icons-material/ArrowDropDownRounded';
 import { MenuItem, Select, SelectChangeEvent } from '@mui/material';
+import { useRouter } from 'next/navigation';
 import { useEffect } from 'react';
 import { NETWORKS } from '../../../config';
 import { useErrorMonitoring } from '../../context/ErrorMonitoringContext';
@@ -9,11 +10,14 @@ function NetworkSwitch() {
   const { Sentry } = useErrorMonitoring();
   const { provider, setCurrentNetwork, currentNetwork } = useEthers();
 
+  const router = useRouter();
+
   const handleChange = async (event: SelectChangeEvent<(typeof NETWORKS)[number]['chainName']>) => {
     const choosenNetwork = NETWORKS.find((network) => network.chainName === event.target.value)!;
     const { blockExplorerUrls, chainId, chainName, nativeCurrency, rpcUrls } = choosenNetwork;
 
     if (typeof window.ethereum !== 'undefined') {
+      // @ts-ignore
       window.ethereum
         .request({
           method: 'wallet_switchEthereumChain',
@@ -34,6 +38,7 @@ function NetworkSwitch() {
         })
         .catch(() => {
           if (typeof window.ethereum !== 'undefined') {
+            // @ts-ignore
             window.ethereum
               .request({
                 method: 'wallet_addEthereumChain',
@@ -55,7 +60,7 @@ function NetworkSwitch() {
                 window.location.reload();
                 // updateProvider(choosenNetwork)
               })
-              .catch((error) => {
+              .catch((error: any) => {
                 Sentry.captureException(error);
               });
           }
@@ -72,11 +77,14 @@ function NetworkSwitch() {
         // reload page
         window.location.reload();
         // updateProvider(currentNetwork)
+      } else {
+        router.push('/network-not-found');
       }
     };
 
     if (typeof window.ethereum !== 'undefined') {
       // Update Switch on manual network change.
+      // @ts-ignore
       window.ethereum.on('chainChanged', handleNetworkChange);
 
       // Get current network once and set switch initially
@@ -96,6 +104,7 @@ function NetworkSwitch() {
     // Cleanup the listener when the component unmounts
     return () => {
       if (typeof window.ethereum !== 'undefined') {
+        // @ts-ignore
         window.ethereum.removeListener('chainChanged', handleNetworkChange);
       }
     };

@@ -143,9 +143,13 @@ type Pool {
   volume30dUSD: PoolVolume30d!
   volume30dUSD30dAgo: PoolVolume30d!
   totalSupply: BigInt!
+  # TODO: Must be required once the deployment is fixed
+  stakingPool: StakingPool
 
   # client side
   borrowerAmount: bigint!
+  # staking rewards that must be claimed
+  pendingRewards: bigint!
   # Percent value applied when opening the first position for this pool. Can be negative and positive.
   swapFee: bigint!
 }
@@ -156,6 +160,26 @@ type PoolVolume30d {
   lastIndex: Int!
   leadingIndex: Int!
   value: BigInt!
+}
+
+type Staking {
+  # "Staking"
+  id: String!
+  # pools(first: Int = 100, orderBy: StakingPool_orderBy, orderDirection: OrderDirection, skip: Int = 0, where: StakingPool_filter): [StakingPool!]!
+  pools(first: Int = 100): [StakingPool!]!
+  rewardsPerSecond: BigInt!
+  rewardsPerYearUSD: BigInt!
+  totalAllocPoints: BigInt!
+}
+
+type StakingPool {
+  id: Bytes!
+  allocPoints: BigInt!
+  liquidityPool: Pool!
+  stakingAPR: BigInt!
+  totalDeposit: BigInt!
+  totalDepositUSD: BigInt!
+  totalRewardUSD: BigInt!
 }
 
 type Query {
@@ -282,28 +306,36 @@ type Query {
 # 1min, 10min, 1hour, 6hour, 1day, 1week
 # const CandleSizes = [1, 10, 60, 360, 1440, 10080];
 type TokenCandle {
-  id: Bytes!
   candleSize: Int!
   close: BigInt!
+  closeOracle: BigInt!
   high: BigInt!
+  highOracle: BigInt!
+  id: String!
   low: BigInt!
+  lowOracle: BigInt!
   open: BigInt!
+  openOracle: BigInt!
   timestamp: BigInt!
   token: Token!
   volume: BigInt!
 }
+
 type TokenCandleSingleton {
   candleSize: Int!
   close: BigInt!
+  closeOracle: BigInt!
   high: BigInt!
-  id: ID!
+  highOracle: BigInt!
+  id: String!
   low: BigInt!
+  lowOracle: BigInt!
   open: BigInt!
+  openOracle: BigInt!
   timestamp: BigInt!
-  token: Bytes!
+  token: Token!
   volume: BigInt!
 }
-
 input TokenCandle_filter {
   candleSize: Int
   timestamp: Int

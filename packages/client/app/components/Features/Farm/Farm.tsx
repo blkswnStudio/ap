@@ -9,13 +9,19 @@ import Typography from '@mui/material/Typography';
 import { ethers } from 'ethers';
 import { ChangeEvent, useCallback, useEffect, useState } from 'react';
 import { FormProvider, useController, useForm } from 'react-hook-form';
-import { isCollateralTokenAddress } from '../../../../config';
+import { isDebtTokenAddress } from '../../../../config';
 import { useErrorMonitoring } from '../../../context/ErrorMonitoringContext';
 import { useEthers } from '../../../context/EthersProvider';
 import { usePriceFeedData } from '../../../context/PriceFeedDataProvider';
 import { useSelectedToken } from '../../../context/SelectedTokenProvider';
 import { useTransactionDialog } from '../../../context/TransactionDialogProvider';
-import { GET_BORROWER_COLLATERAL_TOKENS, GET_BORROWER_DEBT_TOKENS } from '../../../queries';
+import { evictCacheTimeoutForObject } from '../../../context/utils';
+import {
+  GET_ALL_POOLS,
+  GET_BORROWER_COLLATERAL_TOKENS,
+  GET_BORROWER_DEBT_TOKENS,
+  GET_SYSTEMINFO,
+} from '../../../queries';
 import { WIDGET_HEIGHTS } from '../../../utils/contants';
 import { getHints } from '../../../utils/crypto';
 import {
@@ -31,7 +37,7 @@ import FeatureBox from '../../FeatureBox/FeatureBox';
 import NumberInput from '../../FormControls/NumberInput';
 import ForwardIcon from '../../Icons/ForwardIcon';
 import Label from '../../Label/Label';
-import CollateralRatioVisualization, { CRIT_RATIO } from '../../Visualizations/CollateralRatioVisualization';
+import CollateralRatioVisualization from '../../Visualizations/CollateralRatioVisualization';
 
 type FieldValues = {
   farmShortValue: string;
@@ -51,7 +57,8 @@ const Farm = () => {
 
   const {
     address,
-    contracts: { swapOperationsContract, troveManagerContract, sortedTrovesContract, hintHelpersContract },
+    currentNetwork,
+    contracts: { swapOperationsContract, sortedTrovesContract, hintHelpersContract },
   } = useEthers();
   const { getPythUpdateData } = usePriceFeedData();
   const { Sentry } = useErrorMonitoring();
@@ -153,9 +160,14 @@ const Farm = () => {
             },
             waitForResponseOf: [],
             // Only refetch coll tokens if they were part of the swap
-            reloadQueriesAferMined: isCollateralTokenAddress(selectedToken!.address)
-              ? [GET_BORROWER_COLLATERAL_TOKENS, GET_BORROWER_DEBT_TOKENS]
-              : [GET_BORROWER_DEBT_TOKENS],
+            reloadQueriesAfterMined: !isDebtTokenAddress(selectedToken!.address)
+              ? [GET_BORROWER_COLLATERAL_TOKENS, GET_BORROWER_DEBT_TOKENS, GET_ALL_POOLS, GET_SYSTEMINFO]
+              : [GET_BORROWER_DEBT_TOKENS, GET_ALL_POOLS, GET_SYSTEMINFO],
+            actionAfterMined: (client) => {
+              client.cache.evict({ fieldName: 'getSystemInfo' });
+              client.cache.gc();
+              evictCacheTimeoutForObject(currentNetwork!, ['TroveManager']);
+            },
           },
         },
       ]);
@@ -202,9 +214,12 @@ const Farm = () => {
             },
             waitForResponseOf: [],
             // Only refetch coll tokens if they were part of the swap
-            reloadQueriesAferMined: isCollateralTokenAddress(selectedToken!.address)
-              ? [GET_BORROWER_COLLATERAL_TOKENS, GET_BORROWER_DEBT_TOKENS]
-              : [GET_BORROWER_DEBT_TOKENS],
+            reloadQueriesAfterMined: [GET_BORROWER_DEBT_TOKENS, GET_ALL_POOLS, GET_SYSTEMINFO],
+            actionAfterMined: (client) => {
+              client.cache.evict({ fieldName: 'getSystemInfo' });
+              client.cache.gc();
+              evictCacheTimeoutForObject(currentNetwork!, ['TroveManager']);
+            },
           },
         },
       ]);
@@ -327,11 +342,7 @@ const Farm = () => {
       <div style={{ height: '530px', overflowY: 'scroll' }}>
         <Tabs value={tabValue} onChange={handleTabChange} variant="fullWidth" sx={{ mx: '-15px' }}>
           <Tab label="BUY" value="Long" />
-          <Tab
-            label="SELL"
-            value="Short"
-            disabled={selectedToken?.address ? isCollateralTokenAddress(selectedToken.address) : false}
-          />
+          <Tab label="SELL" value="Short" disabled={!selectedToken || !isDebtTokenAddress(selectedToken.address)} />
         </Tabs>
 
         <FormProvider {...methods}>
@@ -445,6 +456,9 @@ const Farm = () => {
                           pricePerUnit ??
                             (tokenRatio * (floatToBigInt(1) + selectedToken!.swapFee + borrowingFee!)) /
                               floatToBigInt(1),
+                          18,
+                          undefined,
+                          Infinity,
                         ),
                         5,
                         5,
@@ -533,7 +547,8 @@ const Farm = () => {
                     !JUSDToken ||
                     !oldRatio ||
                     !newRatio ||
-                    newRatio < CRIT_RATIO ||
+                    !oldCriticalRatio ||
+                    newRatio <= oldCriticalRatio ||
                     !selectedToken
                   }
                 />

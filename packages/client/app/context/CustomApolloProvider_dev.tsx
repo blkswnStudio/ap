@@ -1,7 +1,7 @@
 import { ApolloClient, ApolloProvider, InMemoryCache, TypePolicies, TypePolicy } from '@apollo/client';
 import { PropsWithChildren } from 'react';
 import { SystemInfo } from '../generated/gql-types';
-import PriceFeedDataProvider_DevMode from './PriceFeedDataProvider';
+import PriceFeedDataProvider_DevMode from './PriceFeedDataProvider_dev';
 
 export type MockedContractData = {
   Token_priceUSDOracleValue: bigint;
@@ -18,6 +18,7 @@ export type MockedContractData = {
   CollateralTokenMeta_stabilityGainedAmount: bigint;
   CollateralTokenMeta_collSurplusAmount: bigint;
   Pool_swapFee: bigint;
+  Pool_pendingRewards: bigint;
   Pool_borrowerAmount: bigint;
   SystemInfo_totalCollateralRatio: bigint;
   SystemInfo_borrowingInterestRate: bigint;
@@ -88,10 +89,10 @@ const getProductionCacheConfig = ({
   DebtTokenMeta_providedStability = BigInt(10000000000000000000),
   DebtTokenMeta_troveMintedAmount = BigInt(10000000000000000000),
   DebtTokenMeta_troveRepableDebtAmount = BigInt(10000000000000000000),
-  DebtTokenMeta_troveLockedAmount = BigInt(100000000000000000000),
   DebtTokenMeta_walletAmount = BigInt(10000000000000000000),
   DebtTokenMeta_troveDebtAmount = BigInt(10000000000000000000),
   Pool_borrowerAmount = BigInt(10000000000000000000),
+  Pool_pendingRewards = BigInt(1000000000000000000000),
   Pool_swapFee = BigInt(50000),
   SystemInfo_totalCollateralRatio = BigInt(1500000000000000000),
   SystemInfo_ICR = BigInt(100000000000000000),
@@ -190,6 +191,12 @@ const getProductionCacheConfig = ({
         swapFee: {
           read() {
             return Pool_swapFee;
+          },
+        },
+
+        pendingRewards: {
+          read() {
+            return Pool_pendingRewards;
           },
         },
 

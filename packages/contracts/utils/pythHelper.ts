@@ -13,15 +13,17 @@ export interface PythPriceData {
 
 const priceData: PythPriceData[] = [];
 
-export const initPrice = (token: string, price: number) => {
-  if (priceData.find(d => d.token === token) === undefined)
+export const initPrice = (token: string, price: number, pythId?: string | undefined) => {
+  if (!priceData.find(d => d.token === token))
     priceData.push({
       token,
       id:
-        '0x' +
-        BigInt(priceData.length + 1)
-          .toString(8)
-          .padStart(64, '0'),
+        pythId !== undefined
+          ? pythId
+          : '0x' +
+            BigInt(priceData.length + 1)
+              .toString(8)
+              .padStart(64, '0'),
       price,
     });
   else setPrice(token, price);

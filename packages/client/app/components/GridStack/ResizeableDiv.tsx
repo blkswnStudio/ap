@@ -34,7 +34,10 @@ function ResizeableDiv({ children }: PropsWithChildren<{}>) {
 
     // set css custom property globally to resize the TradingView
     const distanceToBottom = window.innerHeight - event.clientY;
-    document.documentElement.style.setProperty('--apollon-drag-queen-height', distanceToBottom - 10 + 'px');
+    document.documentElement.style.setProperty(
+      '--apollon-drag-queen-height',
+      Math.max(distanceToBottom, 64) - 10 + 'px',
+    );
 
     // Destroy overlay and follower
     catchMouseOverlay.remove();

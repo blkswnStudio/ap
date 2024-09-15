@@ -104,7 +104,7 @@ contract LiquidationOperations is LiquityBase, Ownable(msg.sender), CheckContrac
    * Attempt to liquidate a custom list of troves provided by the caller.
    */
   function batchLiquidateTroves(address[] memory _troveArray, bytes[] memory _priceUpdateData) public payable override {
-    if (!troveManager.enableLiquidationAndRedeeming()) revert LiquidationDisabled();
+    if (!troveManager.enableLiquidation()) revert LiquidationDisabled();
     if (_troveArray.length == 0) revert EmptyArray();
 
     LocalVariables_OuterLiquidationFunction memory vars;
@@ -122,7 +122,7 @@ contract LiquidationOperations is LiquityBase, Ownable(msg.sender), CheckContrac
     for (uint i = 0; i < _troveArray.length; i++) {
       address trove = _troveArray[i];
       if (!troveManager.isTroveActive(trove)) continue; // Skip non-active troves
-      if (troveManager.getTroveOwnersCount() <= 1) continue; // don't liquidate if last trove
+      if (troveManager.getTroveOwnersCount() <= 1) break; // don't liquidate if last trove
 
       bool liquidated = _executeTroveLiquidation(vars, trove);
       if (liquidated && !atLeastOneTroveLiquidated) atLeastOneTroveLiquidated = true;
@@ -183,13 +183,48 @@ contract LiquidationOperations is LiquityBase, Ownable(msg.sender), CheckContrac
     address trove
   ) internal returns (bool liquidated) {
     LocalVariables_LiquidationSequence memory vars;
-    (
-      vars.troveAmountsIncludingRewards,
-      vars.IMCR,
-      vars.troveCollInUSD,
-      vars.troveDebtInUSD,
-      vars.troveDebtInUSDWithoutGasCompensation
-    ) = troveManager.getEntireDebtAndColl(outerVars.priceCache, trove);
+    uint debtTokenLength;
+    uint stableCoinIndex;
+    (vars.troveAmountsIncludingRewards, debtTokenLength, stableCoinIndex) = troveManager.getEntireDebtAndColl(
+      outerVars.priceCache,
+      trove
+    );
+
+    // adding missing amount meta data
+    uint maxDebtInUSD;
+    for (uint i = 0; i < vars.troveAmountsIncludingRewards.length; i++) {
+      RAmount memory amountEntry = vars.troveAmountsIncludingRewards[i];
+
+      uint totalAmount = amountEntry.amount + amountEntry.pendingReward + amountEntry.pendingInterest;
+      uint inUSD = priceFeed.getUSDValue(outerVars.priceCache, amountEntry.tokenAddress, totalAmount);
+
+      if (amountEntry.isColl) {
+        amountEntry.gasCompensation = _getCollGasCompensation(totalAmount);
+        amountEntry.toLiquidate = totalAmount - amountEntry.gasCompensation;
+        vars.troveCollInUSD += inUSD;
+        maxDebtInUSD += LiquityMath._computeMaxDebtValue(
+          inUSD,
+          outerVars.priceCache.collPrices[i - debtTokenLength].supportedCollateralRatio
+        );
+      } else {
+        if (i == stableCoinIndex) {
+          // stable coin gas compensation should not be liquidated, it will be paid out as reward for the liquidator
+          amountEntry.toLiquidate = totalAmount - STABLE_COIN_GAS_COMPENSATION;
+          vars.troveDebtInUSDWithoutGasCompensation += priceFeed.getUSDValue(
+            outerVars.priceCache,
+            amountEntry.tokenAddress,
+            amountEntry.toLiquidate
+          );
+        } else {
+          amountEntry.toLiquidate = totalAmount;
+          vars.troveDebtInUSDWithoutGasCompensation += inUSD;
+        }
+
+        vars.troveDebtInUSD += inUSD;
+      }
+    }
+
+    vars.IMCR = LiquityMath._computeIMCR(maxDebtInUSD, vars.troveCollInUSD);
     vars.ICR = LiquityMath._computeCR(vars.troveCollInUSD, vars.troveDebtInUSD);
 
     // ICR > TCR, skipping liquidation, no matter what mode
@@ -450,7 +485,7 @@ contract LiquidationOperations is LiquityBase, Ownable(msg.sender), CheckContrac
     for (uint i = 0; i < vars.priceCache.collPrices.length; i++) {
       liquidatedColl[i] = TokenAmount(
         vars.priceCache.collPrices[i].tokenAddress,
-        vars.tokensToRedistribute[i].amount // works because of the initialisation of the array (first debts, then colls)
+        vars.tokensToRedistribute[i].amount // works because of the initialisation of the array (first colls, then debts)
       );
     }
 

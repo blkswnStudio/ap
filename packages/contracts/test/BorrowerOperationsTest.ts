@@ -296,7 +296,7 @@ describe('BorrowerOperations', () => {
       const aliceColl = parseUnits('1.5', 8);
       const aliceDebt = parseUnits('15000');
       await open(alice, aliceColl, aliceDebt);
-      const bobColl = parseUnits('1.5', 8);
+      const bobColl = parseUnits('1', 8);
       const bobDebt = parseUnits('15000');
       await open(bob, bobColl, bobDebt);
 

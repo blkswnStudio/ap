@@ -134,7 +134,7 @@ scalar Bytes
 
 type CollateralTokenMeta {
   id: String!
-  supportedCollateralRatio: BigInt!
+  supportedCollateralRatio: BigInt
   timestamp: BigInt!
   token: Token!
   totalReserve: BigInt!
@@ -492,7 +492,9 @@ type Pool {
   id: String!
   liquidity(first: Int = 100, orderBy: PoolLiquidity_orderBy, orderDirection: OrderDirection, skip: Int = 0, where: PoolLiquidity_filter): [PoolLiquidity!]!
   liquidityDepositAPY: BigInt!
+  stakingPool: StakingPool!
   totalSupply: BigInt!
+  totalValueUSD: BigInt!
   volume30dUSD: PoolVolume30d!
   volume30dUSD30dAgo: PoolVolume30d!
 }
@@ -752,6 +754,27 @@ input Pool_filter {
   liquidity_not_contains: [String!]
   liquidity_not_contains_nocase: [String!]
   or: [Pool_filter]
+  stakingPool: String
+  stakingPool_: StakingPool_filter
+  stakingPool_contains: String
+  stakingPool_contains_nocase: String
+  stakingPool_ends_with: String
+  stakingPool_ends_with_nocase: String
+  stakingPool_gt: String
+  stakingPool_gte: String
+  stakingPool_in: [String!]
+  stakingPool_lt: String
+  stakingPool_lte: String
+  stakingPool_not: String
+  stakingPool_not_contains: String
+  stakingPool_not_contains_nocase: String
+  stakingPool_not_ends_with: String
+  stakingPool_not_ends_with_nocase: String
+  stakingPool_not_in: [String!]
+  stakingPool_not_starts_with: String
+  stakingPool_not_starts_with_nocase: String
+  stakingPool_starts_with: String
+  stakingPool_starts_with_nocase: String
   totalSupply: BigInt
   totalSupply_gt: BigInt
   totalSupply_gte: BigInt
@@ -760,6 +783,14 @@ input Pool_filter {
   totalSupply_lte: BigInt
   totalSupply_not: BigInt
   totalSupply_not_in: [BigInt!]
+  totalValueUSD: BigInt
+  totalValueUSD_gt: BigInt
+  totalValueUSD_gte: BigInt
+  totalValueUSD_in: [BigInt!]
+  totalValueUSD_lt: BigInt
+  totalValueUSD_lte: BigInt
+  totalValueUSD_not: BigInt
+  totalValueUSD_not_in: [BigInt!]
   volume30dUSD: String
   volume30dUSD30dAgo: String
   volume30dUSD30dAgo_: PoolVolume30d_filter
@@ -809,7 +840,15 @@ enum Pool_orderBy {
   id
   liquidity
   liquidityDepositAPY
+  stakingPool
+  stakingPool__allocPoints
+  stakingPool__id
+  stakingPool__stakingAPR
+  stakingPool__totalDeposit
+  stakingPool__totalDepositUSD
+  stakingPool__totalRewardUSD
   totalSupply
+  totalValueUSD
   volume30dUSD
   volume30dUSD30dAgo
   volume30dUSD30dAgo__feeUSD
@@ -1107,6 +1146,62 @@ type Query {
     subgraphError: _SubgraphErrorPolicy_! = deny
     where: StabilityDepositChunk_filter
   ): [StabilityDepositChunk!]!
+  staking(
+    """
+    The block at which the query should be executed. Can either be a `{ hash: Bytes }` value containing a block hash, a `{ number: Int }` containing the block number, or a `{ number_gte: Int }` containing the minimum block number. In the case of `number_gte`, the query will be executed on the latest block only if the subgraph has progressed to or past the minimum block number. Defaults to the latest block when omitted.
+    """
+    block: Block_height
+    id: ID!
+
+    """
+    Set to `allow` to receive data even if the subgraph has skipped over errors while syncing.
+    """
+    subgraphError: _SubgraphErrorPolicy_! = deny
+  ): Staking
+  stakingPool(
+    """
+    The block at which the query should be executed. Can either be a `{ hash: Bytes }` value containing a block hash, a `{ number: Int }` containing the block number, or a `{ number_gte: Int }` containing the minimum block number. In the case of `number_gte`, the query will be executed on the latest block only if the subgraph has progressed to or past the minimum block number. Defaults to the latest block when omitted.
+    """
+    block: Block_height
+    id: ID!
+
+    """
+    Set to `allow` to receive data even if the subgraph has skipped over errors while syncing.
+    """
+    subgraphError: _SubgraphErrorPolicy_! = deny
+  ): StakingPool
+  stakingPools(
+    """
+    The block at which the query should be executed. Can either be a `{ hash: Bytes }` value containing a block hash, a `{ number: Int }` containing the block number, or a `{ number_gte: Int }` containing the minimum block number. In the case of `number_gte`, the query will be executed on the latest block only if the subgraph has progressed to or past the minimum block number. Defaults to the latest block when omitted.
+    """
+    block: Block_height
+    first: Int = 100
+    orderBy: StakingPool_orderBy
+    orderDirection: OrderDirection
+    skip: Int = 0
+
+    """
+    Set to `allow` to receive data even if the subgraph has skipped over errors while syncing.
+    """
+    subgraphError: _SubgraphErrorPolicy_! = deny
+    where: StakingPool_filter
+  ): [StakingPool!]!
+  stakings(
+    """
+    The block at which the query should be executed. Can either be a `{ hash: Bytes }` value containing a block hash, a `{ number: Int }` containing the block number, or a `{ number_gte: Int }` containing the minimum block number. In the case of `number_gte`, the query will be executed on the latest block only if the subgraph has progressed to or past the minimum block number. Defaults to the latest block when omitted.
+    """
+    block: Block_height
+    first: Int = 100
+    orderBy: Staking_orderBy
+    orderDirection: OrderDirection
+    skip: Int = 0
+
+    """
+    Set to `allow` to receive data even if the subgraph has skipped over errors while syncing.
+    """
+    subgraphError: _SubgraphErrorPolicy_! = deny
+    where: Staking_filter
+  ): [Staking!]!
   swapEvent(
     """
     The block at which the query should be executed. Can either be a `{ hash: Bytes }` value containing a block hash, a `{ number: Int }` containing the block number, or a `{ number_gte: Int }` containing the minimum block number. In the case of `number_gte`, the query will be executed on the latest block only if the subgraph has progressed to or past the minimum block number. Defaults to the latest block when omitted.
@@ -1696,6 +1791,193 @@ enum StabilityDepositChunk_orderBy {
   volume
 }
 
+type Staking {
+  id: String!
+  pools(first: Int = 100, orderBy: StakingPool_orderBy, orderDirection: OrderDirection, skip: Int = 0, where: StakingPool_filter): [StakingPool!]!
+  rewardToken: Token!
+  rewardsPerSecond: BigInt!
+  rewardsPerYearUSD: BigInt!
+  totalAllocPoints: BigInt!
+}
+
+type StakingPool {
+  allocPoints: BigInt!
+  id: Bytes!
+  liquidityPool: Pool!
+  stakingAPR: BigInt!
+  totalDeposit: BigInt!
+  totalDepositUSD: BigInt!
+  totalRewardUSD: BigInt!
+}
+
+input StakingPool_filter {
+  """Filter for the block changed event."""
+  _change_block: BlockChangedFilter
+  allocPoints: BigInt
+  allocPoints_gt: BigInt
+  allocPoints_gte: BigInt
+  allocPoints_in: [BigInt!]
+  allocPoints_lt: BigInt
+  allocPoints_lte: BigInt
+  allocPoints_not: BigInt
+  allocPoints_not_in: [BigInt!]
+  and: [StakingPool_filter]
+  id: Bytes
+  id_contains: Bytes
+  id_gt: Bytes
+  id_gte: Bytes
+  id_in: [Bytes!]
+  id_lt: Bytes
+  id_lte: Bytes
+  id_not: Bytes
+  id_not_contains: Bytes
+  id_not_in: [Bytes!]
+  liquidityPool_: Pool_filter
+  or: [StakingPool_filter]
+  stakingAPR: BigInt
+  stakingAPR_gt: BigInt
+  stakingAPR_gte: BigInt
+  stakingAPR_in: [BigInt!]
+  stakingAPR_lt: BigInt
+  stakingAPR_lte: BigInt
+  stakingAPR_not: BigInt
+  stakingAPR_not_in: [BigInt!]
+  totalDeposit: BigInt
+  totalDepositUSD: BigInt
+  totalDepositUSD_gt: BigInt
+  totalDepositUSD_gte: BigInt
+  totalDepositUSD_in: [BigInt!]
+  totalDepositUSD_lt: BigInt
+  totalDepositUSD_lte: BigInt
+  totalDepositUSD_not: BigInt
+  totalDepositUSD_not_in: [BigInt!]
+  totalDeposit_gt: BigInt
+  totalDeposit_gte: BigInt
+  totalDeposit_in: [BigInt!]
+  totalDeposit_lt: BigInt
+  totalDeposit_lte: BigInt
+  totalDeposit_not: BigInt
+  totalDeposit_not_in: [BigInt!]
+  totalRewardUSD: BigInt
+  totalRewardUSD_gt: BigInt
+  totalRewardUSD_gte: BigInt
+  totalRewardUSD_in: [BigInt!]
+  totalRewardUSD_lt: BigInt
+  totalRewardUSD_lte: BigInt
+  totalRewardUSD_not: BigInt
+  totalRewardUSD_not_in: [BigInt!]
+}
+
+enum StakingPool_orderBy {
+  allocPoints
+  id
+  liquidityPool
+  liquidityPool__address
+  liquidityPool__id
+  liquidityPool__liquidityDepositAPY
+  liquidityPool__totalSupply
+  liquidityPool__totalValueUSD
+  stakingAPR
+  totalDeposit
+  totalDepositUSD
+  totalRewardUSD
+}
+
+input Staking_filter {
+  """Filter for the block changed event."""
+  _change_block: BlockChangedFilter
+  and: [Staking_filter]
+  id: String
+  id_contains: String
+  id_contains_nocase: String
+  id_ends_with: String
+  id_ends_with_nocase: String
+  id_gt: String
+  id_gte: String
+  id_in: [String!]
+  id_lt: String
+  id_lte: String
+  id_not: String
+  id_not_contains: String
+  id_not_contains_nocase: String
+  id_not_ends_with: String
+  id_not_ends_with_nocase: String
+  id_not_in: [String!]
+  id_not_starts_with: String
+  id_not_starts_with_nocase: String
+  id_starts_with: String
+  id_starts_with_nocase: String
+  or: [Staking_filter]
+  pools: [String!]
+  pools_: StakingPool_filter
+  pools_contains: [String!]
+  pools_contains_nocase: [String!]
+  pools_not: [String!]
+  pools_not_contains: [String!]
+  pools_not_contains_nocase: [String!]
+  rewardToken: String
+  rewardToken_: Token_filter
+  rewardToken_contains: String
+  rewardToken_contains_nocase: String
+  rewardToken_ends_with: String
+  rewardToken_ends_with_nocase: String
+  rewardToken_gt: String
+  rewardToken_gte: String
+  rewardToken_in: [String!]
+  rewardToken_lt: String
+  rewardToken_lte: String
+  rewardToken_not: String
+  rewardToken_not_contains: String
+  rewardToken_not_contains_nocase: String
+  rewardToken_not_ends_with: String
+  rewardToken_not_ends_with_nocase: String
+  rewardToken_not_in: [String!]
+  rewardToken_not_starts_with: String
+  rewardToken_not_starts_with_nocase: String
+  rewardToken_starts_with: String
+  rewardToken_starts_with_nocase: String
+  rewardsPerSecond: BigInt
+  rewardsPerSecond_gt: BigInt
+  rewardsPerSecond_gte: BigInt
+  rewardsPerSecond_in: [BigInt!]
+  rewardsPerSecond_lt: BigInt
+  rewardsPerSecond_lte: BigInt
+  rewardsPerSecond_not: BigInt
+  rewardsPerSecond_not_in: [BigInt!]
+  rewardsPerYearUSD: BigInt
+  rewardsPerYearUSD_gt: BigInt
+  rewardsPerYearUSD_gte: BigInt
+  rewardsPerYearUSD_in: [BigInt!]
+  rewardsPerYearUSD_lt: BigInt
+  rewardsPerYearUSD_lte: BigInt
+  rewardsPerYearUSD_not: BigInt
+  rewardsPerYearUSD_not_in: [BigInt!]
+  totalAllocPoints: BigInt
+  totalAllocPoints_gt: BigInt
+  totalAllocPoints_gte: BigInt
+  totalAllocPoints_in: [BigInt!]
+  totalAllocPoints_lt: BigInt
+  totalAllocPoints_lte: BigInt
+  totalAllocPoints_not: BigInt
+  totalAllocPoints_not_in: [BigInt!]
+}
+
+enum Staking_orderBy {
+  id
+  pools
+  rewardToken
+  rewardToken__address
+  rewardToken__createdAt
+  rewardToken__decimals
+  rewardToken__id
+  rewardToken__isPoolToken
+  rewardToken__oracleId
+  rewardToken__symbol
+  rewardsPerSecond
+  rewardsPerYearUSD
+  totalAllocPoints
+}
+
 type Subscription {
   """Access to subgraph metadata"""
   _meta(block: Block_height): _Meta_
@@ -1979,6 +2261,62 @@ type Subscription {
     subgraphError: _SubgraphErrorPolicy_! = deny
     where: StabilityDepositChunk_filter
   ): [StabilityDepositChunk!]!
+  staking(
+    """
+    The block at which the query should be executed. Can either be a `{ hash: Bytes }` value containing a block hash, a `{ number: Int }` containing the block number, or a `{ number_gte: Int }` containing the minimum block number. In the case of `number_gte`, the query will be executed on the latest block only if the subgraph has progressed to or past the minimum block number. Defaults to the latest block when omitted.
+    """
+    block: Block_height
+    id: ID!
+
+    """
+    Set to `allow` to receive data even if the subgraph has skipped over errors while syncing.
+    """
+    subgraphError: _SubgraphErrorPolicy_! = deny
+  ): Staking
+  stakingPool(
+    """
+    The block at which the query should be executed. Can either be a `{ hash: Bytes }` value containing a block hash, a `{ number: Int }` containing the block number, or a `{ number_gte: Int }` containing the minimum block number. In the case of `number_gte`, the query will be executed on the latest block only if the subgraph has progressed to or past the minimum block number. Defaults to the latest block when omitted.
+    """
+    block: Block_height
+    id: ID!
+
+    """
+    Set to `allow` to receive data even if the subgraph has skipped over errors while syncing.
+    """
+    subgraphError: _SubgraphErrorPolicy_! = deny
+  ): StakingPool
+  stakingPools(
+    """
+    The block at which the query should be executed. Can either be a `{ hash: Bytes }` value containing a block hash, a `{ number: Int }` containing the block number, or a `{ number_gte: Int }` containing the minimum block number. In the case of `number_gte`, the query will be executed on the latest block only if the subgraph has progressed to or past the minimum block number. Defaults to the latest block when omitted.
+    """
+    block: Block_height
+    first: Int = 100
+    orderBy: StakingPool_orderBy
+    orderDirection: OrderDirection
+    skip: Int = 0
+
+    """
+    Set to `allow` to receive data even if the subgraph has skipped over errors while syncing.
+    """
+    subgraphError: _SubgraphErrorPolicy_! = deny
+    where: StakingPool_filter
+  ): [StakingPool!]!
+  stakings(
+    """
+    The block at which the query should be executed. Can either be a `{ hash: Bytes }` value containing a block hash, a `{ number: Int }` containing the block number, or a `{ number_gte: Int }` containing the minimum block number. In the case of `number_gte`, the query will be executed on the latest block only if the subgraph has progressed to or past the minimum block number. Defaults to the latest block when omitted.
+    """
+    block: Block_height
+    first: Int = 100
+    orderBy: Staking_orderBy
+    orderDirection: OrderDirection
+    skip: Int = 0
+
+    """
+    Set to `allow` to receive data even if the subgraph has skipped over errors while syncing.
+    """
+    subgraphError: _SubgraphErrorPolicy_! = deny
+    where: Staking_filter
+  ): [Staking!]!
   swapEvent(
     """
     The block at which the query should be executed. Can either be a `{ hash: Bytes }` value containing a block hash, a `{ number: Int }` containing the block number, or a `{ number_gte: Int }` containing the minimum block number. In the case of `number_gte`, the query will be executed on the latest block only if the subgraph has progressed to or past the minimum block number. Defaults to the latest block when omitted.
@@ -2494,6 +2832,7 @@ type SystemInfo {
   reservePoolUSDHistoryIndex: Int!
   stabilityPoolManager: Bytes!
   stableCoin: Bytes!
+  stakingOps: Bytes!
   storagePool: Bytes!
   timestamp: BigInt!
   totalValueLockedUSDHistoryIndex: Int!
@@ -2583,6 +2922,16 @@ input SystemInfo_filter {
   stableCoin_not: Bytes
   stableCoin_not_contains: Bytes
   stableCoin_not_in: [Bytes!]
+  stakingOps: Bytes
+  stakingOps_contains: Bytes
+  stakingOps_gt: Bytes
+  stakingOps_gte: Bytes
+  stakingOps_in: [Bytes!]
+  stakingOps_lt: Bytes
+  stakingOps_lte: Bytes
+  stakingOps_not: Bytes
+  stakingOps_not_contains: Bytes
+  stakingOps_not_in: [Bytes!]
   storagePool: Bytes
   storagePool_contains: Bytes
   storagePool_gt: Bytes
@@ -2627,6 +2976,7 @@ enum SystemInfo_orderBy {
   reservePoolUSDHistoryIndex
   stabilityPoolManager
   stableCoin
+  stakingOps
   storagePool
   timestamp
   totalValueLockedUSDHistoryIndex
@@ -2714,10 +3064,14 @@ enum TokenAmount_orderBy {
 type TokenCandle {
   candleSize: Int!
   close: BigInt!
+  closeOracle: BigInt!
   high: BigInt!
+  highOracle: BigInt!
   id: String!
   low: BigInt!
+  lowOracle: BigInt!
   open: BigInt!
+  openOracle: BigInt!
   timestamp: BigInt!
   token: Token!
   volume: BigInt!
@@ -2726,10 +3080,14 @@ type TokenCandle {
 type TokenCandleSingleton {
   candleSize: Int!
   close: BigInt!
+  closeOracle: BigInt!
   high: BigInt!
+  highOracle: BigInt!
   id: String!
   low: BigInt!
+  lowOracle: BigInt!
   open: BigInt!
+  openOracle: BigInt!
   timestamp: BigInt!
   token: Token!
   volume: BigInt!
@@ -2748,6 +3106,14 @@ input TokenCandleSingleton_filter {
   candleSize_not: Int
   candleSize_not_in: [Int!]
   close: BigInt
+  closeOracle: BigInt
+  closeOracle_gt: BigInt
+  closeOracle_gte: BigInt
+  closeOracle_in: [BigInt!]
+  closeOracle_lt: BigInt
+  closeOracle_lte: BigInt
+  closeOracle_not: BigInt
+  closeOracle_not_in: [BigInt!]
   close_gt: BigInt
   close_gte: BigInt
   close_in: [BigInt!]
@@ -2756,6 +3122,14 @@ input TokenCandleSingleton_filter {
   close_not: BigInt
   close_not_in: [BigInt!]
   high: BigInt
+  highOracle: BigInt
+  highOracle_gt: BigInt
+  highOracle_gte: BigInt
+  highOracle_in: [BigInt!]
+  highOracle_lt: BigInt
+  highOracle_lte: BigInt
+  highOracle_not: BigInt
+  highOracle_not_in: [BigInt!]
   high_gt: BigInt
   high_gte: BigInt
   high_in: [BigInt!]
@@ -2784,6 +3158,14 @@ input TokenCandleSingleton_filter {
   id_starts_with: String
   id_starts_with_nocase: String
   low: BigInt
+  lowOracle: BigInt
+  lowOracle_gt: BigInt
+  lowOracle_gte: BigInt
+  lowOracle_in: [BigInt!]
+  lowOracle_lt: BigInt
+  lowOracle_lte: BigInt
+  lowOracle_not: BigInt
+  lowOracle_not_in: [BigInt!]
   low_gt: BigInt
   low_gte: BigInt
   low_in: [BigInt!]
@@ -2792,6 +3174,14 @@ input TokenCandleSingleton_filter {
   low_not: BigInt
   low_not_in: [BigInt!]
   open: BigInt
+  openOracle: BigInt
+  openOracle_gt: BigInt
+  openOracle_gte: BigInt
+  openOracle_in: [BigInt!]
+  openOracle_lt: BigInt
+  openOracle_lte: BigInt
+  openOracle_not: BigInt
+  openOracle_not_in: [BigInt!]
   open_gt: BigInt
   open_gte: BigInt
   open_in: [BigInt!]
@@ -2842,10 +3232,14 @@ input TokenCandleSingleton_filter {
 enum TokenCandleSingleton_orderBy {
   candleSize
   close
+  closeOracle
   high
+  highOracle
   id
   low
+  lowOracle
   open
+  openOracle
   timestamp
   token
   token__address
@@ -2871,6 +3265,14 @@ input TokenCandle_filter {
   candleSize_not: Int
   candleSize_not_in: [Int!]
   close: BigInt
+  closeOracle: BigInt
+  closeOracle_gt: BigInt
+  closeOracle_gte: BigInt
+  closeOracle_in: [BigInt!]
+  closeOracle_lt: BigInt
+  closeOracle_lte: BigInt
+  closeOracle_not: BigInt
+  closeOracle_not_in: [BigInt!]
   close_gt: BigInt
   close_gte: BigInt
   close_in: [BigInt!]
@@ -2879,6 +3281,14 @@ input TokenCandle_filter {
   close_not: BigInt
   close_not_in: [BigInt!]
   high: BigInt
+  highOracle: BigInt
+  highOracle_gt: BigInt
+  highOracle_gte: BigInt
+  highOracle_in: [BigInt!]
+  highOracle_lt: BigInt
+  highOracle_lte: BigInt
+  highOracle_not: BigInt
+  highOracle_not_in: [BigInt!]
   high_gt: BigInt
   high_gte: BigInt
   high_in: [BigInt!]
@@ -2907,6 +3317,14 @@ input TokenCandle_filter {
   id_starts_with: String
   id_starts_with_nocase: String
   low: BigInt
+  lowOracle: BigInt
+  lowOracle_gt: BigInt
+  lowOracle_gte: BigInt
+  lowOracle_in: [BigInt!]
+  lowOracle_lt: BigInt
+  lowOracle_lte: BigInt
+  lowOracle_not: BigInt
+  lowOracle_not_in: [BigInt!]
   low_gt: BigInt
   low_gte: BigInt
   low_in: [BigInt!]
@@ -2915,6 +3333,14 @@ input TokenCandle_filter {
   low_not: BigInt
   low_not_in: [BigInt!]
   open: BigInt
+  openOracle: BigInt
+  openOracle_gt: BigInt
+  openOracle_gte: BigInt
+  openOracle_in: [BigInt!]
+  openOracle_lt: BigInt
+  openOracle_lte: BigInt
+  openOracle_not: BigInt
+  openOracle_not_in: [BigInt!]
   open_gt: BigInt
   open_gte: BigInt
   open_in: [BigInt!]
@@ -2965,10 +3391,14 @@ input TokenCandle_filter {
 enum TokenCandle_orderBy {
   candleSize
   close
+  closeOracle
   high
+  highOracle
   id
   low
+  lowOracle
   open
+  openOracle
   timestamp
   token
   token__address

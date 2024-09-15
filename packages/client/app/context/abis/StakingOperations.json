@@ -227,6 +227,19 @@
         "inputs": [
             {
                 "indexed": false,
+                "internalType": "uint256",
+                "name": "rewardsPerSecond",
+                "type": "uint256"
+            }
+        ],
+        "name": "RewardsPerSecondChanged",
+        "type": "event"
+    },
+    {
+        "anonymous": false,
+        "inputs": [
+            {
+                "indexed": false,
                 "internalType": "address",
                 "name": "swapOperations",
                 "type": "address"

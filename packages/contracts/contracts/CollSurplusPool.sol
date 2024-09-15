@@ -3,12 +3,15 @@
 pragma solidity ^0.8.9;
 
 import '@openzeppelin/contracts/token/ERC20/IERC20.sol';
+import '@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol';
 import '@openzeppelin/contracts/access/Ownable.sol';
 import './Dependencies/CheckContract.sol';
 import './Interfaces/ICollSurplusPool.sol';
 import './Dependencies/LiquityBase.sol';
 
 contract CollSurplusPool is LiquityBase, Ownable(msg.sender), CheckContract, ICollSurplusPool {
+  using SafeERC20 for IERC20;
+
   string public constant NAME = 'CollSurplusPool';
 
   address public liquidationOperationsAddress;
@@ -25,9 +28,9 @@ contract CollSurplusPool is LiquityBase, Ownable(msg.sender), CheckContract, ICo
     borrowerOperationsAddress = _borrowerOperationsAddress;
     liquidationOperationsAddress = _liquidationOperationsAddress;
 
-    emit CollSurplusPoolInitialized(_liquidationOperationsAddress, _borrowerOperationsAddress);
-
     renounceOwnership();
+
+    emit CollSurplusPoolInitialized(_liquidationOperationsAddress, _borrowerOperationsAddress);
   }
 
   function getCollateral(address _account) external view override returns (TokenAmount[] memory) {
@@ -63,13 +66,14 @@ contract CollSurplusPool is LiquityBase, Ownable(msg.sender), CheckContract, ICo
     _requireCallerIsProtocol();
 
     TokenAmount[] memory accountBalances = balances[_account];
+    delete balances[_account];
+
     for (uint i = 0; i < accountBalances.length; i++) {
       TokenAmount memory tokenEntry = accountBalances[i];
       if (tokenEntry.amount == 0) continue;
-      IERC20(tokenEntry.tokenAddress).transfer(_account, tokenEntry.amount);
+      IERC20(tokenEntry.tokenAddress).safeTransfer(_account, tokenEntry.amount);
     }
 
-    delete balances[_account];
     emit CollClaimed(_account);
   }
 

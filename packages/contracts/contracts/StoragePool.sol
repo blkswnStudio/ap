@@ -3,6 +3,7 @@
 pragma solidity ^0.8.9;
 
 import '@openzeppelin/contracts/token/ERC20/IERC20.sol';
+import '@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol';
 import '@openzeppelin/contracts/access/Ownable.sol';
 import './Dependencies/CheckContract.sol';
 import './Dependencies/LiquityBase.sol';
@@ -18,6 +19,8 @@ import './Interfaces/IStabilityPoolManager.sol';
  *
  */
 contract StoragePool is LiquityBase, Ownable(msg.sender), CheckContract, IStoragePool {
+  using SafeERC20 for IERC20;
+
   string public constant NAME = 'StoragePool';
 
   address public borrowerOperationsAddress;
@@ -107,7 +110,7 @@ contract StoragePool is LiquityBase, Ownable(msg.sender), CheckContract, IStorag
     _requireCallerIsProtocol();
     if (_amount == 0) return;
     _subtractValue(_tokenAddress, _isColl, _poolType, _amount);
-    IERC20(_tokenAddress).transfer(_receiver, _amount);
+    IERC20(_tokenAddress).safeTransfer(_receiver, _amount);
   }
 
   function _subtractValue(address _tokenAddress, bool _isColl, PoolType _poolType, uint _amount) internal {

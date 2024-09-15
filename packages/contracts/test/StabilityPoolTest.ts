@@ -274,7 +274,7 @@ describe('StabilityPool', () => {
         const alice_newDeposit_1 = await stockPool.getCompoundedDebtDeposit(alice);
         expect(alice_newDeposit_1).to.be.equal(alice_topUp_1);
         const alice_btc_balance = await BTC.balanceOf(alice.address);
-        expect(alice_btc_balance).to.be.equal(1980098); // 0.02 BTC - liquidation fee
+        expect(alice_btc_balance).to.be.equal(1980098); // 0.02 BTC - 0.5% liquidation fee
 
         // get system reward terms
         const S_1 = await stockPool.epochToScaleToCollTokenToSum(1, 0, BTC);

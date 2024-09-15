@@ -13,8 +13,6 @@ import './Interfaces/ITokenManager.sol';
 import './Interfaces/ISwapPair.sol';
 
 contract StakingOperations is IStakingOperations, CheckContract, Ownable(msg.sender) {
-  // --- Libs ---
-
   using SafeERC20 for IERC20;
 
   // --- Constants ---
@@ -65,6 +63,7 @@ contract StakingOperations is IStakingOperations, CheckContract, Ownable(msg.sen
 
     // set
     rewardsPerSecond = _rewardsPerSecond;
+    emit RewardsPerSecondChanged(rewardsPerSecond);
   }
 
   function setPool(ISwapPair _pid, uint _allocPoint) external override {
@@ -92,7 +91,7 @@ contract StakingOperations is IStakingOperations, CheckContract, Ownable(msg.sen
     emit ConfigPool(_pid, pool.allocPoint, totalAllocPoint);
 
     // update if required
-    if (prevAllocPoint != _allocPoint) updatePool(_pid);
+    if (prevAllocPoint != _allocPoint) _updatePool(_pid, 0);
   }
 
   // --- View functions ---
@@ -122,23 +121,35 @@ contract StakingOperations is IStakingOperations, CheckContract, Ownable(msg.sen
 
   function claim(ISwapPair _pid) external override {
     requireValidPool(_pid);
-    _claim(_pid, msg.sender);
+    _claim(_pid, msg.sender, 0);
+
+    // set reward debt
+    userInfo[_pid][msg.sender].rewardDebt =
+      (userInfo[_pid][msg.sender].amount * poolInfo[_pid].accRewardPerShare) /
+      REWARD_DECIMALS;
   }
 
   function batchClaim(ISwapPair[] memory _pids) external override {
+    ISwapPair pid;
     uint length = _pids.length;
     for (uint n = 0; n < length; n++) {
-      requireValidPool(_pids[n]);
-      _claim(_pids[n], msg.sender);
+      pid = _pids[n];
+      requireValidPool(pid);
+      _claim(pid, msg.sender, 0);
+
+      // set reward debt
+      userInfo[pid][msg.sender].rewardDebt =
+        (userInfo[pid][msg.sender].amount * poolInfo[pid].accRewardPerShare) /
+        REWARD_DECIMALS;
     }
   }
 
-  function _claim(ISwapPair _pid, address _user) internal {
+  function _claim(ISwapPair _pid, address _user, uint _addedBalance) private {
     PoolInfo storage pool = poolInfo[_pid];
     UserInfo storage user = userInfo[_pid][_user];
 
     // update pool
-    updatePool(_pid);
+    _updatePool(_pid, _addedBalance);
 
     // get reward
     if (user.amount > 0) {
@@ -160,7 +171,7 @@ contract StakingOperations is IStakingOperations, CheckContract, Ownable(msg.sen
     if (_amount == 0) revert DepositZero();
 
     // claim
-    _claim(_pid, _user);
+    _claim(_pid, _user, _amount);
 
     // deposit
     user.amount += _amount;
@@ -178,7 +189,7 @@ contract StakingOperations is IStakingOperations, CheckContract, Ownable(msg.sen
     if (user.amount < _amount) revert InsufficientDeposit();
 
     // claim
-    _claim(_pid, _user);
+    _claim(_pid, _user, 0);
 
     // withdraw
     user.amount -= _amount;
@@ -212,18 +223,22 @@ contract StakingOperations is IStakingOperations, CheckContract, Ownable(msg.sen
   function massUpdatePools() public {
     uint length = pools.length;
     for (uint n = 0; n < length; n++) {
-      updatePool(pools[n]);
+      _updatePool(pools[n], 0);
     }
   }
 
-  function updatePool(ISwapPair _pid) public {
+  function updatePool(ISwapPair _pid) external {
+    _updatePool(_pid, 0);
+  }
+
+  function _updatePool(ISwapPair _pid, uint _addedBalance) private {
     PoolInfo storage pool = poolInfo[_pid];
 
     // check
     if (block.timestamp <= pool.lastRewardTime) return;
 
     // update
-    uint tokenSupply = _pid.balanceOf(address(this));
+    uint tokenSupply = _pid.balanceOf(address(this)) - _addedBalance;
     if (tokenSupply == 0 || totalAllocPoint == 0) {
       pool.lastRewardTime = block.timestamp;
       return;

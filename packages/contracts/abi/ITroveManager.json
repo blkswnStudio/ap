@@ -11,6 +11,11 @@
     },
     {
         "inputs": [],
+        "name": "InvalidParameter",
+        "type": "error"
+    },
+    {
+        "inputs": [],
         "name": "InvalidTrove",
         "type": "error"
     },
@@ -98,7 +103,20 @@
                 "type": "bool"
             }
         ],
-        "name": "SetEnableLiquidationAndRedeeming",
+        "name": "SetEnableLiquidation",
+        "type": "event"
+    },
+    {
+        "anonymous": false,
+        "inputs": [
+            {
+                "indexed": false,
+                "internalType": "bool",
+                "name": "enable",
+                "type": "bool"
+            }
+        ],
+        "name": "SetEnableRedeeming",
         "type": "event"
     },
     {
@@ -660,7 +678,20 @@
     },
     {
         "inputs": [],
-        "name": "enableLiquidationAndRedeeming",
+        "name": "enableLiquidation",
+        "outputs": [
+            {
+                "internalType": "bool",
+                "name": "",
+                "type": "bool"
+            }
+        ],
+        "stateMutability": "view",
+        "type": "function"
+    },
+    {
+        "inputs": [],
+        "name": "enableRedeeming",
         "outputs": [
             {
                 "internalType": "bool",
@@ -997,22 +1028,12 @@
             },
             {
                 "internalType": "uint256",
-                "name": "IMCR",
+                "name": "debtTokenLength",
                 "type": "uint256"
             },
             {
                 "internalType": "uint256",
-                "name": "troveCollInUSD",
-                "type": "uint256"
-            },
-            {
-                "internalType": "uint256",
-                "name": "troveDebtInUSD",
-                "type": "uint256"
-            },
-            {
-                "internalType": "uint256",
-                "name": "troveDebtInUSDWithoutGasCompensation",
+                "name": "stableCoinIndex",
                 "type": "uint256"
             }
         ],
@@ -1739,6 +1760,32 @@
             }
         ],
         "name": "setBorrowingInterestRate",
+        "outputs": [],
+        "stateMutability": "nonpayable",
+        "type": "function"
+    },
+    {
+        "inputs": [
+            {
+                "internalType": "bool",
+                "name": "_enable",
+                "type": "bool"
+            }
+        ],
+        "name": "setEnableLiquidation",
+        "outputs": [],
+        "stateMutability": "nonpayable",
+        "type": "function"
+    },
+    {
+        "inputs": [
+            {
+                "internalType": "bool",
+                "name": "_enable",
+                "type": "bool"
+            }
+        ],
+        "name": "setEnableRedeeming",
         "outputs": [],
         "stateMutability": "nonpayable",
         "type": "function"

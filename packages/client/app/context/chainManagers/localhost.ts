@@ -109,11 +109,6 @@ export const ContractDataFreshnessManager_LOCALHOST: {
             SchemaDataFreshnessManager_LOCALHOST.ERC20[tokenAddress].troveLockedAmount.fetch();
           }
         });
-        Object.values(Contracts_Localhost.DebtToken).forEach((tokenAddress) => {
-          if (isDebtTokenAddress(tokenAddress)) {
-            SchemaDataFreshnessManager_LOCALHOST.DebtToken[tokenAddress].troveLockedAmount.fetch();
-          }
-        });
       },
       value: [],
       lastFetched: 0,
@@ -285,7 +280,7 @@ export const SchemaDataFreshnessManager_LOCALHOST: ContractDataFreshnessManagerT
     ...ERC20_BTC,
     ...ERC20_USDT,
     ...ERC20_GOV,
-  } as any ,
+  } as any,
 
   SwapPairs: {
     ...SwapPairs_BTC,

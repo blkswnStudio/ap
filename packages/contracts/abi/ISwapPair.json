@@ -70,6 +70,17 @@
         "type": "error"
     },
     {
+        "inputs": [
+            {
+                "internalType": "address",
+                "name": "token",
+                "type": "address"
+            }
+        ],
+        "name": "UntrustedOracle",
+        "type": "error"
+    },
+    {
         "anonymous": false,
         "inputs": [
             {
@@ -100,7 +111,7 @@
             {
                 "indexed": true,
                 "internalType": "address",
-                "name": "sender",
+                "name": "from",
                 "type": "address"
             },
             {
@@ -114,12 +125,6 @@
                 "internalType": "uint256",
                 "name": "amount1",
                 "type": "uint256"
-            },
-            {
-                "indexed": true,
-                "internalType": "address",
-                "name": "to",
-                "type": "address"
             }
         ],
         "name": "Burn",
@@ -131,7 +136,7 @@
             {
                 "indexed": true,
                 "internalType": "address",
-                "name": "sender",
+                "name": "to",
                 "type": "address"
             },
             {

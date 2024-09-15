@@ -19,10 +19,11 @@ import {
 } from '@mui/material';
 import { BaseContract, ContractTransactionReceipt, ContractTransactionResponse } from 'ethers/contract';
 import { useSnackbar } from 'notistack';
-import { ReactNode, createContext, useContext, useEffect, useState } from 'react';
+import { ReactNode, createContext, useContext, useEffect, useRef, useState } from 'react';
 import Draggable from 'react-draggable';
 import CrossIcon from '../components/Icons/CrossIcon';
 import DiamondIcon from '../components/Icons/DiamondIcon';
+import { manualSubgraphSyncTimeout } from '../utils/contants';
 import { useErrorMonitoring } from './ErrorMonitoringContext';
 
 export type TransactionStep = {
@@ -31,7 +32,7 @@ export type TransactionStep = {
   transaction: {
     methodCall: () => Promise<ContractTransactionResponse>;
     waitForResponseOf: number[];
-    reloadQueriesAferMined?: Parameters<ApolloClient<object>['refetchQueries']>[0]['include'];
+    reloadQueriesAfterMined?: Parameters<ApolloClient<object>['refetchQueries']>[0]['include'];
     actionAfterMined?: (client: ApolloClient<object>) => void;
   };
 };
@@ -94,14 +95,18 @@ export default function TransactionDialogProvider({ children }: { children: Reac
   const [stepsState, setStepsState] = useState<StepState[]>([]);
   const [actionAfterCompleted, setActionAfterCompleted] = useState<() => void>();
   const [transactionPending, setTransactionPending] = useState(false);
-
   const [activeStep, setActiveStep] = useState<number | undefined>(undefined);
+
+  const showErrorTimeout = useRef<NodeJS.Timeout>();
 
   useEffect(() => {
     if (steps.length > 0) {
       setActiveStep(0);
+      setTransactionPending(true);
     } else {
       setActiveStep(undefined);
+      setTransactionPending(false);
+      setActionAfterCompleted(undefined);
       setStepsState(Array(steps.length).fill({ status: 'waiting' }));
     }
   }, [steps]);
@@ -109,7 +114,7 @@ export default function TransactionDialogProvider({ children }: { children: Reac
   useEffect(() => {
     if (activeStep !== undefined) {
       const {
-        transaction: { methodCall, waitForResponseOf, reloadQueriesAferMined = [], actionAfterMined },
+        transaction: { methodCall, waitForResponseOf, reloadQueriesAfterMined = [], actionAfterMined },
       } = steps[activeStep];
       // First wait if previous necessary steps have been mined
       Promise.all(waitForResponseOf.map((stepIndex) => stepsState[stepIndex].resultPromise?.wait())).then(async () => {
@@ -139,16 +144,17 @@ export default function TransactionDialogProvider({ children }: { children: Reac
               if (actionAfterMined) {
                 actionAfterMined(client);
               }
-              if (reloadQueriesAferMined.length > 0) {
-                client.refetchQueries({ include: reloadQueriesAferMined });
+              if (reloadQueriesAfterMined.length > 0) {
+                setTimeout(() => {
+                  client.refetchQueries({ include: reloadQueriesAfterMined });
+                  // Give subgraph some time to catch up
+                }, manualSubgraphSyncTimeout);
               }
 
               if (activeStep === steps.length - 1) {
                 actionAfterCompleted?.();
                 enqueueSnackbar('All transactions have been confirmed.', { variant: 'success' });
-                setTransactionPending(false);
-                setActiveStep(undefined);
-                setSteps([]);
+                handleClose();
               }
             });
 
@@ -160,8 +166,6 @@ export default function TransactionDialogProvider({ children }: { children: Reac
           })
           .catch((error: { message: string; cause?: BaseContract }) => {
             console.error('error: ', error);
-            // Allow interaction from the start
-            setTransactionPending(false);
 
             const showError = (errorMessage: string) => {
               setStepsState((stepsState) => {
@@ -173,9 +177,8 @@ export default function TransactionDialogProvider({ children }: { children: Reac
                 };
                 return newStepsState;
               });
-              setTimeout(() => {
-                setActiveStep(undefined);
-                setSteps([]);
+              showErrorTimeout.current = setTimeout(() => {
+                handleClose();
               }, 10000);
             };
 
@@ -230,13 +233,34 @@ export default function TransactionDialogProvider({ children }: { children: Reac
     }
   };
 
+  const handleClose = () => {
+    // If there is a timeout for showing a bug cancel it.
+    if (showErrorTimeout.current) {
+      clearTimeout(showErrorTimeout.current);
+    }
+
+    setSteps([]);
+    setActiveStep(undefined);
+    setTransactionPending(false);
+    setActionAfterCompleted(undefined);
+  };
+
   return (
     <TransactionDialogContext.Provider
       value={{
         steps,
         setSteps: (steps: TransactionStep[], actionAfterCompleted?: () => void) => {
-          setActionAfterCompleted(() => actionAfterCompleted);
-          setSteps(createDemoSteps(steps));
+          if (transactionPending) {
+            handleClose();
+
+            setTimeout(() => {
+              setActionAfterCompleted(() => actionAfterCompleted);
+              setSteps(createDemoSteps(steps));
+            }, 250);
+          } else {
+            setActionAfterCompleted(() => actionAfterCompleted);
+            setSteps(createDemoSteps(steps));
+          }
         },
         transactionPending,
       }}
@@ -249,11 +273,7 @@ export default function TransactionDialogProvider({ children }: { children: Reac
         >
           <Dialog
             open={activeStep !== undefined}
-            onClose={() => {
-              setSteps([]);
-              setActiveStep(undefined);
-              setTransactionPending(false);
-            }}
+            onClose={handleClose}
             maxWidth="sm"
             fullWidth
             disableEnforceFocus // Allows other things to take focus
@@ -281,6 +301,8 @@ export default function TransactionDialogProvider({ children }: { children: Reac
                 alignItems: 'center',
                 backgroundColor: 'background.default',
                 cursor: 'grab',
+                borderTopLeftRadius: '4px',
+                borderTopRightRadius: '4px',
               }}
             >
               <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
@@ -289,13 +311,7 @@ export default function TransactionDialogProvider({ children }: { children: Reac
                   {`${steps.length} transactions in progress.`}
                 </Typography>
               </div>
-              <IconButton
-                onClick={() => {
-                  setSteps([]);
-                  setActiveStep(undefined);
-                }}
-                aria-label="close transaction dialog"
-              >
+              <IconButton onClick={handleClose} aria-label="close transaction dialog">
                 <CrossIcon />
               </IconButton>
             </DialogTitle>
@@ -304,11 +320,13 @@ export default function TransactionDialogProvider({ children }: { children: Reac
               sx={{
                 p: 0,
                 backgroundColor: 'background.default',
+                borderBottomLeftRadius: '4px',
+                borderBottomRightRadius: '4px',
               }}
             >
               <Alert severity="info">
-                Please sign each transaction and do not close this window until all transactions are confirmed. Some
-                actions require previous approvals to be mined first and might take some time.
+                Please sign each transaction and keep this window open until all transactions have been confirmed. Some
+                actions may require prior approvals to be processed first, which could take some time.
               </Alert>
 
               <Box sx={{ padding: '20px' }}>

@@ -1,9 +1,11 @@
 'use client';
 
 import { Button } from '@mui/material';
+import { useWeb3ModalAccount, useWeb3ModalProvider } from '@web3modal/ethers/react';
 import { Contract, JsonRpcSigner, Network } from 'ethers';
-import { BrowserProvider, Eip1193Provider, JsonRpcProvider } from 'ethers/providers';
+import { BrowserProvider, JsonRpcProvider } from 'ethers/providers';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { useSnackbar } from 'notistack';
 import { createContext, useContext, useEffect, useState } from 'react';
 import { NETWORKS, defaultNetwork } from '../../config';
@@ -41,7 +43,8 @@ import troveManagerAbi from './abis/TroveManager.json';
 
 declare global {
   interface Window {
-    ethereum?: BrowserProvider & Eip1193Provider;
+    // ethereum?: BrowserProvider & Eip1193Provider;
+    ethereum?: Record<string, unknown>;
   }
 }
 
@@ -76,7 +79,7 @@ export const EthersContext = createContext<{
     collSurplusContract: CollSurplusPool;
     stakingOperationsContract: StakingOperations;
   };
-  connectWallet: () => void;
+  connectWallet: (address: string) => Promise<void>;
   setCurrentNetwork: (network: (typeof NETWORKS)[0] | null) => void;
 }>({
   provider: null,
@@ -99,17 +102,18 @@ export const EthersContext = createContext<{
     collSurplusContract: undefined,
     stakingOperationsContract: undefined,
   } as any,
-  connectWallet: () => {},
+  connectWallet: async () => {},
   setCurrentNetwork: () => {},
 });
 
 export default function EthersProvider({ children }: { children: React.ReactNode }) {
+  const { address, isConnected } = useWeb3ModalAccount();
+  const { walletProvider } = useWeb3ModalProvider();
   const { Sentry } = useErrorMonitoring();
   const { enqueueSnackbar } = useSnackbar();
   const [provider, setProvider] = useState<BrowserProvider | null>(null);
   const [currentNetwork, setCurrentNetwork] = useState<(typeof NETWORKS)[0] | null>(null);
   const [signer, setSigner] = useState<JsonRpcSigner | null>(null);
-  const [address, setAddress] = useState<string>('');
   const [debtTokenContracts, setDebtTokenContracts] = useState<AllDebtTokenContracts>();
   const [collateralTokenContracts, setCollateralTokenContracts] = useState<AllCollateralTokenContracts>();
   const [troveManagerContract, setTroveManagerContract] = useState<TroveManager>();
@@ -125,11 +129,13 @@ export default function EthersProvider({ children }: { children: React.ReactNode
   const [collSurplusContract, setCollSurplusContract] = useState<CollSurplusPool>();
   const [stakingOperationsContract, setStakingOperationsContract] = useState<StakingOperations>();
 
-  const connectWallet = async () => {
+  const router = useRouter();
+
+  const connectWallet = async (address: string) => {
     try {
       if (typeof window.ethereum !== 'undefined' && currentNetwork) {
         // Opens Meta Mask
-        const newSigner = await provider!.getSigner();
+        const newSigner = await provider!.getSigner(address);
         setSigner(newSigner);
 
         const debtTokenContractStable = new Contract(currentNetwork.contracts.DebtToken.STABLE, debtTokenAbi, provider);
@@ -151,17 +157,23 @@ export default function EthersProvider({ children }: { children: React.ReactNode
           [currentNetwork.contracts.DebtToken.STOCK_1]: debtTokenContractSTOCK_1WithSigner,
           [currentNetwork.contracts.DebtToken.STOCK_2]: debtTokenContractSTOCK_2WithSigner,
         } as any);
-        const collateralTokenContractUSDT = new Contract(currentNetwork.contracts.ERC20.USDT, ERC20Abi, provider);
-        const collateralTokenContractWithSignerUSDT = collateralTokenContractUSDT.connect(newSigner) as MockERC20;
-        const collateralTokenContractBTC = new Contract(currentNetwork.contracts.ERC20.BTC, ERC20Abi, provider);
-        const collateralTokenContractWithSignerBTC = collateralTokenContractBTC.connect(newSigner) as MockERC20;
-        const collateralTokenContractDFI = new Contract(currentNetwork.contracts.ERC20.GOV, ERC20Abi, provider);
-        const collateralTokenContractWithSignerDFI = collateralTokenContractDFI.connect(newSigner) as MockERC20;
-        setCollateralTokenContracts({
-          [currentNetwork.contracts.ERC20.USDT]: collateralTokenContractWithSignerUSDT,
-          [currentNetwork.contracts.ERC20.BTC]: collateralTokenContractWithSignerBTC,
-          [currentNetwork.contracts.ERC20.GOV]: collateralTokenContractWithSignerDFI,
-        } as any);
+        // First, initialize an empty object to hold the contracts with signers
+        const collateralTokenContracts = {};
+
+        // Loop through the keys of the ERC20 contracts in the current network
+        Object.keys(currentNetwork.contracts.ERC20).forEach((tokenKey) => {
+          // For each token, create a new contract instance
+          // @ts-ignore
+          const contract = new Contract(currentNetwork.contracts.ERC20[tokenKey], ERC20Abi, provider);
+          // Connect the contract with the signer and cast it to MockERC20
+          const contractWithSigner = contract.connect(newSigner) as MockERC20;
+          // Add the contract with signer to the collateralTokenContracts object
+          // @ts-ignore
+          collateralTokenContracts[currentNetwork.contracts.ERC20[tokenKey]] = contractWithSigner;
+        });
+
+        // Finally, set the state or use the collateralTokenContracts object as needed
+        setCollateralTokenContracts(collateralTokenContracts as any);
 
         const troveManagerContract = new Contract(
           currentNetwork.contracts.TroveManager,
@@ -255,13 +267,8 @@ export default function EthersProvider({ children }: { children: React.ReactNode
         setStakingOperationsContract(stakingOperationsContractWithSigner);
 
         try {
-          // Request account access
-          const accounts = await window.ethereum.request({
-            method: 'eth_requestAccounts',
-          });
-          setAddress(accounts[0]);
           Sentry.setUser({
-            id: accounts[0],
+            id: address,
           });
         } catch (error) {
           Sentry.captureException(error);
@@ -303,7 +310,7 @@ export default function EthersProvider({ children }: { children: React.ReactNode
       //   chainId: network.chainIdNumber,
       // });
       const mmNetwork = new Network(network.chainName, network.chainId);
-      const newProvider = new BrowserProvider(window.ethereum, mmNetwork);
+      const newProvider = new BrowserProvider(window.ethereum as any, mmNetwork);
 
       setProvider(newProvider);
     }
@@ -312,9 +319,10 @@ export default function EthersProvider({ children }: { children: React.ReactNode
   // Initialize the correct provider
   useEffect(() => {
     if (typeof window.ethereum !== 'undefined' && provider === null) {
+      // @ts-ignore
       window.ethereum
         .request({ method: 'eth_chainId' })
-        .then((chainIdHex) => {
+        .then((chainIdHex: string) => {
           const initNetwork = NETWORKS.find((network) => network.chainId === chainIdHex);
           if (initNetwork) {
             setCurrentNetwork(initNetwork as any);
@@ -322,32 +330,10 @@ export default function EthersProvider({ children }: { children: React.ReactNode
           }
           // Could not find network in the list => add it
           else {
-            const { blockExplorerUrls, chainId, chainName, nativeCurrency, rpcUrls } = defaultNetwork;
-
-            window
-              .ethereum!.request({
-                method: 'wallet_addEthereumChain',
-                params: [
-                  {
-                    // All params must be provided to make it work
-                    chainId,
-                    rpcUrls,
-                    chainName,
-                    nativeCurrency,
-                    blockExplorerUrls,
-                  },
-                ],
-              })
-              .then(() => {
-                window.location.reload();
-                // updateProvider(choosenNetwork)
-              })
-              .catch((error) => {
-                console.error('wallet_addEthereumChain error: ', error);
-              });
+            router.push('/network-not-found');
           }
         })
-        .catch((error) => {
+        .catch((error: any) => {
           Sentry.captureException(error);
         });
     } else if (typeof window.ethereum === 'undefined') {
@@ -382,31 +368,28 @@ export default function EthersProvider({ children }: { children: React.ReactNode
   }, []);
 
   useEffect(() => {
-    if (typeof window.ethereum !== 'undefined' && provider) {
-      // Log in automaticall if we know the user already.
-      window.ethereum
-        .request({ method: 'eth_accounts' })
-        .then((accounts) => {
-          if (accounts.length > 0) {
-            connectWallet();
-          }
-        })
-        .catch((error) => {
-          Sentry.captureException(error);
-        });
+    if (address && isConnected && provider) {
+      connectWallet(address);
+    }
+    const reloadWhenAccountChanged = () => {
+      window.location.reload();
+    };
 
-      window.ethereum.on('accountsChanged', connectWallet);
+    if (typeof window.ethereum !== 'undefined' && provider) {
+      // @ts-ignore
+      window.ethereum.on('accountsChanged', reloadWhenAccountChanged);
     }
 
     // Cleanup the listener when the component unmounts
     return () => {
       if (typeof window.ethereum !== 'undefined') {
-        window.ethereum.removeListener('accountsChanged', connectWallet);
+        // @ts-ignore
+        window.ethereum.removeListener('accountsChanged', reloadWhenAccountChanged);
       }
     };
 
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [provider]);
+  }, [address, isConnected, provider]);
 
   // This use effect initializes the contracts to do initial read operations.
   useEffect(() => {
@@ -433,44 +416,21 @@ export default function EthersProvider({ children }: { children: React.ReactNode
           [currentNetwork.contracts.DebtToken.STOCK_2]: debtTokenContractSTOCK_2,
         } as any);
 
-        const collateralTokenContractUSDT = new Contract(
-          currentNetwork.contracts.ERC20.USDT,
-          ERC20Abi,
-          provider,
-        ) as unknown as MockERC20;
-        const collateralTokenContractBTC = new Contract(
-          currentNetwork.contracts.ERC20.BTC,
-          ERC20Abi,
-          provider,
-        ) as unknown as MockERC20;
-        const collateralTokenContractGOV = new Contract(
-          currentNetwork.contracts.ERC20.GOV,
-          ERC20Abi,
-          provider,
-        ) as unknown as MockERC20;
-        const collateralTokenContractSTABLE = new Contract(
-          currentNetwork.contracts.ERC20.STABLE,
-          ERC20Abi,
-          provider,
-        ) as unknown as MockERC20;
-        const collateralTokenContractSTOCK_1 = new Contract(
-          currentNetwork.contracts.ERC20.STOCK_1,
-          ERC20Abi,
-          provider,
-        ) as unknown as MockERC20;
-        const collateralTokenContractSTOCK_2 = new Contract(
-          currentNetwork.contracts.ERC20.STOCK_2,
-          ERC20Abi,
-          provider,
-        ) as unknown as MockERC20;
-        setCollateralTokenContracts({
-          [currentNetwork.contracts.ERC20.USDT]: collateralTokenContractUSDT,
-          [currentNetwork.contracts.ERC20.BTC]: collateralTokenContractBTC,
-          [currentNetwork.contracts.ERC20.GOV]: collateralTokenContractGOV,
-          [currentNetwork.contracts.ERC20.STABLE]: collateralTokenContractSTABLE,
-          [currentNetwork.contracts.ERC20.STOCK_1]: collateralTokenContractSTOCK_1,
-          [currentNetwork.contracts.ERC20.STOCK_2]: collateralTokenContractSTOCK_2,
-        } as any);
+        // First, initialize an empty object to hold the contracts with signers
+        const collateralTokenContracts = {};
+
+        // Loop through the keys of the ERC20 contracts in the current network
+        Object.keys(currentNetwork.contracts.ERC20).forEach((tokenKey) => {
+          // For each token, create a new contract instance
+          // @ts-ignore
+          const contract = new Contract(currentNetwork.contracts.ERC20[tokenKey], ERC20Abi, provider);
+          // Add the contract with signer to the collateralTokenContracts object
+          // @ts-ignore
+          collateralTokenContracts[currentNetwork.contracts.ERC20[tokenKey]] = contract;
+        });
+
+        // Finally, set the state or use the collateralTokenContracts object as needed
+        setCollateralTokenContracts(collateralTokenContracts as any);
 
         const troveManagerContract = new Contract(
           currentNetwork.contracts.TroveManager,
@@ -617,7 +577,7 @@ export default function EthersProvider({ children }: { children: React.ReactNode
         provider,
         signer,
         currentNetwork: currentNetwork as typeof defaultNetwork,
-        address,
+        address: address ?? '',
         connectWallet,
         setCurrentNetwork,
         contracts: {
@@ -664,7 +624,7 @@ export function useEthers(): {
     collSurplusContract: CollSurplusPool;
     stakingOperationsContract: StakingOperations;
   };
-  connectWallet: () => void;
+  connectWallet: (address: string) => Promise<void>;
   setCurrentNetwork: (network: (typeof NETWORKS)[0] | null) => void;
 } {
   const context = useContext(EthersContext);

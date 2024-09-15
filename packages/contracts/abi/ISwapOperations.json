@@ -41,6 +41,16 @@
     },
     {
         "inputs": [],
+        "name": "InsufficientAmountADesired",
+        "type": "error"
+    },
+    {
+        "inputs": [],
+        "name": "InsufficientAmountBDesired",
+        "type": "error"
+    },
+    {
+        "inputs": [],
         "name": "InsufficientBAmount",
         "type": "error"
     },
@@ -77,6 +87,11 @@
     {
         "inputs": [],
         "name": "PairRequiresStable",
+        "type": "error"
+    },
+    {
+        "inputs": [],
+        "name": "ReachedPoolLimit",
         "type": "error"
     },
     {

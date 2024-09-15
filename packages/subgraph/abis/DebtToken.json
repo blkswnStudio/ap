@@ -160,6 +160,11 @@
   },
   {
     "inputs": [],
+    "name": "MintingDisabledForToken",
+    "type": "error"
+  },
+  {
+    "inputs": [],
     "name": "NotAllowedDirectTransfer",
     "type": "error"
   },

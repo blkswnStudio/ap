@@ -1,8 +1,7 @@
 import '@fontsource-variable/inter';
 import '@fontsource-variable/space-grotesk';
-import PlausibleProvider from 'next-plausible';
 import { Metadata } from 'next/types';
-import ContextWrapper from './context/ContextWrapper';
+import BaseThemeWrapper from './context/BaseThemeWrapper';
 import './styles.css';
 
 export const metadata: Metadata = {
@@ -16,11 +15,9 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
       </head>
       <body>
-        <PlausibleProvider domain={process.env.NEXT_PUBLIC_PLAUSIBLE_DOMAIN ?? ''}>
-          <ContextWrapper>
-            <main>{children}</main>
-          </ContextWrapper>
-        </PlausibleProvider>
+        <main>
+          <BaseThemeWrapper>{children}</BaseThemeWrapper>
+        </main>
       </body>
     </html>
   );

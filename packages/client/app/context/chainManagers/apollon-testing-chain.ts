@@ -16,15 +16,15 @@ import DebtToken_STOCK_1 from '../typePolicies/ATC/DebtToken_STOCK_1.policy';
 import DebtToken_STOCK_2 from '../typePolicies/ATC/DebtToken_STOCK_2.policy';
 import ERC20_BTC from '../typePolicies/ATC/ERC20_BTC.policy';
 import ERC20_GOV from '../typePolicies/ATC/ERC20_GOV.policy';
+import ERC20_STABLE from '../typePolicies/ATC/ERC20_STABLE.policy';
+import ERC20_STOCK_1 from '../typePolicies/ATC/ERC20_STOCK_1.policy';
+import ERC20_STOCK_2 from '../typePolicies/ATC/ERC20_STOCK_2.policy';
 import ERC20_USDT from '../typePolicies/ATC/ERC20_USDT.policy';
 import SwapPairs_BTC from '../typePolicies/ATC/SwapPairs_BTC.policy';
 import SwapPairs_GOV from '../typePolicies/ATC/SwapPairs_GOV.policy';
 import SwapPairs_STOCK_1 from '../typePolicies/ATC/SwapPairs_STOCK_1.policy';
 import SwapPairs_STOCK_2 from '../typePolicies/ATC/SwapPairs_STOCK_2.policy';
 import SwapPairs_USDT from '../typePolicies/ATC/SwapPairs_USDT.policy';
-import ERC20_STABLE from '../typePolicies/ATC/ERC20_STABLE.policy';
-import ERC20_STOCK_1 from '../typePolicies/ATC/ERC20_STOCK_1.policy';
-import ERC20_STOCK_2 from '../typePolicies/ATC/ERC20_STOCK_2.policy';
 // GENERATED IMPORT CODE END
 
 const defaultFieldValue = BigInt(0);
@@ -84,7 +84,7 @@ export const ContractDataFreshnessManager_ATC: {
         ContractDataFreshnessManager_ATC.TroveManager.getTroveRepayableDebts.value = tokenAmounts;
 
         // Update the values of all tokens after fetching.
-        tokenAmounts.forEach(({ tokenAddress }) => {
+        Object.values(Contracts_ATC.DebtToken).forEach((tokenAddress) => {
           if (isDebtTokenAddress(tokenAddress)) {
             SchemaDataFreshnessManager_ATC.DebtToken[tokenAddress].troveRepableDebtAmount.fetch();
           }
@@ -107,11 +107,9 @@ export const ContractDataFreshnessManager_ATC: {
         ContractDataFreshnessManager_ATC.TroveManager.getTroveWithdrawableColls.value = tokenAmounts;
 
         // Update the values of all tokens after fetching.
-        tokenAmounts.forEach(({ tokenAddress }) => {
+        Object.values(Contracts_ATC.ERC20).forEach((tokenAddress) => {
           if (isCollateralTokenAddress(tokenAddress)) {
             SchemaDataFreshnessManager_ATC.ERC20[tokenAddress].troveLockedAmount.fetch();
-          } else if (isDebtTokenAddress(tokenAddress)) {
-            SchemaDataFreshnessManager_ATC.DebtToken[tokenAddress].troveLockedAmount.fetch();
           }
         });
       },

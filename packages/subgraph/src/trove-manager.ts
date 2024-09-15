@@ -15,7 +15,7 @@ import {
   handleCreateUpdateDebtTokenMeta,
   handleUpdateDebtTokenMeta_totalReserve30dAverage,
 } from './entities/debt-token-meta-entity';
-import { handleCreateReservePoolUSDHistoryChunk } from './entities/reserve-pool-USD-history-chunk';
+import { handleCreateReservePoolUSDHistoryChunk } from './entities/reserve-pool-USD-history-chunk-entity';
 
 export function handleCollChanged(event: TroveCollChangedEvent): void {
   for (let i = 0; i < event.params._collTokenAddresses.length; i++) {

@@ -7,7 +7,7 @@ import { server } from '../../tests/setupMSW';
 import { IntegrationWrapper } from '../../tests/test-utils';
 import StabilityUpdateDialog from './StabilityUpdateDialog';
 
-describe.skip('StabilityUpdateDialog', () => {
+describe('StabilityUpdateDialog', () => {
   it('should call function "provideStability" and 2x "approve" of mocked contract', async () => {
     const contractMock = {
       stabilityPoolManagerContract: {

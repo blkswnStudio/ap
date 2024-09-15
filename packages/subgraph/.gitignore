@@ -3,3 +3,4 @@ generated
 node_modules
 tests/.bin
 data/
+.latest.json

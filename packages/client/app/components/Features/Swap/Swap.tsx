@@ -15,14 +15,20 @@ import { usePriceFeedData } from '../../../context/PriceFeedDataProvider';
 import { useSelectedToken } from '../../../context/SelectedTokenProvider';
 import { useTransactionDialog } from '../../../context/TransactionDialogProvider';
 import { useUtilities } from '../../../context/UtilityProvider';
+import { evictCacheTimeoutForObject } from '../../../context/utils';
 import {
   GetBorrowerCollateralTokensQuery,
   GetBorrowerCollateralTokensQueryVariables,
   GetBorrowerDebtTokensQuery,
   GetBorrowerDebtTokensQueryVariables,
 } from '../../../generated/gql-types';
-import { GET_BORROWER_COLLATERAL_TOKENS, GET_BORROWER_DEBT_TOKENS, GET_BORROWER_SWAPS } from '../../../queries';
-import { WIDGET_HEIGHTS, manualSubgraphSyncTimeout } from '../../../utils/contants';
+import {
+  GET_ALL_POOLS,
+  GET_BORROWER_COLLATERAL_TOKENS,
+  GET_BORROWER_DEBT_TOKENS,
+  GET_BORROWER_SWAPS,
+} from '../../../queries';
+import { WIDGET_HEIGHTS } from '../../../utils/contants';
 import { getCheckSum } from '../../../utils/crypto';
 import {
   convertToEtherPrecission,
@@ -159,7 +165,6 @@ const Swap = () => {
     } else {
       if (isDefined) {
         const tokenInputAsBigint = ethers.parseUnits(value, selectedToken!.decimals);
-        console.log('tokenInputAsBigint: ', tokenInputAsBigint);
 
         let stableAmountToFill = 0n;
 
@@ -200,6 +205,11 @@ const Swap = () => {
   };
 
   const onSubmit = async (data: FieldValues) => {
+    // Just a safety check
+    if (isSwapFeeCalculationInProgress) {
+      return;
+    }
+
     Sentry.addBreadcrumb({
       category: 'swap',
       message: `Attempting swap with data`,
@@ -296,12 +306,20 @@ const Swap = () => {
               }
             },
             waitForResponseOf: stableApprovalNecessary ? [0] : [],
-            reloadQueriesAferMined: [GET_BORROWER_COLLATERAL_TOKENS, GET_BORROWER_DEBT_TOKENS],
-            actionAfterMined: (client) => {
-              setTimeout(() => {
-                // Manually waits for subgraph sync
-                client.refetchQueries({ include: [GET_BORROWER_SWAPS] });
-              }, manualSubgraphSyncTimeout);
+            reloadQueriesAfterMined: [
+              GET_BORROWER_COLLATERAL_TOKENS,
+              GET_BORROWER_DEBT_TOKENS,
+              GET_BORROWER_SWAPS,
+              GET_ALL_POOLS,
+            ],
+            actionAfterMined: () => {
+              evictCacheTimeoutForObject(currentNetwork!, ['DebtToken', JUSDToken!.address]);
+
+              if (isDebtTokenAddress(selectedToken!.address)) {
+                evictCacheTimeoutForObject(currentNetwork!, ['DebtToken', selectedToken!.address], ['walletAmount']);
+              } else {
+                evictCacheTimeoutForObject(currentNetwork!, ['ERC20', selectedToken!.address], ['walletAmount']);
+              }
             },
           },
         },
@@ -383,7 +401,21 @@ const Swap = () => {
               }
             },
             waitForResponseOf: tokenApprovalNecessary ? [0] : [],
-            reloadQueriesAferMined: [GET_BORROWER_COLLATERAL_TOKENS, GET_BORROWER_DEBT_TOKENS, GET_BORROWER_SWAPS],
+            reloadQueriesAfterMined: [
+              GET_BORROWER_COLLATERAL_TOKENS,
+              GET_BORROWER_DEBT_TOKENS,
+              GET_BORROWER_SWAPS,
+              GET_ALL_POOLS,
+            ],
+            actionAfterMined: () => {
+              evictCacheTimeoutForObject(currentNetwork!, ['DebtToken', JUSDToken!.address]);
+
+              if (isDebtTokenAddress(selectedToken!.address)) {
+                evictCacheTimeoutForObject(currentNetwork!, ['DebtToken', selectedToken!.address], ['walletAmount']);
+              } else {
+                evictCacheTimeoutForObject(currentNetwork!, ['ERC20', selectedToken!.address], ['walletAmount']);
+              }
+            },
           },
         },
       ]);
@@ -437,6 +469,15 @@ const Swap = () => {
     tradingDirection,
   ]);
 
+  // Make it either 1 or 0.1 or 0.001 depending on the wallet amount of the user
+  // Calculate the step size based on the wallet amount
+  const stepSizeToken = selectedToken
+    ? dangerouslyConvertBigIntToNumber(relevantToken.walletAmount, selectedToken!.decimals - 6, 6) > 1
+      ? 1
+      : dangerouslyConvertBigIntToNumber(relevantToken.walletAmount, selectedToken!.decimals - 6, 6) > 0.1
+        ? 0.1
+        : 0.001
+    : 1;
   const tokenInput = (
     <NumberInput
       key="tokenAmount"
@@ -448,7 +489,10 @@ const Swap = () => {
         max:
           selectedToken && tradingDirection === 'jUSDAquired'
             ? {
-                value: dangerouslyConvertBigIntToNumber(relevantToken.walletAmount, selectedToken.decimals - 6, 6),
+                value: Math.min(
+                  dangerouslyConvertBigIntToNumber(relevantToken.walletAmount, selectedToken.decimals - 6, 6),
+                  dangerouslyConvertBigIntToNumber(selectedToken.pool.liquidityPair[1], selectedToken.decimals - 6, 6),
+                ),
                 message: 'Amount exceeds wallet balance.',
               }
             : undefined,
@@ -456,9 +500,26 @@ const Swap = () => {
       focused={inputToken === 'Token'}
       disabled={!selectedToken}
       onChange={(e: ChangeEvent<HTMLInputElement>) => {
+        if (
+          parseFloat(e.target.value) >=
+          dangerouslyConvertBigIntToNumber(selectedToken!.pool.liquidityPair[1], selectedToken!.decimals - 6, 6)
+        ) {
+          e.target.value = (
+            dangerouslyConvertBigIntToNumber(selectedToken!.pool.liquidityPair[1], selectedToken!.decimals - 6, 6) -
+            stepSizeToken
+          ).toString();
+        }
+
         tokenAmountField.onChange(e);
         setIsSwapFeeCalculationInProgress(true);
         handleSwapValueChangeDebounce('Token', e.target.value);
+      }}
+      inputProps={{
+        max: selectedToken
+          ? dangerouslyConvertBigIntToNumber(selectedToken.pool.liquidityPair[1], selectedToken.decimals - 6, 6) -
+            stepSizeToken
+          : 0,
+        step: stepSizeToken,
       }}
       InputProps={{
         endAdornment: selectedToken && (
@@ -479,9 +540,12 @@ const Swap = () => {
         required: { value: true, message: 'You need to specify an amount.' },
         min: { value: 0, message: 'Amount needs to be positive.' },
         max:
-          tradingDirection === 'jUSDSpent'
+          selectedToken && tradingDirection === 'jUSDSpent'
             ? {
-                value: dangerouslyConvertBigIntToNumber(stableWalletAmount, 9, 9),
+                value: Math.min(
+                  dangerouslyConvertBigIntToNumber(stableWalletAmount, 9, 9),
+                  dangerouslyConvertBigIntToNumber(selectedToken!.pool.liquidityPair[0]),
+                ),
                 message: 'Amount exceeds wallet balance.',
               }
             : undefined,
@@ -489,9 +553,17 @@ const Swap = () => {
       focused={inputToken === 'JUSD'}
       disabled={!selectedToken}
       onChange={(e: ChangeEvent<HTMLInputElement>) => {
+        if (parseFloat(e.target.value) >= dangerouslyConvertBigIntToNumber(selectedToken!.pool.liquidityPair[0])) {
+          e.target.value = (dangerouslyConvertBigIntToNumber(selectedToken!.pool.liquidityPair[0]) - 1).toString();
+        }
         jUSDField.onChange(e);
         setIsSwapFeeCalculationInProgress(true);
         handleSwapValueChangeDebounce('JUSD', e.target.value);
+      }}
+      // Only applies then arrow keys are used
+      inputProps={{
+        max: selectedToken ? dangerouslyConvertBigIntToNumber(selectedToken.pool.liquidityPair[0]) - 1 : 0,
+        step: 1,
       }}
       InputProps={{
         endAdornment: JUSDToken && (
@@ -656,7 +728,7 @@ const Swap = () => {
                   <span>
                     {roundCurrency(
                       pricePerUnit
-                        ? dangerouslyConvertBigIntToNumber(pricePerUnit, 12, 6)
+                        ? dangerouslyConvertBigIntToNumber(pricePerUnit, 12, 6, Infinity)
                         : dangerouslyConvertBigIntToNumber(tokenRatio * swapFeeFactor, 18 + 18 - 6, 6),
                       5,
                       5,

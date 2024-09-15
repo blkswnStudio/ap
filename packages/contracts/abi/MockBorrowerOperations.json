@@ -1,7 +1,34 @@
 [
     {
         "inputs": [],
+        "name": "Above100Pct",
+        "type": "error"
+    },
+    {
+        "inputs": [],
         "name": "ActiveTrove",
+        "type": "error"
+    },
+    {
+        "inputs": [
+            {
+                "internalType": "address",
+                "name": "target",
+                "type": "address"
+            }
+        ],
+        "name": "AddressEmptyCode",
+        "type": "error"
+    },
+    {
+        "inputs": [
+            {
+                "internalType": "address",
+                "name": "account",
+                "type": "address"
+            }
+        ],
+        "name": "AddressInsufficientBalance",
         "type": "error"
     },
     {
@@ -12,6 +39,11 @@
     {
         "inputs": [],
         "name": "CollWithdrawPermittedInRM",
+        "type": "error"
+    },
+    {
+        "inputs": [],
+        "name": "FailedInnerCall",
         "type": "error"
     },
     {
@@ -99,6 +131,17 @@
     {
         "inputs": [],
         "name": "Repaid_gt_CurrentDebt",
+        "type": "error"
+    },
+    {
+        "inputs": [
+            {
+                "internalType": "address",
+                "name": "token",
+                "type": "address"
+            }
+        ],
+        "name": "SafeERC20FailedOperation",
         "type": "error"
     },
     {
@@ -318,6 +361,19 @@
     },
     {
         "inputs": [],
+        "name": "MIN_REDEMPTION",
+        "outputs": [
+            {
+                "internalType": "uint256",
+                "name": "",
+                "type": "uint256"
+            }
+        ],
+        "stateMutability": "view",
+        "type": "function"
+    },
+    {
+        "inputs": [],
         "name": "NAME",
         "outputs": [
             {
@@ -345,6 +401,19 @@
     {
         "inputs": [],
         "name": "STABLE_COIN_GAS_COMPENSATION",
+        "outputs": [
+            {
+                "internalType": "uint256",
+                "name": "",
+                "type": "uint256"
+            }
+        ],
+        "stateMutability": "view",
+        "type": "function"
+    },
+    {
+        "inputs": [],
+        "name": "SWAP_POOL_AMOUNT_CAP",
         "outputs": [
             {
                 "internalType": "uint256",
@@ -618,11 +687,6 @@
                 "internalType": "struct IBase.MintMeta",
                 "name": "_meta",
                 "type": "tuple"
-            },
-            {
-                "internalType": "bytes[]",
-                "name": "_priceUpdateData",
-                "type": "bytes[]"
             }
         ],
         "name": "increaseDebt",
@@ -678,6 +742,46 @@
             }
         ],
         "name": "increaseDebts",
+        "outputs": [],
+        "stateMutability": "payable",
+        "type": "function"
+    },
+    {
+        "inputs": [
+            {
+                "internalType": "uint256",
+                "name": "_stableAmount",
+                "type": "uint256"
+            },
+            {
+                "components": [
+                    {
+                        "internalType": "address",
+                        "name": "upperHint",
+                        "type": "address"
+                    },
+                    {
+                        "internalType": "address",
+                        "name": "lowerHint",
+                        "type": "address"
+                    },
+                    {
+                        "internalType": "uint256",
+                        "name": "maxFeePercentage",
+                        "type": "uint256"
+                    }
+                ],
+                "internalType": "struct IBase.MintMeta",
+                "name": "_meta",
+                "type": "tuple"
+            },
+            {
+                "internalType": "bytes[]",
+                "name": "_priceUpdateData",
+                "type": "bytes[]"
+            }
+        ],
+        "name": "increaseStableDebt",
         "outputs": [],
         "stateMutability": "payable",
         "type": "function"

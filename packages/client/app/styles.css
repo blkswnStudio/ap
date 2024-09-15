@@ -89,3 +89,10 @@ a {
 #apollon-drag-queen {
   height: var(--apollon-drag-queen-height, 330px);
 }
+
+body.dark {
+  background-color: #14111d !important;
+}
+body.light {
+  background-color: #ffffff !important;
+}

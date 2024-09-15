@@ -4,6 +4,8 @@ pragma solidity ^0.8.9;
 
 import '@openzeppelin/contracts/access/Ownable.sol';
 import '@openzeppelin/contracts/utils/math/Math.sol';
+import '@openzeppelin/contracts/token/ERC20/IERC20.sol';
+import '@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol';
 import '@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol';
 import './Dependencies/LiquityBase.sol';
 import './Dependencies/CheckContract.sol';
@@ -14,6 +16,8 @@ import './Interfaces/IPriceFeed.sol';
 import './Interfaces/ITokenManager.sol';
 
 contract ReservePool is LiquityBase, Ownable(msg.sender), CheckContract, IReservePool {
+  using SafeERC20 for IERC20;
+
   string public constant NAME = 'ReservePool';
 
   ITokenManager public tokenManager;
@@ -91,17 +95,18 @@ contract ReservePool is LiquityBase, Ownable(msg.sender), CheckContract, IReserv
   ) external returns (uint usedGov, uint usedStable) {
     _requireCallerIsStabilityPoolManager();
 
-    IDebtToken stableDebtToken = tokenManager.getStableCoin();
+    IERC20 stableDebtToken = tokenManager.getStableCoin();
     IERC20 govToken = IERC20(tokenManager.getGovTokenAddress());
     TokenPrice memory govTokenPrice = priceFeed.getTokenPrice(priceCache, address(govToken));
 
     usedGov = priceFeed.getAmountFromUSDValue(govTokenPrice, withdrawAmountInUSD);
     usedGov = Math.min(usedGov, govToken.balanceOf(address(this)));
-    govToken.transfer(stabilityPool, usedGov);
 
     usedStable = withdrawAmountInUSD - priceFeed.getUSDValue(govTokenPrice, usedGov);
     if (usedStable > 0) usedStable = Math.min(usedStable, stableDebtToken.balanceOf(address(this)));
-    stableDebtToken.transfer(stabilityPool, usedStable);
+
+    govToken.safeTransfer(stabilityPool, usedGov);
+    stableDebtToken.safeTransfer(stabilityPool, usedStable);
 
     emit WithdrewReserves(usedGov, usedStable);
   }

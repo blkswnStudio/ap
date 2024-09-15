@@ -26,6 +26,7 @@ interface IDebtToken is IERC20, IERC20Metadata, IERC2612, IBase {
   error NotFromDTManager();
   error NotFromBorrowerOps();
   error MintingDisabled();
+  error MintingDisabledForToken();
   error NotFromBOorTroveMorSPorDebtToken();
   error NotFromSPManager();
   error NotFromTroveMorSP();

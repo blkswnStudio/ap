@@ -12,6 +12,7 @@ import {
   TotalValueLockedChunk,
 } from '../../generated/schema';
 import { bigIntWithZeros } from './token-candle-entity';
+// import { log } from '@graphprotocol/graph-ts';
 
 export function handleCreateUpdateCollateralTokenMeta(
   event: ethereum.Event,
@@ -20,17 +21,17 @@ export function handleCreateUpdateCollateralTokenMeta(
   supportedCollateralRatio: BigInt | null = null,
 ): void {
   let collateralTokenMeta = CollateralTokenMeta.load(`CollateralTokenMeta-${tokenAddress.toHexString()}`);
-
   if (collateralTokenMeta === null) {
     collateralTokenMeta = new CollateralTokenMeta(`CollateralTokenMeta-${tokenAddress.toHexString()}`);
     createCollateralTokenMeta_totalReserve30dAverage(event, tokenAddress);
     handleCreateCollateralTokenMeta_totalValueLockedUSD30dAverage(event, tokenAddress);
   }
 
-  if (supportedCollateralRatio === null) {
-    // Never called, just for isolation
+  if (!supportedCollateralRatio && !collateralTokenMeta.supportedCollateralRatio) {
     collateralTokenMeta.supportedCollateralRatio = BigInt.fromI32(0);
-  } else {
+  }
+  // Only when initialized set it to any value in case of race condition
+  else if (supportedCollateralRatio !== null) {
     collateralTokenMeta.supportedCollateralRatio = supportedCollateralRatio;
   }
 

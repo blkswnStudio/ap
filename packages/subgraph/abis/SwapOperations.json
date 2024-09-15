@@ -41,6 +41,16 @@
   },
   {
     "inputs": [],
+    "name": "InsufficientAmountADesired",
+    "type": "error"
+  },
+  {
+    "inputs": [],
+    "name": "InsufficientAmountBDesired",
+    "type": "error"
+  },
+  {
+    "inputs": [],
     "name": "InsufficientBAmount",
     "type": "error"
   },
@@ -104,6 +114,11 @@
   {
     "inputs": [],
     "name": "PairRequiresStable",
+    "type": "error"
+  },
+  {
+    "inputs": [],
+    "name": "ReachedPoolLimit",
     "type": "error"
   },
   {
@@ -270,6 +285,19 @@
   },
   {
     "inputs": [],
+    "name": "MIN_REDEMPTION",
+    "outputs": [
+      {
+        "internalType": "uint256",
+        "name": "",
+        "type": "uint256"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
     "name": "REDEMPTION_FEE_FLOOR",
     "outputs": [
       {
@@ -284,6 +312,19 @@
   {
     "inputs": [],
     "name": "STABLE_COIN_GAS_COMPENSATION",
+    "outputs": [
+      {
+        "internalType": "uint256",
+        "name": "",
+        "type": "uint256"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "SWAP_POOL_AMOUNT_CAP",
     "outputs": [
       {
         "internalType": "uint256",

@@ -18,11 +18,11 @@ Sentry.init({
   replaysOnErrorSampleRate:
     process.env.NEXT_PUBLIC_ENVIRONMENT === 'staging' || process.env.NEXT_PUBLIC_ENVIRONMENT === 'production' ? 1.0 : 0,
 
-  // This sets the sample rate to be 10%. You may want this to be 100% while
+  // This sets the sample rate to be 0.1%. You may want this to be 100% while
   // in development and sample at a lower rate in production
   replaysSessionSampleRate:
     process.env.NEXT_PUBLIC_ENVIRONMENT === 'staging' || process.env.NEXT_PUBLIC_ENVIRONMENT === 'production'
-      ? 0.05
+      ? 0.001
       : 0,
 
   integrations: [

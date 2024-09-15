@@ -8,6 +8,7 @@ const StableDemo = Address.fromString('0xc3e53f4d16ae77db1c982e75a937b9f60fe6369
 const ReservePoolDemo = Address.fromString('0x8A791620dd6260079BF849Dc5567aDC3F2FdC318');
 const GovTokenDemo = Address.fromString('0xe6e340d132b5f46d1e472debcd681b2abc16e57e');
 const StabilityPoolManagerDemo = Address.fromString('0x0165878a594ca255338adfa4d48449f69242eb8f');
+const StakingOperationsDemo = Address.fromString('0x0165878a594ca255338adfa4d48449f69242eb8f');
 
 export const handleUpdateSystemInfo_stableCoin = (event: ethereum.Event, stableCoin: Address): void => {
   let systemInfo = SystemInfo.load(`SystemInfo`);
@@ -17,6 +18,7 @@ export const handleUpdateSystemInfo_stableCoin = (event: ethereum.Event, stableC
     systemInfo.storagePool = StoragePoolDemo;
     systemInfo.priceFeed = PriceFeedDemo;
     systemInfo.reservePool = ReservePoolDemo;
+    systemInfo.stakingOps = StakingOperationsDemo;
     systemInfo.totalValueLockedUSDHistoryIndex = 0;
     systemInfo.totalValueMintedUSDHistoryIndex = 0;
     systemInfo.reservePoolUSDHistoryIndex = 0;
@@ -38,6 +40,7 @@ export const handleUpdateSystemInfo_govToken = (event: ethereum.Event, govToken:
     systemInfo.storagePool = StoragePoolDemo;
     systemInfo.priceFeed = PriceFeedDemo;
     systemInfo.reservePool = ReservePoolDemo;
+    systemInfo.stakingOps = StakingOperationsDemo;
     systemInfo.totalValueLockedUSDHistoryIndex = 0;
     systemInfo.totalValueMintedUSDHistoryIndex = 0;
     systemInfo.reservePoolUSDHistoryIndex = 0;
@@ -59,6 +62,7 @@ export const handleUpdateSystemInfo_storagePool = (event: ethereum.Event, storag
     systemInfo.stableCoin = StableDemo;
     systemInfo.priceFeed = PriceFeedDemo;
     systemInfo.reservePool = ReservePoolDemo;
+    systemInfo.stakingOps = StakingOperationsDemo;
     systemInfo.totalValueLockedUSDHistoryIndex = 0;
     systemInfo.totalValueMintedUSDHistoryIndex = 0;
     systemInfo.reservePoolUSDHistoryIndex = 0;
@@ -80,6 +84,7 @@ export const handleUpdateSystemInfo_priceFeed = (event: ethereum.Event, priceFee
     systemInfo.stableCoin = StableDemo;
     systemInfo.storagePool = StoragePoolDemo;
     systemInfo.reservePool = ReservePoolDemo;
+    systemInfo.stakingOps = StakingOperationsDemo;
     systemInfo.totalValueLockedUSDHistoryIndex = 0;
     systemInfo.totalValueMintedUSDHistoryIndex = 0;
     systemInfo.reservePoolUSDHistoryIndex = 0;
@@ -93,6 +98,28 @@ export const handleUpdateSystemInfo_priceFeed = (event: ethereum.Event, priceFee
   systemInfo.save();
 };
 
+export const handleUpdateSystemInfo_stakingOps = (event: ethereum.Event, stakingOps: Address): void => {
+  let systemInfo = SystemInfo.load(`SystemInfo`);
+
+  if (systemInfo === null) {
+    systemInfo = new SystemInfo(`SystemInfo`);
+    systemInfo.stableCoin = StableDemo;
+    systemInfo.storagePool = StoragePoolDemo;
+    systemInfo.reservePool = ReservePoolDemo;
+    systemInfo.totalValueLockedUSDHistoryIndex = 0;
+    systemInfo.totalValueMintedUSDHistoryIndex = 0;
+    systemInfo.reservePoolUSDHistoryIndex = 0;
+    systemInfo.govToken = GovTokenDemo;
+    systemInfo.priceFeed = PriceFeedDemo;
+    systemInfo.stabilityPoolManager = StabilityPoolManagerDemo;
+  }
+
+  systemInfo.stakingOps = stakingOps;
+  systemInfo.timestamp = event.block.timestamp;
+
+  systemInfo.save();
+};
+
 export const handleUpdateSystemInfo_reservePool = (event: ethereum.Event, reservePool: Address): void => {
   let systemInfo = SystemInfo.load(`SystemInfo`);
 
@@ -101,6 +128,7 @@ export const handleUpdateSystemInfo_reservePool = (event: ethereum.Event, reserv
     systemInfo.stableCoin = StableDemo;
     systemInfo.storagePool = StoragePoolDemo;
     systemInfo.priceFeed = PriceFeedDemo;
+    systemInfo.stakingOps = StakingOperationsDemo;
     systemInfo.totalValueLockedUSDHistoryIndex = 0;
     systemInfo.totalValueMintedUSDHistoryIndex = 0;
     systemInfo.reservePoolUSDHistoryIndex = 0;
@@ -126,6 +154,7 @@ export const handleUpdateSystemInfo_stabilityPoolManager = (
     systemInfo.storagePool = StoragePoolDemo;
     systemInfo.priceFeed = PriceFeedDemo;
     systemInfo.reservePool = ReservePoolDemo;
+    systemInfo.stakingOps = StakingOperationsDemo;
     systemInfo.totalValueLockedUSDHistoryIndex = 0;
     systemInfo.totalValueMintedUSDHistoryIndex = 0;
     systemInfo.reservePoolUSDHistoryIndex = 0;

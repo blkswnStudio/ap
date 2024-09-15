@@ -38,6 +38,7 @@ interface IBorrowerOperations is IBBase {
   error NotBorrower();
   error WithdrawAmount_gt_Coll();
   error ZeroDebtChange();
+  error Above100Pct();
   error InsufficientDebtToRepay();
   error ZeroDebtRepay();
   error UsedTooMuchDebtAsCollateral();
@@ -86,6 +87,11 @@ interface IBorrowerOperations is IBBase {
     address _borrower,
     address _to,
     TokenAmount[] memory _debts,
+    MintMeta memory _meta
+  ) external payable;
+
+  function increaseStableDebt(
+    uint _stableAmount,
     MintMeta memory _meta,
     bytes[] memory _priceUpdateData
   ) external payable;

@@ -158,6 +158,25 @@
         "anonymous": false,
         "inputs": [
             {
+                "indexed": true,
+                "internalType": "address",
+                "name": "token",
+                "type": "address"
+            },
+            {
+                "indexed": false,
+                "internalType": "bool",
+                "name": "disable",
+                "type": "bool"
+            }
+        ],
+        "name": "SetDisableDebtMinting",
+        "type": "event"
+    },
+    {
+        "anonymous": false,
+        "inputs": [
+            {
                 "indexed": false,
                 "internalType": "bool",
                 "name": "enable",
@@ -265,6 +284,19 @@
     },
     {
         "inputs": [],
+        "name": "MIN_REDEMPTION",
+        "outputs": [
+            {
+                "internalType": "uint256",
+                "name": "",
+                "type": "uint256"
+            }
+        ],
+        "stateMutability": "view",
+        "type": "function"
+    },
+    {
+        "inputs": [],
         "name": "NAME",
         "outputs": [
             {
@@ -292,6 +324,19 @@
     {
         "inputs": [],
         "name": "STABLE_COIN_GAS_COMPENSATION",
+        "outputs": [
+            {
+                "internalType": "uint256",
+                "name": "",
+                "type": "uint256"
+            }
+        ],
+        "stateMutability": "view",
+        "type": "function"
+    },
+    {
+        "inputs": [],
+        "name": "SWAP_POOL_AMOUNT_CAP",
         "outputs": [
             {
                 "internalType": "uint256",
@@ -334,6 +379,29 @@
         "inputs": [
             {
                 "internalType": "address",
+                "name": "_tokenAddress",
+                "type": "address"
+            },
+            {
+                "internalType": "uint256",
+                "name": "_supportedCollateralRatio",
+                "type": "uint256"
+            },
+            {
+                "internalType": "bool",
+                "name": "_isGovToken",
+                "type": "bool"
+            }
+        ],
+        "name": "addCollTokenWithoutOracleId",
+        "outputs": [],
+        "stateMutability": "nonpayable",
+        "type": "function"
+    },
+    {
+        "inputs": [
+            {
+                "internalType": "address",
                 "name": "_debtTokenAddress",
                 "type": "address"
             },
@@ -344,6 +412,19 @@
             }
         ],
         "name": "addDebtToken",
+        "outputs": [],
+        "stateMutability": "nonpayable",
+        "type": "function"
+    },
+    {
+        "inputs": [
+            {
+                "internalType": "address",
+                "name": "_debtTokenAddress",
+                "type": "address"
+            }
+        ],
+        "name": "addDebtTokenWithoutOracleId",
         "outputs": [],
         "stateMutability": "nonpayable",
         "type": "function"
@@ -419,6 +500,25 @@
                 "internalType": "contract IDebtToken",
                 "name": "",
                 "type": "address"
+            }
+        ],
+        "stateMutability": "view",
+        "type": "function"
+    },
+    {
+        "inputs": [
+            {
+                "internalType": "address",
+                "name": "",
+                "type": "address"
+            }
+        ],
+        "name": "disableDebtMinting",
+        "outputs": [
+            {
+                "internalType": "bool",
+                "name": "",
+                "type": "bool"
             }
         ],
         "stateMutability": "view",
@@ -654,6 +754,24 @@
     {
         "inputs": [
             {
+                "internalType": "address",
+                "name": "_token",
+                "type": "address"
+            },
+            {
+                "internalType": "bool",
+                "name": "_disable",
+                "type": "bool"
+            }
+        ],
+        "name": "setDisableDebtMinting",
+        "outputs": [],
+        "stateMutability": "nonpayable",
+        "type": "function"
+    },
+    {
+        "inputs": [
+            {
                 "internalType": "bool",
                 "name": "_enable",
                 "type": "bool"
@@ -678,6 +796,24 @@
             }
         ],
         "name": "setNextStockSplitRelative",
+        "outputs": [],
+        "stateMutability": "nonpayable",
+        "type": "function"
+    },
+    {
+        "inputs": [
+            {
+                "internalType": "address",
+                "name": "_token",
+                "type": "address"
+            },
+            {
+                "internalType": "bytes32",
+                "name": "_oracleId",
+                "type": "bytes32"
+            }
+        ],
+        "name": "setOracleId",
         "outputs": [],
         "stateMutability": "nonpayable",
         "type": "function"

@@ -38,6 +38,7 @@ interface IRedemptionOperations is IBBase {
 
   error RedeptionDisabled();
   error ZeroAmount();
+  error LessThanMinRedemption();
   error InvalidMaxFeePercent();
   error LessThanMCR();
   error ExceedDebtBalance();

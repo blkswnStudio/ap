@@ -6,6 +6,7 @@ import 'hardhat-abi-exporter';
 import 'hardhat-gas-reporter';
 import 'hardhat-contract-sizer';
 import 'solidity-coverage';
+import './deploy/deploy';
 
 import fs from 'fs';
 const getSecret = (secretKey: string, defaultValue = '') => {
@@ -46,6 +47,14 @@ export default {
     remote: {
       chainId: 31338,
       url: 'http://161.97.170.25:8545',
+    },
+    seiTest: {
+      chainId: 1328,
+      url: 'https://evm-rpc-testnet.sei-apis.com',
+    },
+    sei: {
+      chainId: 1329,
+      url: 'https://evm-rpc.sei-apis.com',
     },
     mainnet: {
       url: `https://eth-mainnet.alchemyapi.io/v2/${getSecret('alchemyAPIKey')}`,

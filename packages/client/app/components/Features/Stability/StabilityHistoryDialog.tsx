@@ -110,6 +110,8 @@ const StabilityHistoryDialog = () => {
               border: '1px solid',
               borderColor: 'background.paper',
               borderBottom: 'none',
+              borderTopLeftRadius: '4px',
+              borderTopRightRadius: '4px',
             }}
           >
             <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
@@ -129,6 +131,8 @@ const StabilityHistoryDialog = () => {
               backgroundColor: 'background.default',
               border: '1px solid',
               borderColor: 'background.paper',
+              borderBottomLeftRadius: '4px',
+              borderBottomRightRadius: '4px',
             }}
           >
             {data.borrowerHistories.map((history, index) => (

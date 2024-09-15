@@ -22,6 +22,19 @@ const SwapPairs_STOCK_2 = {
       timeout: 1000 * 2,
       periodic: 1000 * 30,
     },
+    pendingRewards: {
+      fetch: async (stakingOperationsContract: StakingOperations, address: string) => {
+        SchemaDataFreshnessManager_ATC.SwapPairs[Contracts_ATC.SwapPairs.STOCK_2].pendingRewards.lastFetched =
+          Date.now();
+
+        const pendingRewards = await stakingOperationsContract.pendingReward(Contracts_ATC.SwapPairs.STOCK_2, address);
+
+        SchemaDataFreshnessManager_ATC.SwapPairs[Contracts_ATC.SwapPairs.STOCK_2].pendingRewards.value(pendingRewards);
+      },
+      value: makeVar(defaultFieldValue),
+      lastFetched: 0,
+      timeout: 1000 * 2,
+    },
     swapFee: {
       fetch: async (swapPairContract: SwapPair, reserve0: bigint, reserve1: bigint) => {
         SchemaDataFreshnessManager_ATC.SwapPairs[Contracts_ATC.SwapPairs.STOCK_2].swapFee.lastFetched = Date.now();

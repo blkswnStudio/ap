@@ -2,6 +2,8 @@
 
 pragma solidity ^0.8.9;
 
+import '@openzeppelin/contracts/token/ERC20/IERC20.sol';
+import '@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol';
 import './Interfaces/IBorrowerOperations.sol';
 import './Interfaces/IStabilityPool.sol';
 import './Interfaces/IBorrowerOperations.sol';
@@ -124,6 +126,8 @@ import './Dependencies/CheckContract.sol';
  *
  */
 contract StabilityPool is LiquityBase, CheckContract, IStabilityPool {
+  using SafeERC20 for IERC20;
+
   string public constant NAME = 'StabilityPool';
 
   address public stabilityPoolManagerAddress;
@@ -214,13 +218,17 @@ contract StabilityPool is LiquityBase, CheckContract, IStabilityPool {
     _requireNonZeroAmount(_amount);
 
     uint remainingDeposit = getCompoundedDebtDeposit(depositor);
-    _payoutCollGains(depositor, remainingDeposit);
+    TokenAmount[] memory collGains = _calculateCollGains(depositor, remainingDeposit);
 
     totalDeposits += _amount;
-
-    // update deposit snapshots
     uint newDeposit = remainingDeposit + _amount;
     _updateDepositAndSnapshots(depositor, newDeposit);
+
+    // payout coll gains
+    for (uint i = 0; i < collGains.length; i++) {
+      if (collGains[i].amount == 0) continue;
+      IERC20(collGains[i].tokenAddress).safeTransfer(depositor, collGains[i].amount);
+    }
 
     emit StabilityProvided(depositor, _amount);
   }
@@ -237,15 +245,18 @@ contract StabilityPool is LiquityBase, CheckContract, IStabilityPool {
     depositToWithdrawal = LiquityMath._min(depositToWithdrawal, remainingDeposit);
     if (depositToWithdrawal == 0) return;
 
-    // coll gain and deposit payout
-    _payoutCollGains(user, remainingDeposit);
+    TokenAmount[] memory collGains = _calculateCollGains(user, remainingDeposit);
 
-    depositToken.transfer(user, depositToWithdrawal);
     totalDeposits -= depositToWithdrawal;
-
-    // update current deposit snapshot
     uint newDeposit = remainingDeposit - depositToWithdrawal;
     _updateDepositAndSnapshots(user, newDeposit);
+
+    // payout coll gains and withdraw debt tokens
+    IERC20(depositToken).safeTransfer(user, depositToWithdrawal);
+    for (uint i = 0; i < collGains.length; i++) {
+      if (collGains[i].amount == 0) continue;
+      IERC20(collGains[i].tokenAddress).safeTransfer(user, collGains[i].amount);
+    }
 
     emit StabilityWithdrawn(user, depositToWithdrawal);
   }
@@ -259,12 +270,17 @@ contract StabilityPool is LiquityBase, CheckContract, IStabilityPool {
   function withdrawGains(address user) external override {
     _requireCallerIsStabilityPoolManager();
 
-    // coll gain payout
     uint remainingDeposit = getCompoundedDebtDeposit(user);
-    _payoutCollGains(user, remainingDeposit);
+    TokenAmount[] memory collGains = _calculateCollGains(user, remainingDeposit);
 
     // update deposit snapshots
     _updateDepositAndSnapshots(user, remainingDeposit);
+
+    // payout coll gains
+    for (uint i = 0; i < collGains.length; i++) {
+      if (collGains[i].amount == 0) continue;
+      IERC20(collGains[i].tokenAddress).safeTransfer(user, collGains[i].amount);
+    }
   }
 
   // --- Liquidation functions ---
@@ -412,24 +428,27 @@ contract StabilityPool is LiquityBase, CheckContract, IStabilityPool {
 
   // --- Reward calculator functions ---
 
-  function _payoutCollGains(address _depositor, uint remainingDeposit) internal {
+  function _calculateCollGains(
+    address _depositor,
+    uint remainingDeposit
+  ) internal returns (TokenAmount[] memory collGains) {
     bool hasAnyCollGain = false;
-    TokenAmount[] memory collGains = new TokenAmount[](usedCollTokens.length);
+    collGains = new TokenAmount[](usedCollTokens.length);
     for (uint i = 0; i < usedCollTokens.length; i++) {
       address collTokenAddress = usedCollTokens[i];
       uint collGain = getDepositorCollGain(_depositor, collTokenAddress);
       if (collGain == 0) continue;
 
       totalGainedColl[collTokenAddress] -= collGain;
-      IERC20(collTokenAddress).transfer(_depositor, collGain);
       collGains[i] = TokenAmount(collTokenAddress, collGain);
       if (!hasAnyCollGain) hasAnyCollGain = true;
     }
 
     uint initialDeposit = deposits[_depositor];
     uint depositLoss = initialDeposit - remainingDeposit;
-
     if (hasAnyCollGain || depositLoss > 0) emit StabilityGainsWithdrawn(_depositor, depositLoss, collGains);
+
+    return collGains;
   }
 
   /* Calculates the gains earned by the deposit since its last snapshots were taken.

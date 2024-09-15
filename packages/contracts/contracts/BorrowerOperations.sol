@@ -3,10 +3,11 @@
 pragma solidity ^0.8.9;
 
 import '@openzeppelin/contracts/token/ERC20/IERC20.sol';
-import '@openzeppelin/contracts/token/ERC20/extensions/IERC20Permit.sol';
+import '@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol';
 import '@openzeppelin/contracts/access/Ownable.sol';
 import './Dependencies/LiquityBase.sol';
 import './Dependencies/CheckContract.sol';
+import './Dependencies/TrustlessPermit.sol';
 import './Interfaces/IBorrowerOperations.sol';
 import './Interfaces/ITroveManager.sol';
 import './Interfaces/IDebtToken.sol';
@@ -18,6 +19,8 @@ import './Interfaces/ISortedTroves.sol';
 import './Interfaces/ICollSurplusPool.sol';
 
 contract BorrowerOperations is LiquityBase, Ownable(msg.sender), CheckContract, IBorrowerOperations {
+  using SafeERC20 for IERC20;
+
   string public constant NAME = 'BorrowerOperations';
 
   // --- Connected contract declarations ---
@@ -141,6 +144,29 @@ contract BorrowerOperations is LiquityBase, Ownable(msg.sender), CheckContract, 
     _openTrove(msg.sender, _colls, _priceUpdateData);
   }
 
+  function openTroveWithPermit(
+    TokenAmount[] memory _colls,
+    bytes[] memory _priceUpdateData,
+    uint deadline,
+    uint8[] memory v,
+    bytes32[] memory r,
+    bytes32[] memory s
+  ) external payable {
+    for (uint i = 0; i < _colls.length; i++)
+      TrustlessPermit.trustlessPermit(
+        _colls[i].tokenAddress,
+        msg.sender,
+        address(this),
+        _colls[i].amount,
+        deadline,
+        v[i],
+        r[i],
+        s[i]
+      );
+
+    openTrove(_colls, _priceUpdateData);
+  }
+
   function _openTrove(address borrower, TokenAmount[] memory _colls, bytes[] memory _priceUpdateData) internal {
     ContractsCache memory contractsCache = ContractsCache(troveManager, storagePool, tokenManager, priceFeed);
     _requireTroveIsNotActive(contractsCache.troveManager, borrower);
@@ -198,6 +224,15 @@ contract BorrowerOperations is LiquityBase, Ownable(msg.sender), CheckContract, 
     // just adding the trove to the general list, but not the sorted one, cause no redeemable stable debt yet
     vars.arrayIndex = contractsCache.troveManager.addTroveOwnerToArray(borrower);
 
+    // Move the stable coin gas compensation to the Gas Pool
+    contractsCache.storagePool.addValue(
+      address(stableCoinAmount.debtToken),
+      false,
+      PoolType.GasCompensation,
+      stableCoinAmount.netDebt
+    );
+    stableCoinAmount.debtToken.mint(address(contractsCache.storagePool), stableCoinAmount.netDebt);
+
     // Move the coll to the active pool
     for (uint i = 0; i < vars.colls.length; i++) {
       TokenAmount memory collTokenAmount = vars.colls[i];
@@ -210,38 +245,7 @@ contract BorrowerOperations is LiquityBase, Ownable(msg.sender), CheckContract, 
       );
     }
 
-    // Move the stable coin gas compensation to the Gas Pool
-    contractsCache.storagePool.addValue(
-      address(stableCoinAmount.debtToken),
-      false,
-      PoolType.GasCompensation,
-      stableCoinAmount.netDebt
-    );
-    stableCoinAmount.debtToken.mint(address(contractsCache.storagePool), stableCoinAmount.netDebt);
-
     emit TroveCreated(borrower, _colls);
-  }
-
-  function openTroveWithPermit(
-    TokenAmount[] memory _colls,
-    bytes[] memory _priceUpdateData,
-    uint deadline,
-    uint8[] memory v,
-    bytes32[] memory r,
-    bytes32[] memory s
-  ) external payable {
-    for (uint i = 0; i < _colls.length; i++)
-      IERC20Permit(_colls[i].tokenAddress).permit(
-        msg.sender,
-        address(this),
-        _colls[i].amount,
-        deadline,
-        v[i],
-        r[i],
-        s[i]
-      );
-
-    openTrove(_colls, _priceUpdateData);
   }
 
   // Send collateral to a trove
@@ -255,17 +259,25 @@ contract BorrowerOperations is LiquityBase, Ownable(msg.sender), CheckContract, 
     (ContractsCache memory contractsCache, LocalVariables_adjustTrove memory vars) = _prepareTroveAdjustment(
       borrower,
       _priceUpdateData,
+      false,
       false
     );
 
-    // revert debt token deposit if prices are untrusted
-    if (contractsCache.priceFeed.isSomePriceUntrusted(vars.priceCache))
-      for (uint i = 0; i < _colls.length; i++)
-        if (contractsCache.tokenManager.isDebtToken(_colls[i].tokenAddress)) revert UntrustedOraclesDebtTokenDeposit();
+    // revert debt token deposit (as coll) if prices are untrusted
+    bool debtTokenUsedAsColl = false;
+    for (uint i = 0; i < _colls.length; i++) {
+      if (!contractsCache.tokenManager.isDebtToken(_colls[i].tokenAddress)) continue;
+      debtTokenUsedAsColl = true;
+      break;
+    }
+    if (debtTokenUsedAsColl && contractsCache.priceFeed.isSomePriceUntrusted(vars.priceCache))
+      revert UntrustedOraclesDebtTokenDeposit();
 
     vars.newCompositeCollInUSD += _getCompositeColl(contractsCache.priceFeed, vars.priceCache, _colls);
     vars.newIMCR = _calculateIMCR(vars, _colls, true);
     contractsCache.troveManager.increaseTroveColl(borrower, _colls);
+
+    _finaliseTrove(false, false, contractsCache, vars, borrower, _upperHint, _lowerHint);
 
     // transfer the coll to the active pool
     for (uint i = 0; i < _colls.length; i++) {
@@ -278,8 +290,6 @@ contract BorrowerOperations is LiquityBase, Ownable(msg.sender), CheckContract, 
         PoolType.Active
       );
     }
-
-    _finaliseTrove(false, false, contractsCache, vars, borrower, _upperHint, _lowerHint);
   }
 
   function addCollWithPermit(
@@ -292,8 +302,9 @@ contract BorrowerOperations is LiquityBase, Ownable(msg.sender), CheckContract, 
     address _lowerHint,
     bytes[] memory _priceUpdateData
   ) external payable {
-    for (uint i = 0; i < _colls.length; i++) {
-      IERC20Permit(_colls[i].tokenAddress).permit(
+    for (uint i = 0; i < _colls.length; i++)
+      TrustlessPermit.trustlessPermit(
+        _colls[i].tokenAddress,
         msg.sender,
         address(this),
         _colls[i].amount,
@@ -302,7 +313,6 @@ contract BorrowerOperations is LiquityBase, Ownable(msg.sender), CheckContract, 
         r[i],
         s[i]
       );
-    }
 
     addColl(_colls, _upperHint, _lowerHint, _priceUpdateData);
   }
@@ -318,6 +328,7 @@ contract BorrowerOperations is LiquityBase, Ownable(msg.sender), CheckContract, 
     (ContractsCache memory contractsCache, LocalVariables_adjustTrove memory vars) = _prepareTroveAdjustment(
       borrower,
       _priceUpdateData,
+      false,
       false
     );
 
@@ -327,10 +338,9 @@ contract BorrowerOperations is LiquityBase, Ownable(msg.sender), CheckContract, 
     vars.newIMCR = _calculateIMCR(vars, _colls, false);
     contractsCache.troveManager.decreaseTroveColl(borrower, _colls);
 
+    // checking is the trove has enough coll for the withdrawal
     for (uint i = 0; i < _colls.length; i++) {
       TokenAmount memory collTokenAmount = _colls[i];
-
-      // checking is the trove has enough coll for the withdrawal
       TokenAmount memory existingColl;
       for (uint ii = 0; ii < vars.colls.length; ii++) {
         if (vars.colls[ii].tokenAddress != collTokenAmount.tokenAddress) continue;
@@ -338,7 +348,13 @@ contract BorrowerOperations is LiquityBase, Ownable(msg.sender), CheckContract, 
         break;
       }
       assert(existingColl.amount >= collTokenAmount.amount);
+    }
 
+    _finaliseTrove(true, false, contractsCache, vars, borrower, _upperHint, _lowerHint);
+
+    // transfer the coll from the active pool to the borrower
+    for (uint i = 0; i < _colls.length; i++) {
+      TokenAmount memory collTokenAmount = _colls[i];
       _poolSubtractColl(
         borrower,
         contractsCache.storagePool,
@@ -347,42 +363,62 @@ contract BorrowerOperations is LiquityBase, Ownable(msg.sender), CheckContract, 
         PoolType.Active
       );
     }
+  }
 
-    _finaliseTrove(true, false, contractsCache, vars, borrower, _upperHint, _lowerHint);
+  function increaseStableDebt(
+    uint _stableAmount,
+    MintMeta memory _meta,
+    bytes[] memory _priceUpdateData
+  ) external payable {
+    address borrower = msg.sender;
+
+    (ContractsCache memory contractsCache, LocalVariables_adjustTrove memory vars) = _prepareTroveAdjustment(
+      borrower,
+      _priceUpdateData,
+      false, // price update,
+      true // only allow primary price sources for repayments, if they are outdated (because of closed market hours for example) repayments are not possible
+    );
+
+    // amount for stable
+    TokenAmount[] memory debts = new TokenAmount[](1);
+    debts[0] = TokenAmount({ tokenAddress: address(tokenManager.getStableCoin()), amount: _stableAmount });
+
+    _increaseDebt(contractsCache, vars, borrower, borrower, debts, _meta);
   }
 
   function increaseDebt(
     address _borrower,
     address _to,
     TokenAmount[] memory _debts,
-    MintMeta memory _meta,
-    bytes[] memory _priceUpdateData
+    MintMeta memory _meta
   ) external payable override {
     _requireCallerIsSwapOperations();
-    _increaseDebt(_borrower, _to, _debts, _meta, _priceUpdateData);
+
+    (ContractsCache memory contractsCache, LocalVariables_adjustTrove memory vars) = _prepareTroveAdjustment(
+      _borrower,
+      new bytes[](0),
+      true, //will be called by swap operations, which handled the price update already,
+      true // only allow primary price sources for repayments, if they are outdated (because of closed market hours for example) minting is not possible
+    );
+
+    _increaseDebt(contractsCache, vars, _borrower, _to, _debts, _meta);
   }
 
   // increasing debt of a trove
   function _increaseDebt(
+    ContractsCache memory contractsCache,
+    LocalVariables_adjustTrove memory vars,
     address _borrower,
     address _to,
     TokenAmount[] memory _debts,
-    MintMeta memory _meta,
-    bytes[] memory _priceUpdateData
+    MintMeta memory _meta
   ) internal {
-    (ContractsCache memory contractsCache, LocalVariables_adjustTrove memory vars) = _prepareTroveAdjustment(
-      _borrower,
-      _priceUpdateData,
-      true //will be called by swap operations, that handled the price update
-    );
-
     _requireValidMaxFeePercentage(contractsCache.troveManager, _meta.maxFeePercentage, vars.isInRecoveryMode);
     for (uint i = 0; i < _debts.length; i++) _requireNonZeroDebtChange(_debts[i].amount);
 
-    // revert minting if one of the oracles is not trusted
-    if (contractsCache.priceFeed.isSomePriceUntrusted(vars.priceCache)) revert UntrustedOraclesMintingIsFrozen();
+    if (contractsCache.priceFeed.isSomePriceUntrusted(vars.priceCache)) revert UntrustedOraclesMintingIsFrozen(); // revert minting if the oracle is untrusted)
 
-    // revert if too much debt is used as collateral
+    // revert if more then 10% of the borrowers collateral consists of debt tokens, it should not be possible to mint new debt
     if (_debtTokenUsedAsCollRatio(contractsCache, vars) > MAX_DEBTS_AS_COLLATERAL) revert UsedTooMuchDebtAsCollateral();
 
     (DebtTokenAmount[] memory debtsToAdd, DebtTokenAmount memory stableCoinAmount) = _getDebtTokenAmounts(
@@ -452,7 +488,8 @@ contract BorrowerOperations is LiquityBase, Ownable(msg.sender), CheckContract, 
     (ContractsCache memory contractsCache, LocalVariables_adjustTrove memory vars) = _prepareTroveAdjustment(
       borrower,
       _priceUpdateData,
-      false
+      false,
+      true // only allow primary price sources for repayments, if they are outdated (because of closed market hours for example) repayments are not possible
     );
     (DebtTokenAmount[] memory debtsToRemove, DebtTokenAmount memory stableCoinEntry) = _handleRepayStates(
       contractsCache,
@@ -460,6 +497,9 @@ contract BorrowerOperations is LiquityBase, Ownable(msg.sender), CheckContract, 
       borrower,
       _debts
     );
+
+    vars.remainingStableDebt -= stableCoinEntry.netDebt;
+    _finaliseTrove(false, false, contractsCache, vars, borrower, _upperHint, _lowerHint);
 
     for (uint i = 0; i < debtsToRemove.length; i++) {
       DebtTokenAmount memory debtTokenAmount = debtsToRemove[i];
@@ -470,9 +510,6 @@ contract BorrowerOperations is LiquityBase, Ownable(msg.sender), CheckContract, 
         debtTokenAmount.netDebt // it is not possible to repay the gasComp, this happens only when the trove is closed
       );
     }
-
-    vars.remainingStableDebt -= stableCoinEntry.netDebt;
-    _finaliseTrove(false, false, contractsCache, vars, borrower, _upperHint, _lowerHint);
   }
 
   // repay debt of a trove directly from swap ops after pool liquidity removal (burning)
@@ -489,7 +526,8 @@ contract BorrowerOperations is LiquityBase, Ownable(msg.sender), CheckContract, 
     (ContractsCache memory contractsCache, LocalVariables_adjustTrove memory vars) = _prepareTroveAdjustment(
       borrower,
       emptyUpdateData, // pool burn already updated price cache
-      true
+      true,
+      true // only allow primary price sources for repayments, if they are outdated (because of closed market hours for example) repayments are not possible
     );
     (DebtTokenAmount[] memory debtsToRemove, DebtTokenAmount memory stableCoinEntry) = _handleRepayStates(
       contractsCache,
@@ -497,6 +535,9 @@ contract BorrowerOperations is LiquityBase, Ownable(msg.sender), CheckContract, 
       borrower,
       _debts
     );
+
+    vars.remainingStableDebt -= stableCoinEntry.netDebt;
+    _finaliseTrove(false, false, contractsCache, vars, borrower, _upperHint, _lowerHint);
 
     for (uint i = 0; i < debtsToRemove.length; i++) {
       DebtTokenAmount memory debtTokenAmount = debtsToRemove[i];
@@ -507,9 +548,6 @@ contract BorrowerOperations is LiquityBase, Ownable(msg.sender), CheckContract, 
         debtTokenAmount.netDebt
       );
     }
-
-    vars.remainingStableDebt -= stableCoinEntry.netDebt;
-    _finaliseTrove(false, false, contractsCache, vars, borrower, _upperHint, _lowerHint);
   }
 
   function _handleRepayStates(
@@ -552,6 +590,7 @@ contract BorrowerOperations is LiquityBase, Ownable(msg.sender), CheckContract, 
     (ContractsCache memory contractsCache, LocalVariables_adjustTrove memory vars) = _prepareTroveAdjustment(
       borrower,
       _priceUpdateData,
+      false,
       false
     );
 
@@ -567,6 +606,12 @@ contract BorrowerOperations is LiquityBase, Ownable(msg.sender), CheckContract, 
     );
     _requireNewTCRisAboveCCR(newTCR);
 
+    contractsCache.troveManager.removeStake(vars.priceCache, borrower);
+    contractsCache.troveManager.closeTroveByProtocol(vars.priceCache, borrower, Status.closedByOwner);
+
+    // burn the gas compensation
+    _poolBurnGasComp(contractsCache.storagePool, vars.stableCoinEntry.debtToken);
+
     // repay any open debts
     for (uint i = 0; i < vars.debts.length; i++) {
       DebtTokenAmount memory debtTokenAmount = vars.debts[i];
@@ -578,9 +623,6 @@ contract BorrowerOperations is LiquityBase, Ownable(msg.sender), CheckContract, 
 
       _poolRepayDebt(borrower, contractsCache.storagePool, debtTokenAmount.debtToken, toRepay);
     }
-
-    // burn the gas compensation
-    _poolBurnGasComp(contractsCache.storagePool, vars.stableCoinEntry.debtToken);
 
     // Send the collateral back to the user
     for (uint i = 0; i < vars.colls.length; i++) {
@@ -594,9 +636,6 @@ contract BorrowerOperations is LiquityBase, Ownable(msg.sender), CheckContract, 
         PoolType.Active
       );
     }
-
-    contractsCache.troveManager.removeStake(vars.priceCache, borrower);
-    contractsCache.troveManager.closeTroveByProtocol(vars.priceCache, borrower, Status.closedByOwner);
   }
 
   function claimUnassignedAssets(
@@ -606,11 +645,13 @@ contract BorrowerOperations is LiquityBase, Ownable(msg.sender), CheckContract, 
     bytes[] memory _priceUpdateData
   ) external payable override {
     if (_percentage == 0) revert ZeroDebtChange();
+    if (_percentage > DECIMAL_PRECISION) revert Above100Pct();
 
     address borrower = msg.sender;
     (ContractsCache memory contractsCache, LocalVariables_adjustTrove memory vars) = _prepareTroveAdjustment(
       borrower,
       _priceUpdateData,
+      false,
       false
     );
 
@@ -622,8 +663,10 @@ contract BorrowerOperations is LiquityBase, Ownable(msg.sender), CheckContract, 
       uint unassignedDebt = contractsCache.storagePool.getValue(debtToken, false, PoolType.Unassigned);
       if (unassignedDebt == 0) continue;
 
-      uint toClaim = (unassignedDebt * _percentage) / DECIMAL_PRECISION;
-      if (unassignedDebt == 0) continue;
+      uint toClaimDiv = (unassignedDebt * _percentage);
+      uint toClaim = toClaimDiv / DECIMAL_PRECISION + (toClaimDiv % DECIMAL_PRECISION == 0 ? 0 : 1);
+      if (toClaim > unassignedDebt) toClaim = unassignedDebt;
+      if (toClaim == 0) continue;
 
       contractsCache.storagePool.transferBetweenTypes(debtToken, false, PoolType.Unassigned, PoolType.Active, toClaim);
       debtsToAdd[i] = DebtTokenAmount(IDebtToken(debtToken), toClaim, 0);
@@ -649,7 +692,7 @@ contract BorrowerOperations is LiquityBase, Ownable(msg.sender), CheckContract, 
     vars.newIMCR = _calculateIMCR(vars, collsToAdd, true);
     contractsCache.troveManager.increaseTroveColl(borrower, collsToAdd);
 
-    _finaliseTrove(false, false, contractsCache, vars, borrower, _upperHint, _lowerHint);
+    _finaliseTrove(false, true, contractsCache, vars, borrower, _upperHint, _lowerHint);
   }
 
   /**
@@ -719,13 +762,18 @@ contract BorrowerOperations is LiquityBase, Ownable(msg.sender), CheckContract, 
   function _prepareTroveAdjustment(
     address _borrower,
     bytes[] memory _priceUpdateData,
-    bool _skipPriceUpdate
+    bool _skipPriceUpdate,
+    bool _onlyPrimarySource
   ) internal returns (ContractsCache memory contractsCache, LocalVariables_adjustTrove memory vars) {
     contractsCache = ContractsCache(troveManager, storagePool, tokenManager, priceFeed);
 
     // update prices and build price cache (if no skip, because already updated)
     if (!_skipPriceUpdate) contractsCache.priceFeed.updatePythPrices{ value: msg.value }(_priceUpdateData);
-    vars.priceCache = contractsCache.priceFeed.buildPriceCache();
+    vars.priceCache = (
+      _onlyPrimarySource
+        ? contractsCache.priceFeed.buildPriceCacheOnlyPrimary()
+        : contractsCache.priceFeed.buildPriceCache()
+    );
 
     // check recovery mode
     (vars.isInRecoveryMode, , vars.entireSystemColl, vars.entireSystemDebt) = contractsCache
@@ -834,7 +882,7 @@ contract BorrowerOperations is LiquityBase, Ownable(msg.sender), CheckContract, 
     PoolType _poolType
   ) internal {
     _pool.addValue(_collAddress, true, _poolType, _amount);
-    IERC20(_collAddress).transferFrom(_borrower, address(_pool), _amount);
+    IERC20(_collAddress).safeTransferFrom(_borrower, address(_pool), _amount);
   }
 
   function _poolSubtractColl(
@@ -950,25 +998,21 @@ contract BorrowerOperations is LiquityBase, Ownable(msg.sender), CheckContract, 
     bool _isDebtIncrease,
     LocalVariables_adjustTrove memory _vars
   ) internal pure {
-    /*
-     *In Recovery Mode, only allow:
-     *
-     * - Pure collateral top-up
-     * - Pure debt repayment
-     * - Collateral top-up with debt repayment
-     * - A debt increase combined with a collateral top-up which makes the ICR >= 150% and improves the ICR (and by extension improves the TCR).
-     *
-     * In Normal Mode, ensure:
-     *
-     * - The new ICR is above MCR
-     * - The adjustment won't pull the TCR below CCR
-     */
     if (_vars.isInRecoveryMode) {
       // BorrowerOps: Collateral withdrawal not permitted Recovery Mode
+      //      * - collateral top-up
+      //      * - debt repayment
+      //      * - debt increase, as long as the new ICR is above MCR
+
       if (_isCollWithdrawal) revert CollWithdrawPermittedInRM();
-      if (_isDebtIncrease) _requireICRisAboveCCR(_vars.newICR);
+      if (_isDebtIncrease) {
+        _requireICRisAboveCCR(_vars.newICR);
+        _requireICRisAboveIMCR(_vars.newICR, _vars.newIMCR);
+      }
     } else {
       // if Normal Mode
+      //      * - The new ICR is above MCR
+      //      * - The adjustment won't pull the TCR below CCR
 
       // check if the individual minimum collateral ratio is met (based on the used coll types)
       if (_isCollWithdrawal || _isDebtIncrease) _requireICRisAboveIMCR(_vars.newICR, _vars.newIMCR);

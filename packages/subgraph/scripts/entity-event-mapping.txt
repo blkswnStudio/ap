@@ -19,10 +19,32 @@ entity (reserve-pool-USD-history-chunk)
   > handleCreateReservePoolUSDHistoryChunk
     ~ borrower-operations: handlePaidBorrowingFee
     ~ reserve-pool: handleWithdrewReserves
+entity (token-candle-entity)
+  > bigIntWithZeros
+    ~ token-candle-entity: handleUpdateTokenCandle_low_high
+    ~ token-candle-entity: handleUpdateTokenCandle_volume
+  > handleCreateTokenCandleSingleton
+    ~ swap-operations: handlePairCreated
+  > handleUpdateTokenCandle_volume
+    ~ swap-pair: handleSwap
+  > handleUpdateTokenCandle_low_high
+    ~ swap-pair: handleSync
 entity (borrower-history-entity)
   > handleCreateBorrowerHistory
     ~ stability-pool: handleStabilityProvided
     ~ stability-pool: handleStabilityWithdrawn
+entity (staking-event-entity)
+  > handleInitEvent
+    ~ staking-operations: handleInit
+  > handleAddPoolEvent
+    ~ staking-operations: handleAddPool
+  > handleConfigPoolEvent
+    ~ staking-operations: handleConfigPool
+  > handleRewardsChangedEvent
+    ~ staking-operations: handleRewardsChanged
+  > handleDepositWithdrawEvent
+    ~ staking-operations: handleDeposit
+    ~ staking-operations: handleWithdraw
 entity (total-value-locked-USD-history-chunk-entity)
   > handleCreateTotalValueLockedUSDHistoryChunk
     ~ storage-pool: handleStoragePoolValueUpdated
@@ -39,13 +61,6 @@ entity (pool-entity)
   > handleUpdatePool_liquidityDepositAPY
     ~ swap-pair: handleSync
   > handleUpdateLiquidity_totalAmount
-    ~ swap-pair: handleSync
-entity (token-candle-entity)
-  > handleCreateTokenCandleSingleton
-    ~ swap-operations: handlePairCreated
-  > handleUpdateTokenCandle_volume
-    ~ swap-pair: handleSwap
-  > handleUpdateTokenCandle_low_high
     ~ swap-pair: handleSync
 entity (token-entity)
   > handleCreateToken

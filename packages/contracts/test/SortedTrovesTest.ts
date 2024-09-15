@@ -35,7 +35,7 @@ describe('SortedTroves', () => {
 
   before(async () => {
     signers = await ethers.getSigners();
-    [, defaulter_1, , , whale, alice, bob, carol, dennis] = signers;
+    [, defaulter_1, , whale, alice, bob, carol, dennis] = signers;
   });
 
   beforeEach(async () => {
@@ -298,7 +298,7 @@ describe('SortedTroves', () => {
     it('No prevId for hint - ascend list starting from nextId, result is after the tail', async () => {
       await whaleShrimpTroveInit(contracts, signers, false);
 
-      const pos = await sortedTroves.findInsertPosition(parseUnits('100', 16), ZERO_ADDRESS, defaulter_1);
+      const pos = await sortedTroves.findInsertPosition(parseUnits('100', 16), ZERO_ADDRESS, defaulter_1.address);
       assert.equal(pos[0], defaulter_1.address, 'prevId result should be nextId param');
       assert.equal(pos[1], ZERO_ADDRESS, 'nextId result should be zero');
     });

@@ -17,19 +17,20 @@ import Tabs from '@mui/material/Tabs';
 import Typography from '@mui/material/Typography';
 import { SyntheticEvent, useCallback, useEffect, useState } from 'react';
 import { FormProvider, useForm } from 'react-hook-form';
-import { Contracts_ATC, Contracts_Localhost, isCollateralTokenAddress } from '../../../../config';
+import { Contracts_ATC, Contracts_Localhost, isCollateralTokenAddress, isDebtTokenAddress } from '../../../../config';
 import { useErrorMonitoring } from '../../../context/ErrorMonitoringContext';
 import { useEthers } from '../../../context/EthersProvider';
 import { usePriceFeedData } from '../../../context/PriceFeedDataProvider';
 import { useTransactionDialog } from '../../../context/TransactionDialogProvider';
 import { useUtilities } from '../../../context/UtilityProvider';
+import { evictCacheTimeoutForObject } from '../../../context/utils';
 import {
   GetBorrowerCollateralTokensQuery,
   GetBorrowerCollateralTokensQueryVariables,
   GetBorrowerDebtTokensQuery,
   GetBorrowerDebtTokensQueryVariables,
 } from '../../../generated/gql-types';
-import { GET_BORROWER_COLLATERAL_TOKENS, GET_BORROWER_DEBT_TOKENS } from '../../../queries';
+import { GET_BORROWER_COLLATERAL_TOKENS, GET_BORROWER_DEBT_TOKENS, GET_SYSTEMINFO } from '../../../queries';
 import { getHints } from '../../../utils/crypto';
 import { dangerouslyConvertBigIntToNumber, displayPercentage, floatToBigInt, roundCurrency } from '../../../utils/math';
 import RecoveryModeMarketCloseWrapper from '../../Buttons/RecoveryModeWrapper';
@@ -38,7 +39,7 @@ import CrossIcon from '../../Icons/CrossIcon';
 import DiamondIcon from '../../Icons/DiamondIcon';
 import ForwardIcon from '../../Icons/ForwardIcon';
 import Label from '../../Label/Label';
-import CollateralRatioVisualization, { CRIT_RATIO } from '../../Visualizations/CollateralRatioVisualization';
+import CollateralRatioVisualization from '../../Visualizations/CollateralRatioVisualization';
 
 type Props = {
   buttonVariant: ButtonProps['variant'];
@@ -61,22 +62,17 @@ const CollateralUpdateDialog = ({ buttonVariant, buttonSx = {} }: Props) => {
 
   const [isOpen, setIsOpen] = useState(false);
   const [tabValue, setTabValue] = useState<'DEPOSIT' | 'WITHDRAW'>('DEPOSIT');
-  const [oldRatio, setOldRatio] = useState(0);
-  const [newRatio, setNewRatio] = useState(0);
-  const [oldCriticalRatio, setOldCriticalRatio] = useState(0);
-  const [newCriticalRatio, setNewCriticalRatio] = useState(0);
+  const [oldRatio, setOldRatio] = useState<null | number>(null);
+  const [newRatio, setNewRatio] = useState<null | number>(null);
+  const [oldCriticalRatio, setOldCriticalRatio] = useState<null | number>(null);
+  const [newCriticalRatio, setNewCriticalRatio] = useState<null | number>(null);
 
   const {
     address,
     currentNetwork,
-    contracts: {
-      borrowerOperationsContract,
-      collateralTokenContracts,
-      sortedTrovesContract,
-      troveManagerContract,
-      hintHelpersContract,
-    },
+    contracts: { borrowerOperationsContract, collateralTokenContracts, sortedTrovesContract, hintHelpersContract },
   } = useEthers();
+
   const { setSteps } = useTransactionDialog();
 
   const { data: collTokenMetaData } = useQuery<
@@ -133,7 +129,7 @@ const CollateralUpdateDialog = ({ buttonVariant, buttonSx = {} }: Props) => {
         ...emptyValues,
       });
     }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [collTokenMetaData, isDirty, reset]);
 
   if (!debtTokenData || !collTokenMetaData || collateralToDeposit.length === 0) {
@@ -261,7 +257,13 @@ const CollateralUpdateDialog = ({ buttonVariant, buttonSx = {} }: Props) => {
                   });
               }
             },
-            reloadQueriesAferMined: [GET_BORROWER_COLLATERAL_TOKENS, GET_BORROWER_DEBT_TOKENS],
+            reloadQueriesAfterMined: [GET_BORROWER_COLLATERAL_TOKENS, GET_BORROWER_DEBT_TOKENS, GET_SYSTEMINFO],
+            actionAfterMined: (client) => {
+              // Need to evict local queries first...
+              client.cache.evict({ fieldName: 'getSystemInfo' });
+              client.cache.gc();
+              evictCacheTimeoutForObject(currentNetwork!, ['TroveManager']);
+            },
             // wait for all approvals
             waitForResponseOf: Array(needsAllowance.length)
               .fill('')
@@ -290,7 +292,12 @@ const CollateralUpdateDialog = ({ buttonVariant, buttonSx = {} }: Props) => {
                   throw new Error(err, { cause: borrowerOperationsContract });
                 });
             },
-            reloadQueriesAferMined: [GET_BORROWER_COLLATERAL_TOKENS, GET_BORROWER_DEBT_TOKENS],
+            reloadQueriesAfterMined: [GET_BORROWER_COLLATERAL_TOKENS, GET_BORROWER_DEBT_TOKENS, GET_SYSTEMINFO],
+            actionAfterMined: (client) => {
+              client.cache.evict({ fieldName: 'getSystemInfo' });
+              client.cache.gc();
+              evictCacheTimeoutForObject(currentNetwork!, ['TroveManager']);
+            },
             waitForResponseOf: [],
           },
         },
@@ -353,6 +360,8 @@ const CollateralUpdateDialog = ({ buttonVariant, buttonSx = {} }: Props) => {
             border: '1px solid',
             borderColor: 'background.paper',
             borderBottom: 'none',
+            borderTopLeftRadius: '4px',
+            borderTopRightRadius: '4px',
           }}
         >
           <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
@@ -411,25 +420,30 @@ const CollateralUpdateDialog = ({ buttonVariant, buttonSx = {} }: Props) => {
                         )}
 
                         <div>
-                          <NumberInput
-                            name={address}
-                            data-testid={`apollon-collateral-update-dialog-${symbol}-amount`}
-                            placeholder="Value"
-                            fullWidth
-                            rules={{
-                              min: { value: 0, message: 'Amount needs to be positive.' },
-                              max:
-                                tabValue === 'DEPOSIT'
-                                  ? {
-                                      value: dangerouslyConvertBigIntToNumber(walletAmount, decimals - 6, 6),
-                                      message: 'Your wallet does not contain the specified amount.',
-                                    }
-                                  : {
-                                      value: dangerouslyConvertBigIntToNumber(troveLockedAmount, decimals - 6, 6),
-                                      message: 'Your trove does not contain the specified amount.',
-                                    },
-                            }}
-                          />
+                          <RecoveryModeMarketCloseWrapper
+                            respectMarketClose={isDebtTokenAddress(address)}
+                            respectRecoveryMode={false}
+                          >
+                            <NumberInput
+                              name={address}
+                              data-testid={`apollon-collateral-update-dialog-${symbol}-amount`}
+                              placeholder="Value"
+                              fullWidth
+                              rules={{
+                                min: { value: 0, message: 'Amount needs to be positive.' },
+                                max:
+                                  tabValue === 'DEPOSIT'
+                                    ? {
+                                        value: dangerouslyConvertBigIntToNumber(walletAmount, decimals - 6, 6),
+                                        message: 'Your wallet does not contain the specified amount.',
+                                      }
+                                    : {
+                                        value: dangerouslyConvertBigIntToNumber(troveLockedAmount, decimals - 6, 6),
+                                        message: 'Your trove does not contain the specified amount.',
+                                      },
+                              }}
+                            />
+                          </RecoveryModeMarketCloseWrapper>
 
                           <div style={{ display: 'flex', justifyContent: 'space-between' }}>
                             <div>
@@ -471,13 +485,18 @@ const CollateralUpdateDialog = ({ buttonVariant, buttonSx = {} }: Props) => {
                               )}
                             </div>
 
-                            <Button
-                              variant="undercover"
-                              sx={{ textDecoration: 'underline', p: 0, mt: 0.25, height: 25 }}
-                              onClick={() => fillMaxInputValue(address as keyof FieldValues, index, decimals)}
+                            <RecoveryModeMarketCloseWrapper
+                              respectMarketClose={isDebtTokenAddress(address)}
+                              respectRecoveryMode={false}
                             >
-                              max
-                            </Button>
+                              <Button
+                                variant="undercover"
+                                sx={{ textDecoration: 'underline', p: 0, mt: 0.25, height: 25 }}
+                                onClick={() => fillMaxInputValue(address as keyof FieldValues, index, decimals)}
+                              >
+                                max
+                              </Button>
+                            </RecoveryModeMarketCloseWrapper>
                           </div>
                         </div>
                       </div>
@@ -570,17 +589,24 @@ const CollateralUpdateDialog = ({ buttonVariant, buttonSx = {} }: Props) => {
               sx={{
                 border: '1px solid',
                 borderColor: 'background.paper',
+                borderBottomLeftRadius: '4px',
+                borderBottomRightRadius: '4px',
                 backgroundColor: 'background.default',
                 p: '30px 20px',
               }}
             >
               <div style={{ width: '100%' }}>
-                <RecoveryModeMarketCloseWrapper respectRecoveryMode>
+                <RecoveryModeMarketCloseWrapper respectRecoveryMode={tabValue === 'WITHDRAW'}>
                   <Button
                     type="submit"
                     variant="outlined"
                     sx={{ borderColor: 'primary.contrastText' }}
-                    disabled={tabValue === 'WITHDRAW' && newRatio < CRIT_RATIO}
+                    disabled={
+                      tabValue === 'WITHDRAW' &&
+                      Boolean(newRatio) &&
+                      Boolean(oldCriticalRatio) &&
+                      newRatio! <= oldCriticalRatio!
+                    }
                   >
                     Change
                   </Button>

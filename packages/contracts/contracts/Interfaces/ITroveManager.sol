@@ -23,7 +23,8 @@ interface ITroveManager is IBBase {
     address _reservePoolAddress
   );
 
-  event SetEnableLiquidationAndRedeeming(bool enable);
+  event SetEnableRedeeming(bool enable);
+  event SetEnableLiquidation(bool enable);
   event SetBorrowingFeeFloor(uint _borrowingFeeFloor);
   event SetBorrowingInterestRate(uint _borrowingInterestRate);
   event TroveAppliedRewards(address _borrower, CAmount[] _appliedRewards);
@@ -46,9 +47,15 @@ interface ITroveManager is IBBase {
 
   // --- Functions ---
 
-  function enableLiquidationAndRedeeming() external view returns (bool);
+  function enableLiquidation() external view returns (bool);
+
+  function enableRedeeming() external view returns (bool);
 
   function borrowingFeeFloor() external view returns (uint);
+
+  function setEnableLiquidation(bool _enable) external;
+
+  function setEnableRedeeming(bool _enable) external;
 
   function setBorrowingFeeFloor(uint _borrowingFeeFloor) external;
 
@@ -106,16 +113,7 @@ interface ITroveManager is IBBase {
   function getEntireDebtAndColl(
     PriceCache memory _priceCache,
     address _borrower
-  )
-    external
-    view
-    returns (
-      RAmount[] memory amounts,
-      uint IMCR,
-      uint troveCollInUSD,
-      uint troveDebtInUSD,
-      uint troveDebtInUSDWithoutGasCompensation
-    );
+  ) external view returns (RAmount[] memory amounts, uint debtTokenLength, uint stableCoinIndex);
 
   function getTroveDebt(address _borrower) external view returns (TokenAmount[] memory);
 

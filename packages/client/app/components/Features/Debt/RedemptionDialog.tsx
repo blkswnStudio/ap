@@ -125,7 +125,7 @@ function RedemptionDialog({ buttonVariant = 'outlined', buttonSx = {} }: Props) 
           },
           // wait for all approvals
           waitForResponseOf: [],
-          reloadQueriesAferMined: [GET_BORROWER_DEBT_TOKENS],
+          reloadQueriesAfterMined: [GET_BORROWER_DEBT_TOKENS],
         },
       },
     ]);
@@ -181,6 +181,8 @@ function RedemptionDialog({ buttonVariant = 'outlined', buttonSx = {} }: Props) 
             border: '1px solid',
             borderColor: 'background.paper',
             borderBottom: 'none',
+            borderTopLeftRadius: '4px',
+            borderTopRightRadius: '4px',
           }}
         >
           <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
@@ -264,7 +266,6 @@ function RedemptionDialog({ buttonVariant = 'outlined', buttonSx = {} }: Props) 
                     </Box>
 
                     <Box
-                      data-testid="apollon-repay-debt-dialog"
                       sx={{
                         display: 'flex',
                         justifyContent: 'space-between',
@@ -286,7 +287,7 @@ function RedemptionDialog({ buttonVariant = 'outlined', buttonSx = {} }: Props) 
                               value: dangerouslyConvertBigIntToNumber(
                                 redemptionData.getRedemtionOperations.redemptionRateWithDecay,
                                 9,
-                                9,
+                                9 + 2,
                               ),
                               message: 'The specified amount is below the minimal redemption fee.',
                             },
@@ -328,6 +329,8 @@ function RedemptionDialog({ buttonVariant = 'outlined', buttonSx = {} }: Props) 
               sx={{
                 border: '1px solid',
                 borderColor: 'background.paper',
+                borderBottomLeftRadius: '4px',
+                borderBottomRightRadius: '4px',
                 backgroundColor: 'background.default',
                 p: '30px 20px',
               }}

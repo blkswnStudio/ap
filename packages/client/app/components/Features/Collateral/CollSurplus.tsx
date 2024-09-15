@@ -53,7 +53,7 @@ function CollSurplus() {
             });
           },
           waitForResponseOf: [],
-          reloadQueriesAferMined: [GET_BORROWER_COLLATERAL_TOKENS],
+          reloadQueriesAfterMined: [GET_BORROWER_COLLATERAL_TOKENS],
         },
       },
     ]);

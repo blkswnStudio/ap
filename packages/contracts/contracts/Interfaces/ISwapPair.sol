@@ -17,9 +17,10 @@ interface ISwapPair is ISwapERC20 {
   error InvalidTo();
   error K();
   error NotFromSwapOperations();
+  error UntrustedOracle(address token);
 
-  event Mint(address indexed sender, uint amount0, uint amount1);
-  event Burn(address indexed sender, uint amount0, uint amount1, address indexed to);
+  event Mint(address indexed to, uint amount0, uint amount1);
+  event Burn(address indexed from, uint amount0, uint amount1);
   event Swap(
     address indexed sender,
     uint amount0In,

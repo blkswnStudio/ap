@@ -4,7 +4,7 @@ import { PaletteMode } from '@mui/material';
 import CssBaseline from '@mui/material/CssBaseline';
 import ThemeProvider from '@mui/material/styles/ThemeProvider';
 import { feedbackIntegration } from '@sentry/nextjs';
-import { SnackbarProvider } from 'notistack';
+import { SnackbarProvider, enqueueSnackbar } from 'notistack';
 import { PropsWithChildren, useEffect, useMemo, useState } from 'react';
 import { ThemeModeLocalStorageKey } from '../components/Buttons/ThemeSwitch';
 import MockServer from '../components/MockServer';
@@ -18,6 +18,7 @@ import EthersProvider from './EthersProvider';
 import SelectedTokenProvider from './SelectedTokenProvider';
 import TransactionDialogProvider from './TransactionDialogProvider';
 import UtilityProvider from './UtilityProvider';
+import { Web3Modal } from './WalletConnectProvider';
 
 function ContextWrapper({ children }: PropsWithChildren<{}>) {
   // The initial mode will be taken from LS or from the browser if the user didnt select any before.
@@ -29,7 +30,17 @@ function ContextWrapper({ children }: PropsWithChildren<{}>) {
 
     setTheme(theme);
     if (process.env.NEXT_PUBLIC_ENVIRONMENT === 'staging') {
-      const feedback = feedbackIntegration({ colorScheme: theme, autoInject: true, showBranding: false });
+      const feedback = feedbackIntegration({
+        colorScheme: theme,
+        autoInject: true,
+        showBranding: false,
+        onSubmitError: () => {
+          enqueueSnackbar(
+            "Please disable any Adblocker or lower the privacy settings of your browser and try again. E.g.: Firefox users can do so under 'about:preferences#privacy'.",
+            { variant: 'error' },
+          );
+        },
+      });
       feedback.setupOnce();
     }
   };
@@ -71,15 +82,17 @@ function ContextWrapper({ children }: PropsWithChildren<{}>) {
           <DeviceFallbackController>
             <MockServer>
               <EthersProvider>
-                <CustomApolloProvider>
-                  <UtilityProvider getDynamicSwapFeeOverride={getDynamicSwapFee} getAllowanceOverride={getAllowance}>
-                    <NavigationBar themeMode={themeMode} setThemeMode={setThemeMode} />
+                <Web3Modal themeMode={themeMode}>
+                  <CustomApolloProvider>
+                    <UtilityProvider getDynamicSwapFeeOverride={getDynamicSwapFee} getAllowanceOverride={getAllowance}>
+                      <NavigationBar themeMode={themeMode} setThemeMode={setThemeMode} />
 
-                    <SelectedTokenProvider>
-                      <TransactionDialogProvider>{children}</TransactionDialogProvider>
-                    </SelectedTokenProvider>
-                  </UtilityProvider>
-                </CustomApolloProvider>
+                      <SelectedTokenProvider>
+                        <TransactionDialogProvider>{children}</TransactionDialogProvider>
+                      </SelectedTokenProvider>
+                    </UtilityProvider>
+                  </CustomApolloProvider>
+                </Web3Modal>
               </EthersProvider>
             </MockServer>
           </DeviceFallbackController>

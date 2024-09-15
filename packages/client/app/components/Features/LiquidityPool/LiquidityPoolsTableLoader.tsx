@@ -21,7 +21,7 @@ function LiquidityPoolsTableLoader() {
               <HeaderCell title="" />
               <HeaderCell title="" cellProps={{ align: 'right' }} />
               <HeaderCell title="" />
-              <HeaderCell title="APY" cellProps={{ align: 'right' }} />
+              <HeaderCell title="APR" cellProps={{ align: 'right' }} />
               <HeaderCell title="" />
               <HeaderCell title="24h Volume" />
             </TableRow>

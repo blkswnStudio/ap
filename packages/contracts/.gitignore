@@ -6,6 +6,9 @@
 # Buidler compilation cache
 /cache
 
+# Deployment Scripts
+/deploy/deployments
+
 # Ethereum accounts for testing
 /accountsList.js 
 

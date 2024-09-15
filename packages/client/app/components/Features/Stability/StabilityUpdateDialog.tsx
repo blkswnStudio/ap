@@ -15,7 +15,6 @@ import { useTransactionDialog } from '../../../context/TransactionDialogProvider
 import { useUtilities } from '../../../context/UtilityProvider';
 import { GetBorrowerDebtTokensQuery, GetBorrowerDebtTokensQueryVariables } from '../../../generated/gql-types';
 import { GET_BORROWER_DEBT_TOKENS, GET_BORROWER_STABILITY_HISTORY } from '../../../queries';
-import { manualSubgraphSyncTimeout } from '../../../utils/contants';
 import { dangerouslyConvertBigIntToNumber, floatToBigInt, roundCurrency } from '../../../utils/math';
 import NumberInput from '../../FormControls/NumberInput';
 import CrossIcon from '../../Icons/CrossIcon';
@@ -160,13 +159,7 @@ const StabilityUpdateDialog = () => {
             waitForResponseOf: Array(needsAllowance.length)
               .fill('')
               .map((_, index) => index),
-            reloadQueriesAferMined: [GET_BORROWER_DEBT_TOKENS],
-            actionAfterMined: (client) => {
-              setTimeout(() => {
-                // Manually waits for subgraph sync
-                client.refetchQueries({ include: [GET_BORROWER_STABILITY_HISTORY] });
-              }, manualSubgraphSyncTimeout);
-            },
+            reloadQueriesAfterMined: [GET_BORROWER_DEBT_TOKENS, GET_BORROWER_STABILITY_HISTORY],
           },
         },
       ]);
@@ -181,13 +174,7 @@ const StabilityUpdateDialog = () => {
               });
             },
             waitForResponseOf: [],
-            reloadQueriesAferMined: [GET_BORROWER_DEBT_TOKENS],
-            actionAfterMined: (client) => {
-              setTimeout(() => {
-                // Manually waits for subgraph sync
-                client.refetchQueries({ include: [GET_BORROWER_STABILITY_HISTORY] });
-              }, manualSubgraphSyncTimeout);
-            },
+            reloadQueriesAfterMined: [GET_BORROWER_DEBT_TOKENS, GET_BORROWER_STABILITY_HISTORY],
           },
         },
       ]);
@@ -235,6 +222,8 @@ const StabilityUpdateDialog = () => {
             border: '1px solid',
             borderColor: 'background.paper',
             borderBottom: 'none',
+            borderTopLeftRadius: '4px',
+            borderTopRightRadius: '4px',
           }}
         >
           <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
@@ -370,6 +359,8 @@ const StabilityUpdateDialog = () => {
               sx={{
                 border: '1px solid',
                 borderColor: 'background.paper',
+                borderBottomLeftRadius: '4px',
+                borderBottomRightRadius: '4px',
                 backgroundColor: 'background.default',
                 p: '30px 20px',
               }}

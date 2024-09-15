@@ -7,7 +7,7 @@ import { server } from '../../tests/setupMSW';
 import { IntegrationWrapper } from '../../tests/test-utils';
 import RepayDebtDialog from './RepayDebtDialog';
 
-describe.skip('RepayDebtDialog', () => {
+describe('RepayDebtDialog', () => {
   it('should call function "repayDebt" and 2x "approve" of mocked contract', async () => {
     const contractMock = {
       borrowerOperationsContract: {

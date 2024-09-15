@@ -1,7 +1,7 @@
 # Run the subgraph locally
 
 - `yarn workspace @liquity/contracts hardhat node --hostname 0.0.0.0`
-- `yarn workspace @liquity/contracts deploy:local:testing`
+- `yarn workspace @liquity/contracts deploy:test:local:pools`
 - `docker compose up` (Make extra sure to delete the "data" directory with `sudo rm -r data/` as it persists meta data and will let your subgraph fail silently.)
 - `yarn create-local` (Make sure to set the correct addresses and startBlocks first!)
 - `yarn deploy-local`

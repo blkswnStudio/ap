@@ -1,6 +1,11 @@
 [
     {
         "inputs": [],
+        "name": "Above100Pct",
+        "type": "error"
+    },
+    {
+        "inputs": [],
         "name": "ActiveTrove",
         "type": "error"
     },
@@ -398,6 +403,41 @@
                 "internalType": "struct IBase.MintMeta",
                 "name": "_meta",
                 "type": "tuple"
+            }
+        ],
+        "name": "increaseDebt",
+        "outputs": [],
+        "stateMutability": "payable",
+        "type": "function"
+    },
+    {
+        "inputs": [
+            {
+                "internalType": "uint256",
+                "name": "_stableAmount",
+                "type": "uint256"
+            },
+            {
+                "components": [
+                    {
+                        "internalType": "address",
+                        "name": "upperHint",
+                        "type": "address"
+                    },
+                    {
+                        "internalType": "address",
+                        "name": "lowerHint",
+                        "type": "address"
+                    },
+                    {
+                        "internalType": "uint256",
+                        "name": "maxFeePercentage",
+                        "type": "uint256"
+                    }
+                ],
+                "internalType": "struct IBase.MintMeta",
+                "name": "_meta",
+                "type": "tuple"
             },
             {
                 "internalType": "bytes[]",
@@ -405,7 +445,7 @@
                 "type": "bytes[]"
             }
         ],
-        "name": "increaseDebt",
+        "name": "increaseStableDebt",
         "outputs": [],
         "stateMutability": "payable",
         "type": "function"

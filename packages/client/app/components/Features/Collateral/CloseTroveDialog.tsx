@@ -98,7 +98,7 @@ const CloseTroveDialog = ({ buttonVariant, buttonSx = {} }: Props) => {
             });
           },
           waitForResponseOf: [],
-          reloadQueriesAferMined: [GET_BORROWER_COLLATERAL_TOKENS, GET_BORROWER_DEBT_TOKENS],
+          reloadQueriesAfterMined: [GET_BORROWER_COLLATERAL_TOKENS, GET_BORROWER_DEBT_TOKENS],
         },
       },
     ]);
@@ -151,6 +151,8 @@ const CloseTroveDialog = ({ buttonVariant, buttonSx = {} }: Props) => {
             border: '1px solid',
             borderColor: 'background.paper',
             borderBottom: 'none',
+            borderTopLeftRadius: '4px',
+            borderTopRightRadius: '4px',
           }}
         >
           <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
@@ -203,6 +205,8 @@ const CloseTroveDialog = ({ buttonVariant, buttonSx = {} }: Props) => {
             borderColor: 'background.paper',
             backgroundColor: 'background.default',
             p: '30px 20px',
+            borderBottomLeftRadius: '4px',
+            borderBottomRightRadius: '4px',
           }}
         >
           <div style={{ width: '100%' }}>

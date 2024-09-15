@@ -1,9 +1,9 @@
 'use client';
 
 import { useQuery } from '@apollo/client';
-import { Table, TableBody, TableCell, TableContainer, TableHead, TableRow } from '@mui/material';
+import { debounce, Table, TableBody, TableCell, TableContainer, TableHead, TableRow } from '@mui/material';
 import Typography from '@mui/material/Typography';
-import { useEffect, useMemo } from 'react';
+import { useCallback, useEffect, useMemo } from 'react';
 import { isStableCoinAddress } from '../../../../config';
 import { useEthers } from '../../../context/EthersProvider';
 import { GetBorrowerLiquidityPoolsQuery, GetBorrowerLiquidityPoolsQueryVariables } from '../../../generated/gql-types';
@@ -25,11 +25,11 @@ import HeaderCell from '../../Table/HeaderCell';
 import LiquidityPoolsTableLoader from './LiquidityPoolsTableLoader';
 
 type Props = {
-  selectedPoolId: string | null;
-  setSelectedPoolId: (poolId: string | null) => void;
+  selectedPoolAddress: string | null;
+  setSelectedPoolAddress: (poolId: string | null) => void;
 };
 
-function LiquidityPoolsTable({ selectedPoolId, setSelectedPoolId }: Props) {
+function LiquidityPoolsTable({ selectedPoolAddress, setSelectedPoolAddress }: Props) {
   const { address } = useEthers();
 
   const {
@@ -94,25 +94,32 @@ function LiquidityPoolsTable({ selectedPoolId, setSelectedPoolId }: Props) {
       }));
   }, [borrowerPoolsData]);
 
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  const debouncedSetSelectedPoolId = useCallback(
+    debounce((poolId) => setSelectedPoolAddress(poolId), 500),
+    [],
+  );
+
   useEffect(() => {
-    // Select first pool by default
-    if (allPoolsSorted.length > 0 && selectedPoolId === null) {
-      setSelectedPoolId(allPoolsSorted[0].id);
+    if (allPoolsSorted.length > 0 && selectedPoolAddress === null) {
+      debouncedSetSelectedPoolId(allPoolsSorted[0].address);
     }
-  }, [allPoolsSorted, setSelectedPoolId, selectedPoolId]);
+    // Cleanup function to cancel the debounced call if the component unmounts
+    return () => debouncedSetSelectedPoolId.clear();
+  }, [allPoolsSorted, debouncedSetSelectedPoolId, selectedPoolAddress]);
 
   if (!borrowerPoolsData && loading) return <LiquidityPoolsTableLoader />;
 
   return (
-    <FeatureBox title="Pools" noPadding headBorder="full" sx={{ position: 'relative', left: '-1px' }}>
+    <FeatureBox title="Pools" noPadding headBorder="full" sx={{ position: 'relative', left: '-0.5px' }}>
       <TableContainer
         sx={{
           borderRight: '1px solid',
           borderLeft: '1px solid',
           borderColor: 'background.paper',
-          // // screen - toolbar - feature box - padding top - padding bottom
-          // maxHeight: 'calc(100vh - 64px - 54px - 20px - 20px)',
-          // overflowY: 'scroll',
+          // Height of the box to the right - header height of Feature box
+          maxHeight: 'calc(590px - 41.5px)',
+          overflowY: 'scroll',
         }}
       >
         <Table stickyHeader>
@@ -123,7 +130,22 @@ function LiquidityPoolsTable({ selectedPoolId, setSelectedPoolId }: Props) {
               <HeaderCell title="" />
               <HeaderCell title="" cellProps={{ align: 'right' }} />
               <HeaderCell title="" />
-              <HeaderCell title="APY" cellProps={{ align: 'right' }} />
+              <HeaderCell
+                title="Staking APR"
+                cellProps={{ align: 'right', width: 150 }}
+                tooltipProps={{
+                  title:
+                    "APR (Annual Percentage Rate) shows your estimated yearly rewards for staking tokens. It's calculated based on current staking rates and token emissions.",
+                }}
+              />
+              <HeaderCell
+                title="LM APR"
+                cellProps={{ align: 'right', width: 100 }}
+                tooltipProps={{
+                  title:
+                    "APR (Annual Percentage Rate) shows your estimated yearly earnings for providing liquidity. It's calculated from fees collected on trades in this pool.",
+                }}
+              />
               <HeaderCell title="30d Volume" cellProps={{ align: 'right', colSpan: 2 }} />
             </TableRow>
           </TableHead>
@@ -131,13 +153,14 @@ function LiquidityPoolsTable({ selectedPoolId, setSelectedPoolId }: Props) {
           <TableBody>
             {allPoolsSorted.map((pool) => {
               const {
-                id,
+                address,
                 liquidity,
                 volume30dUSD,
                 volume30dUSD30dAgo,
                 liquidityDepositAPY,
                 borrowerAmount,
                 totalSupply,
+                stakingPool,
               } = pool;
               const [tokenA, tokenB] = liquidity;
               const volumeChange = percentageChange(
@@ -147,25 +170,25 @@ function LiquidityPoolsTable({ selectedPoolId, setSelectedPoolId }: Props) {
 
               return (
                 <TableRow
-                  key={id}
+                  key={address}
                   data-testid="apollon-liquidity-pool-table-row"
-                  hover={selectedPoolId !== id}
-                  selected={selectedPoolId === id}
+                  hover={selectedPoolAddress !== address}
+                  selected={selectedPoolAddress === address}
                   sx={{
                     ':hover': {
-                      cursor: selectedPoolId !== id ? 'pointer' : 'default',
+                      cursor: selectedPoolAddress !== address ? 'pointer' : 'default',
                     },
                   }}
                   onClick={() => {
-                    setSelectedPoolId(pool.id);
+                    setSelectedPoolAddress(pool.address);
                     refetch();
                   }}
                 >
                   <TableCell
                     align="right"
                     sx={{
-                      borderLeft: selectedPoolId === id ? '2px solid #33B6FF' : 'none',
-                      pl: selectedPoolId === id ? 0 : 2,
+                      borderLeft: selectedPoolAddress === address ? '2px solid #33B6FF' : 'none',
+                      pl: selectedPoolAddress === address ? 0 : 2,
                     }}
                   >
                     <Typography fontWeight={400} data-testid="apollon-liquidity-pool-table-row-borrower-amount-token-a">
@@ -224,6 +247,12 @@ function LiquidityPoolsTable({ selectedPoolId, setSelectedPoolId }: Props) {
                   <TableCell>
                     <Label variant="none">{tokenB.token.symbol}</Label>
                   </TableCell>
+
+                  {/* TODO: Must be reuqired when deployment is fixed */}
+                  <TableCell align="right">
+                    {displayPercentage(bigIntStringToFloat(stakingPool?.stakingAPR ?? '0'))}
+                  </TableCell>
+
                   <TableCell align="right">{displayPercentage(bigIntStringToFloat(liquidityDepositAPY))}</TableCell>
 
                   <TableCell align="right" sx={{ pr: 0, pl: 1, width: '50px', maxWidth: '200px' }}>

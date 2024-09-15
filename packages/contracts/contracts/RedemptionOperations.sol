@@ -82,7 +82,7 @@ contract RedemptionOperations is LiquityBase, Ownable(msg.sender), CheckContract
     uint _maxFeePercentage,
     bytes[] memory _priceUpdateData
   ) external payable override {
-    if (!troveManager.enableLiquidationAndRedeeming()) revert RedeptionDisabled();
+    if (!troveManager.enableRedeeming()) revert RedeptionDisabled();
     IDebtToken stableCoin = tokenManager.getStableCoin();
 
     // update prices and build price cache
@@ -94,6 +94,7 @@ contract RedemptionOperations is LiquityBase, Ownable(msg.sender), CheckContract
       storagePool.getValue(address(stableCoin), false, PoolType.Default);
 
     if (_stableCoinAmount == 0) revert ZeroAmount();
+    if (_stableCoinAmount < MIN_REDEMPTION) revert LessThanMinRedemption();
     if (_maxFeePercentage < REDEMPTION_FEE_FLOOR || _maxFeePercentage > DECIMAL_PRECISION)
       revert InvalidMaxFeePercent();
     if (_stableCoinAmount > stableCoin.balanceOf(msg.sender)) revert ExceedDebtBalance();
@@ -123,9 +124,9 @@ contract RedemptionOperations is LiquityBase, Ownable(msg.sender), CheckContract
       // resulting CR differs from the expected CR, we bail in that case, because all following iterations will consume too much gas by searching for a updated hints
       // allowing 1% deviation, because of time based borrowing interests
       if (troveRedemption.resultingCR > iteration.expectedCR) {
-        if ((troveRedemption.resultingCR * DECIMAL_PRECISION) / iteration.expectedCR > 1.01e18) break;
+        if ((troveRedemption.resultingCR * 100) / iteration.expectedCR > 101) break;
       } else {
-        if ((iteration.expectedCR * DECIMAL_PRECISION) / troveRedemption.resultingCR > 1.01e18) break;
+        if ((iteration.expectedCR * 100) / troveRedemption.resultingCR > 101) break;
       }
 
       // updating the troves stable debt
@@ -214,7 +215,7 @@ contract RedemptionOperations is LiquityBase, Ownable(msg.sender), CheckContract
 
     address nextTrove = sortedTroves.getNext(_redemptionHint);
     (uint nextTroveCR, uint nextTroveMCR, ) = hintHelpers.getCurrentICR(_priceCache, nextTrove);
-    if (nextTrove != address(0) && nextTroveCR > nextTroveMCR) revert InvalidHintLowerCRExists();
+    if (nextTrove != address(0) && nextTroveCR >= nextTroveMCR) revert InvalidHintLowerCRExists();
   }
 
   function calculateTroveRedemption(

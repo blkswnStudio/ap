@@ -32,7 +32,9 @@ const ERC20_STABLE = {
       fetch: async (troveManagerContract: TroveManager) => {
         SchemaDataFreshnessManager_ATC.ERC20[Contracts_ATC.ERC20.STABLE].borrowingRate.lastFetched = Date.now();
 
-        const borrowingRate = await troveManagerContract.getBorrowingRate(isStableCoinAddress(Contracts_ATC.ERC20.STABLE));
+        const borrowingRate = await troveManagerContract.getBorrowingRate(
+          isStableCoinAddress(Contracts_ATC.ERC20.STABLE),
+        );
 
         SchemaDataFreshnessManager_ATC.ERC20[Contracts_ATC.ERC20.STABLE].borrowingRate.value(borrowingRate);
       },

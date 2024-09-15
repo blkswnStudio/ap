@@ -84,7 +84,7 @@ export function CustomApolloProvider({ children }: PropsWithChildren<{}>) {
                     case 'TroveManager':
                       switch (contract) {
                         case 'borrowerIMCR':
-                          activeDataManager[type][contract].fetch({ borrower, troveManagerContract });
+                          activeDataManager[type][contract].fetch({ borrower, hintHelpersContract });
                           break;
 
                         case 'borrowerICR':
@@ -223,6 +223,14 @@ export function CustomApolloProvider({ children }: PropsWithChildren<{}>) {
                               activeDataManager[type][contract][policy].fetch(
                                 // @ts-ignore
                                 contract,
+                                stakingOperationsContract,
+                                borrower,
+                              );
+                              break;
+                            case 'pendingRewards':
+                              // @ts-ignore
+                              activeDataManager[type][contract][policy].fetch(
+                                // @ts-ignore
                                 stakingOperationsContract,
                                 borrower,
                               );
@@ -626,7 +634,7 @@ const getProductionCacheConfig = ({
                 borrower
               ) {
                 SchemaDataFreshnessManager.ERC20[tokenData.address].troveLockedAmount.fetch({
-                  troveManagerContract: troveManagerContract,
+                  troveManagerContract,
                   borrower,
                 });
               }
@@ -695,7 +703,6 @@ const getProductionCacheConfig = ({
             const poolAddress = readField('address') as Readonly<string>;
             const poolLiquidity = readField('liquidity') as Readonly<Reference>[];
 
-            console.log('poolAddress: ', poolAddress);
             if (poolAddress && isPoolAddress(poolAddress)) {
               if (poolLiquidity.length === 2) {
                 const tokenLiq0 = cache.readFragment<LiquidityFragmentFragment>({
@@ -720,6 +727,23 @@ const getProductionCacheConfig = ({
                 }
               }
               return SchemaDataFreshnessManager.SwapPairs[poolAddress].swapFee.value();
+            }
+          },
+        },
+
+        pendingRewards: {
+          read(_, { readField }) {
+            const poolAddress = readField('address') as Readonly<string>;
+
+            if (poolAddress && isPoolAddress(poolAddress)) {
+              if (isFieldOutdated(SchemaDataFreshnessManager.SwapPairs[poolAddress], 'pendingRewards') && borrower) {
+                SchemaDataFreshnessManager.SwapPairs[poolAddress].pendingRewards.fetch(
+                  stakingOperationsContract,
+                  borrower,
+                );
+              }
+
+              return SchemaDataFreshnessManager.SwapPairs[poolAddress].pendingRewards.value();
             }
           },
         },

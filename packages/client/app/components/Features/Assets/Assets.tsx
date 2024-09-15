@@ -48,7 +48,9 @@ function Assets() {
   const { selectedToken, setSelectedToken, JUSDToken } = useSelectedToken();
 
   // TODO: Implement a filter for only JUSD to subgraph
-  const { data } = useQuery<GetAllPoolsQuery, GetAllPoolsQueryVariables>(GET_ALL_POOLS);
+  const { data } = useQuery<GetAllPoolsQuery, GetAllPoolsQueryVariables>(GET_ALL_POOLS, {
+    pollInterval: 5000,
+  });
   const { data: pastTokenPrices } = useQuery<GetPastTokenPricesQuery, GetPastTokenPricesQueryVariables>(
     GET_TOKEN_PRICES_24h_AGO,
     {
@@ -158,6 +160,10 @@ function Assets() {
         return;
       }
       setSelectedToken(preselectedToken);
+    } else if (tokens.length && selectedToken) {
+      const updatedToken =
+        tokens.find(({ address }) => getCheckSum(address) === getCheckSum(selectedToken.address)) ?? tokens[0];
+      setSelectedToken(updatedToken);
     }
   }, [tokens, setSelectedToken, selectedToken, JUSDToken]);
 

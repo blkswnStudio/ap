@@ -4,7 +4,6 @@ import {
   MockDebtToken,
   MockERC20,
   MockPyth,
-  PriceFeed,
   StakingOperations,
   SwapOperations,
   SwapPair,
@@ -32,7 +31,6 @@ describe('StakingOps', () => {
 
   let contracts: Contracts;
   let pyth: MockPyth;
-  let priceFeed: PriceFeed;
   let tokenMgr: TokenManager;
   let stakingOps: StakingOperations;
   let swapOps: SwapOperations;
@@ -47,7 +45,6 @@ describe('StakingOps', () => {
     contracts = await deployTesting();
 
     pyth = contracts.pyth;
-    priceFeed = contracts.priceFeed;
 
     stakingOps = contracts.stakingOperations;
     swapOps = contracts.swapOperations;
@@ -90,7 +87,9 @@ describe('StakingOps', () => {
     //add liquidty to pair
     await swapOps
       .connect(user)
-      .addLiquidity(STABLE, tokenB, amountA, amountB, 0, 0, await priceUpdateAndMintMeta(), await deadline());
+      .addLiquidity(STABLE, tokenB, amountA, amountB, 0, 0, await priceUpdateAndMintMeta(), await deadline(), {
+        value: oracleData.fee,
+      });
 
     //get pair
     const pairAddress = await swapOps.getPair(STABLE, tokenB);
@@ -256,7 +255,7 @@ describe('StakingOps', () => {
 
       // check pending
       const pending = await stakingOps.pendingReward(pair, bob);
-      expect(pending).to.be.equal(rewardPerSecond * passedTime);
+      expect(pending).to.be.approximately(rewardPerSecond * passedTime, 1n); // rounding diff
 
       // claim
       const t1 = await getLatestBlockTimestamp();
@@ -288,6 +287,25 @@ describe('StakingOps', () => {
       expect(await GOV.balanceOf(bob)).to.be.equal(pending);
     });
 
+    it('Claim (full) and try claim again (fail)', async () => {
+      const claimable = rewardPerSecond * passedTime * 2n;
+      await GOV.unprotectedMint(stakingOps, claimable);
+
+      const pending = await prepare();
+      expect(await stakingOps.unclaimedReward(bob)).to.be.equal(0n);
+      expect(await GOV.balanceOf(bob)).to.be.equal(pending);
+
+      // multi claim
+      expect(await stakingOps.pendingReward(pair, bob)).to.be.eq(0n);
+      await network.provider.send('evm_setAutomine', [false]); // stop automine
+      await stakingOps.connect(bob).claim(pair);
+      await stakingOps.connect(bob).claim(pair);
+      await stakingOps.connect(bob).claim(pair);
+      await network.provider.send('evm_mine'); // manually mine all at once
+      await network.provider.send('evm_setAutomine', [true]); // start automine
+      expect(await GOV.balanceOf(bob)).to.be.approximately(pending + rewardPerSecond, 1n); // rounding diff
+    });
+
     it('Claim (partial, then unclaimed)', async () => {
       const claimable = rewardPerSecond * (passedTime / 2n);
       await GOV.unprotectedMint(stakingOps, claimable);
@@ -302,7 +320,7 @@ describe('StakingOps', () => {
     });
   });
 
-  it('Complex Scenario (multi pool / multi user', async () => {
+  it('Complex Scenario (multi pool / multi user)', async () => {
     // config
     const rewardPerSecond = parseUnits('1');
     tokenMgr.connect(owner).setStakingRewardsPerSecond(rewardPerSecond);

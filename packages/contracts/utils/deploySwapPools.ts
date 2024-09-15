@@ -1,18 +1,14 @@
 import { ethers } from 'hardhat';
 import deployTestBase from './deployTestBase';
 import { MaxUint256, parseUnits, ZeroAddress } from 'ethers';
-import { generatePriceUpdateData } from './pythHelper';
+import { generatePriceUpdateData, generatePriceUpdateDataWithFee } from './pythHelper';
 
 (async () => {
   const contracts = await deployTestBase();
   const STABLE = contracts.STABLE;
-
-  const blockTimestamp = (await ethers.provider.getBlock('latest'))?.timestamp ?? 0;
-  const deadline = blockTimestamp + 60 * 5;
   const deployer = (await ethers.getSigners())[0];
+  const priceUpdateData = await generatePriceUpdateDataWithFee(contracts);
 
-  // seed some pools
-  const priceUpdateData = await generatePriceUpdateData(contracts.pyth);
   // Log byte data to mock in the client
   // console.log("priceUpdateData: ", priceUpdateData);
   for (const [token, tokenAmount, stableAmount] of [
@@ -33,6 +29,17 @@ import { generatePriceUpdateData } from './pythHelper';
     await pair.waitForDeployment();
 
     await contracts.swapOperations.createPair(pair.target, token, STABLE);
+    await contracts.tokenManager.setStakingAllocPoint(pair.target, 1);
+    // mint staking rewards
+    await contracts.GOV.unprotectedMint(contracts.stakingOperations.target, parseUnits('1000000'));
+
+    await new Promise((resolve) => setTimeout(resolve, 1000));
+
+    await contracts.tokenManager.setStakingRewardsPerSecond(parseUnits('0.001'));
+
+    await new Promise((resolve) => setTimeout(resolve, 1000));
+
+    const blockTimestamp = (await ethers.provider.getBlock('latest'))?.timestamp ?? 0;
     await contracts.swapOperations.addLiquidity(
       token,
       STABLE,
@@ -42,9 +49,10 @@ import { generatePriceUpdateData } from './pythHelper';
       0,
       {
         meta: { upperHint: ZeroAddress, lowerHint: ZeroAddress, maxFeePercentage: 0 },
-        priceUpdateData,
+        priceUpdateData: priceUpdateData.data,
       },
-      deadline
+      blockTimestamp + 60 * 5,
+      { value: priceUpdateData.fee }
     );
 
     console.log(
@@ -52,15 +60,7 @@ import { generatePriceUpdateData } from './pythHelper';
     );
   }
 
-  // mint test user assets
-  for (const [token, amount] of [
-    [contracts.BTC, parseUnits('1', 8)],
-    [contracts.USDT, parseUnits('20000')],
-    [contracts.GOV, parseUnits('15000')],
-    [contracts.STABLE, parseUnits('200000')],
-    [contracts.STOCK, parseUnits('65')],
-  ])
-    await token.unprotectedMint(deployer, amount);
 
+  // printing
   for (const [key, c] of Object.entries(contracts)) console.log(`${key}: ${c.target}`);
 })();

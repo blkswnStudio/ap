@@ -55,10 +55,15 @@ function DebtTable() {
         .filter(({ troveMintedAmount, walletAmount }) => walletAmount! > 0 || troveMintedAmount! > 0)
         .map((token) => ({
           ...token,
-          chartColor: colorPalette.shift() as string,
           troveMintedUSD: token.troveMintedAmount
             ? roundNumber(dangerouslyConvertBigIntToNumber(token.troveMintedAmount * token.token.priceUSDOracle, 30, 6))
             : 0,
+        }))
+        .sort((a, b) => b.troveMintedUSD - a.troveMintedUSD)
+        // need to assign the color after sorting
+        .map((token) => ({
+          ...token,
+          chartColor: colorPalette.shift() as string,
         })) ?? []
     );
   }, [data]);

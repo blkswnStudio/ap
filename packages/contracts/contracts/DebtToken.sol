@@ -46,7 +46,6 @@ contract DebtToken is CheckContract, IDebtToken {
   // invalidate the cached domain separator if the chain id changes.
   bytes32 private immutable _CACHED_DOMAIN_SEPARATOR;
   uint256 private immutable _CACHED_CHAIN_ID;
-
   bytes32 private immutable _HASHED_NAME;
   bytes32 private immutable _HASHED_VERSION;
 
@@ -206,7 +205,6 @@ contract DebtToken is CheckContract, IDebtToken {
   }
 
   function sendToPool(address _sender, address _poolAddress, uint256 _amount) external override {
-    // FIXME: This doesnt guarantee that receiver is really a pool
     _requireCallerIsStabilityPoolManager();
     _transfer(_sender, _poolAddress, _amount);
   }
@@ -279,8 +277,7 @@ contract DebtToken is CheckContract, IDebtToken {
       )
     );
 
-    bytes32 signedMsg = MessageHashUtils.toEthSignedMessageHash(digest);
-    address recoveredAddress = ECDSA.recover(signedMsg, v, r, s);
+    address recoveredAddress = ECDSA.recover(digest, v, r, s);
     if (recoveredAddress != owner) revert InvalidSignature();
     _approve(owner, spender, amount);
   }
@@ -358,6 +355,7 @@ contract DebtToken is CheckContract, IDebtToken {
 
   function _requireMintingEnabled() internal view {
     if (!tokenManager.enableMinting()) revert MintingDisabled();
+    if (tokenManager.disableDebtMinting(address(this))) revert MintingDisabledForToken();
   }
 
   function _requireCallerIsStabilityPoolManager() internal view {

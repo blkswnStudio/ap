@@ -80,7 +80,22 @@ function DebtTokenTableLoader() {
                   Repay
                 </Button>
               </TableCell>
-              <TableCell style={{ borderBottom: 'none', padding: '2px' }} colSpan={4} align="center">
+              <TableCell
+                colSpan={2}
+                sx={{ borderBottom: 'none', borderRight: '1px solid', borderColor: 'table.border', padding: '2px' }}
+              >
+                <Button
+                  variant="text"
+                  sx={{
+                    width: '100%',
+                    p: '6px 8px',
+                  }}
+                  disabled
+                >
+                  Mint Stable
+                </Button>
+              </TableCell>
+              <TableCell style={{ borderBottom: 'none', padding: '2px' }} colSpan={2} align="center">
                 <Button
                   variant="text"
                   sx={{

@@ -202,6 +202,8 @@ describe('handleSync()', () => {
     const event = createSyncEvent(oneEther, oneEther);
 
     mockSwapPair_getReserves(MockSwapPair_STABLE_MockDebtToken_Address, oneEther, oneEther.times(BigInt.fromI32(10)));
+    mockPriceFeed_getPrice(MockDebtTokenAddress, oneEther.div(BigInt.fromI32(2)));
+
     handleSync(event);
 
     CandleSizes.forEach((size) => {
@@ -210,6 +212,11 @@ describe('handleSync()', () => {
       assert.fieldEquals('TokenCandleSingleton', entityId, 'low', oneEther.div(BigInt.fromI32(10)).toString());
       assert.fieldEquals('TokenCandleSingleton', entityId, 'open', oneEther.toString());
       assert.fieldEquals('TokenCandleSingleton', entityId, 'close', oneEther.div(BigInt.fromI32(10)).toString());
+
+      assert.fieldEquals('TokenCandleSingleton', entityId, 'highOracle', oneEther.toString());
+      assert.fieldEquals('TokenCandleSingleton', entityId, 'lowOracle', oneEther.div(BigInt.fromI32(2)).toString());
+      assert.fieldEquals('TokenCandleSingleton', entityId, 'openOracle', oneEther.toString());
+      assert.fieldEquals('TokenCandleSingleton', entityId, 'closeOracle', oneEther.div(BigInt.fromI32(2)).toString());
     });
   });
 
@@ -217,6 +224,8 @@ describe('handleSync()', () => {
     const event = createSyncEvent(oneEther, oneEther);
 
     mockSwapPair_getReserves(MockSwapPair_STABLE_MockDebtToken_Address, oneEther.times(BigInt.fromI32(10)), oneEther);
+    mockPriceFeed_getPrice(MockDebtTokenAddress, oneEther.times(BigInt.fromI32(2)));
+
     handleSync(event);
 
     CandleSizes.forEach((size) => {
@@ -225,6 +234,11 @@ describe('handleSync()', () => {
       assert.fieldEquals('TokenCandleSingleton', entityId, 'low', oneEther.toString());
       assert.fieldEquals('TokenCandleSingleton', entityId, 'open', oneEther.toString());
       assert.fieldEquals('TokenCandleSingleton', entityId, 'close', oneEther.times(BigInt.fromI32(10)).toString());
+
+      assert.fieldEquals('TokenCandleSingleton', entityId, 'highOracle', oneEther.times(BigInt.fromI32(2)).toString());
+      assert.fieldEquals('TokenCandleSingleton', entityId, 'lowOracle', oneEther.toString());
+      assert.fieldEquals('TokenCandleSingleton', entityId, 'openOracle', oneEther.toString());
+      assert.fieldEquals('TokenCandleSingleton', entityId, 'closeOracle', oneEther.times(BigInt.fromI32(2)).toString());
     });
   });
 
@@ -232,10 +246,14 @@ describe('handleSync()', () => {
     const event = createSyncEvent(oneEther, oneEther);
 
     mockSwapPair_getReserves(MockSwapPair_STABLE_MockDebtToken_Address, oneEther.times(BigInt.fromI32(10)), oneEther);
+    mockPriceFeed_getPrice(MockDebtTokenAddress, oneEther.times(BigInt.fromI32(3)));
+
     handleSync(event);
 
     // another event to update close price
     mockSwapPair_getReserves(MockSwapPair_STABLE_MockDebtToken_Address, oneEther.times(BigInt.fromI32(5)), oneEther);
+    mockPriceFeed_getPrice(MockDebtTokenAddress, oneEther.times(BigInt.fromI32(2)));
+
     handleSync(event);
 
     const secondEvent = createSyncEvent(oneEther, oneEther);
@@ -254,6 +272,21 @@ describe('handleSync()', () => {
     assert.fieldEquals('TokenCandle', smallestCandleEntityId, 'open', oneEther.toString());
     assert.fieldEquals('TokenCandle', smallestCandleEntityId, 'close', oneEther.times(BigInt.fromI32(5)).toString());
 
+    assert.fieldEquals(
+      'TokenCandle',
+      smallestCandleEntityId,
+      'highOracle',
+      oneEther.times(BigInt.fromI32(3)).toString(),
+    );
+    assert.fieldEquals('TokenCandle', smallestCandleEntityId, 'lowOracle', oneEther.toString());
+    assert.fieldEquals('TokenCandle', smallestCandleEntityId, 'openOracle', oneEther.toString());
+    assert.fieldEquals(
+      'TokenCandle',
+      smallestCandleEntityId,
+      'closeOracle',
+      oneEther.times(BigInt.fromI32(2)).toString(),
+    );
+
     // Fill up candle
     const nextCandleEntityId = `TokenCandle-${MockDebtTokenAddress.toHexString()}-1-${event.block.timestamp.plus(BigInt.fromI32(1 * 60)).toString()}`;
     assert.fieldEquals(
@@ -267,6 +300,11 @@ describe('handleSync()', () => {
     assert.fieldEquals('TokenCandle', nextCandleEntityId, 'open', oneEther.times(BigInt.fromI32(5)).toString());
     assert.fieldEquals('TokenCandle', nextCandleEntityId, 'close', oneEther.times(BigInt.fromI32(5)).toString());
 
+    assert.fieldEquals('TokenCandle', nextCandleEntityId, 'highOracle', oneEther.times(BigInt.fromI32(2)).toString());
+    assert.fieldEquals('TokenCandle', nextCandleEntityId, 'lowOracle', oneEther.times(BigInt.fromI32(2)).toString());
+    assert.fieldEquals('TokenCandle', nextCandleEntityId, 'openOracle', oneEther.times(BigInt.fromI32(2)).toString());
+    assert.fieldEquals('TokenCandle', nextCandleEntityId, 'closeOracle', oneEther.times(BigInt.fromI32(2)).toString());
+
     // 10 min candle spans all events
     const candleEntityTenMinutesId = `TokenCandle-${MockDebtTokenAddress.toHexString()}-10-${event.block.timestamp.toString().toString()}`;
     assert.fieldEquals('TokenCandle', candleEntityTenMinutesId, 'timestamp', event.block.timestamp.toString());
@@ -274,6 +312,21 @@ describe('handleSync()', () => {
     assert.fieldEquals('TokenCandle', candleEntityTenMinutesId, 'low', oneEther.toString());
     assert.fieldEquals('TokenCandle', candleEntityTenMinutesId, 'open', oneEther.toString());
     assert.fieldEquals('TokenCandle', candleEntityTenMinutesId, 'close', oneEther.times(BigInt.fromI32(5)).toString());
+
+    assert.fieldEquals(
+      'TokenCandle',
+      candleEntityTenMinutesId,
+      'highOracle',
+      oneEther.times(BigInt.fromI32(3)).toString(),
+    );
+    assert.fieldEquals('TokenCandle', candleEntityTenMinutesId, 'lowOracle', oneEther.toString());
+    assert.fieldEquals('TokenCandle', candleEntityTenMinutesId, 'openOracle', oneEther.toString());
+    assert.fieldEquals(
+      'TokenCandle',
+      candleEntityTenMinutesId,
+      'closeOracle',
+      oneEther.times(BigInt.fromI32(2)).toString(),
+    );
   });
 
   test('handleUpdatePool_liquidityDepositAPY: update APY after sync for fees and totalAmount', () => {

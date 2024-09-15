@@ -14,7 +14,7 @@ import {
   handleCreateUpdateDebtTokenMeta,
   handleUpdateDebtTokenMeta_totalReserve30dAverage,
 } from './entities/debt-token-meta-entity';
-import { handleCreateReservePoolUSDHistoryChunk } from './entities/reserve-pool-USD-history-chunk';
+import { handleCreateReservePoolUSDHistoryChunk } from './entities/reserve-pool-USD-history-chunk-entity';
 import { handleUpdateSystemInfo_reservePool } from './entities/system-info-entity';
 
 export function handleReservePoolInitialized(event: ReservePoolInitializedEvent): void {

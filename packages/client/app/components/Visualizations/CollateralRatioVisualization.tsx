@@ -20,7 +20,7 @@ import {
   floatToBigInt,
 } from '../../utils/math';
 
-export const CRIT_RATIO = 1.1;
+const CRIT_RATIO = 1.1;
 
 type Props = {
   /**
@@ -108,9 +108,10 @@ function CollateralRatioVisualization({
     variables: { borrower: address },
     skip: !address,
   });
-  const supportedCollateral = collateralData?.collateralTokenMetas.filter(
-    ({ supportedCollateralRatio }) => bigIntStringToFloat(supportedCollateralRatio) > 0,
-  ) ?? [];
+  const supportedCollateral =
+    collateralData?.collateralTokenMetas.filter(
+      ({ supportedCollateralRatio }) => bigIntStringToFloat(supportedCollateralRatio) > 0,
+    ) ?? [];
 
   const debtValue =
     debtData?.debtTokenMetas
@@ -124,7 +125,7 @@ function CollateralRatioVisualization({
       ) ?? 0;
 
   const collateralValueUSD =
-  supportedCollateral
+    supportedCollateral
       .filter(({ troveLockedAmount }) => troveLockedAmount > 0)
       .reduce(
         (acc, { troveLockedAmount, token }) =>
@@ -151,8 +152,8 @@ function CollateralRatioVisualization({
           acc +
           amountUSD /
             bigIntStringToFloat(
-              supportedCollateral!.find(({ token }) => getCheckSum(token.address) === getCheckSum(tokenAddress))
               // FIXME: REMOVE THE FALLBACK
+              supportedCollateral!.find(({ token }) => getCheckSum(token.address) === getCheckSum(tokenAddress))
                 ?.supportedCollateralRatio ?? floatToBigInt(1).toString(),
             ),
         0,

@@ -104,27 +104,6 @@ export const GET_BORROWER_DEBT_TOKENS = gql`
   }
 `;
 
-export const GET_BORROWER_SWAPS = gql`
-  query GetBorrowerSwapEvents($where: SwapEvent_filter!, $first: Int = 30, $skip: Int!) {
-    swapEvents(first: $first, orderBy: timestamp, orderDirection: desc, skip: $skip, where: $where) {
-      id
-      timestamp
-      timestamp
-      token {
-        id
-        address
-        symbol
-        priceUSDOracle @client
-        decimals
-      }
-      direction
-      size
-      totalPriceInStable
-      swapFee
-    }
-  }
-`;
-
 export const GET_BORROWER_LIQUIDITY_POOLS = gql`
   query GetBorrowerLiquidityPools($borrower: String) {
     pools(borrower: $borrower) {
@@ -151,6 +130,33 @@ export const GET_BORROWER_LIQUIDITY_POOLS = gql`
 
       totalSupply
       borrowerAmount @client
+      pendingRewards @client
+
+      stakingPool {
+        id
+        stakingAPR
+      }
+    }
+  }
+`;
+
+export const GET_BORROWER_SWAPS = gql`
+  query GetBorrowerSwapEvents($where: SwapEvent_filter!, $first: Int = 30, $skip: Int!) {
+    swapEvents(first: $first, orderBy: timestamp, orderDirection: desc, skip: $skip, where: $where) {
+      id
+      timestamp
+      timestamp
+      token {
+        id
+        address
+        symbol
+        priceUSDOracle @client
+        decimals
+      }
+      direction
+      size
+      totalPriceInStable
+      swapFee
     }
   }
 `;
@@ -245,9 +251,13 @@ export const GET_TRADING_VIEW_CANDLES = gql`
       id
       timestamp
       open
+      openOracle
       high
+      highOracle
       low
+      lowOracle
       close
+      closeOracle
       volume
     }
   }
@@ -260,9 +270,13 @@ export const GET_TRADING_VIEW_LATEST_CANDLE = gql`
       id
       timestamp
       open
+      openOracle
       high
+      highOracle
       low
+      lowOracle
       close
+      closeOracle
       volume
     }
   }

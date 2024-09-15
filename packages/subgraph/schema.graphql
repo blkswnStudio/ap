@@ -6,6 +6,7 @@ type SystemInfo @entity {
   stableCoin: Bytes!
   govToken: Bytes!
   storagePool: Bytes!
+  stakingOps: Bytes!
   priceFeed: Bytes!
   reservePool: Bytes!
   stabilityPoolManager: Bytes!
@@ -126,7 +127,8 @@ type CollateralTokenMeta @entity {
   # Only != 0 on the GOV token
   totalReserve: BigInt!
   totalReserve30dAverage: TotalReserveAverage
-  supportedCollateralRatio: BigInt!
+  # Actually is required, damn wasm
+  supportedCollateralRatio: BigInt
 }
 
 # aggregator for 30d average, each chunk is 60min
@@ -212,6 +214,8 @@ type Pool @entity {
   id: String!
   # SwapPair contract address
   address: Bytes!
+  # TODO: Must be required once the deployment is fixed
+  stakingPool: StakingPool
 
   # Percent value applied when opening the first position for this pool. Can be negative and positive.
   # swapFee: BigInt!
@@ -225,6 +229,7 @@ type Pool @entity {
   volume30dUSD30dAgo: PoolVolume30d!
 
   totalSupply: BigInt!
+  totalValueUSD: BigInt!
 }
 
 # Aggregator, pushed old events out and lets new in, recalculating the acc value each time
@@ -293,6 +298,10 @@ type TokenCandleSingleton @entity {
   close: BigInt!
   volume: BigInt!
   candleSize: Int!
+  openOracle: BigInt!
+  highOracle: BigInt!
+  lowOracle: BigInt!
+  closeOracle: BigInt!
 }
 
 type TokenCandle @entity(immutable: true) {
@@ -300,12 +309,16 @@ type TokenCandle @entity(immutable: true) {
   id: String!
   token: Token! @relation(name: "TokenToTokenCandle")
   timestamp: BigInt!
+  candleSize: Int!
   open: BigInt!
   high: BigInt!
   low: BigInt!
   close: BigInt!
   volume: BigInt!
-  candleSize: Int!
+  openOracle: BigInt!
+  highOracle: BigInt!
+  lowOracle: BigInt!
+  closeOracle: BigInt!
 }
 
 #  SMALL BALANCE CHARTS
@@ -338,4 +351,28 @@ type ReservePoolUSDHistoryChunk @entity {
   value: BigInt!
   # interval in seconds. This allows to filter if more/less granularity is needed.
   size: Int!
+}
+
+# STAKING
+
+# staking contract
+
+type Staking @entity {
+  id: String! # "Staking"
+  pools: [StakingPool!]! @relation(name: "StakingPoolToStaking")
+  totalAllocPoints: BigInt!
+  rewardsPerSecond: BigInt!
+  rewardsPerYearUSD: BigInt!
+}
+
+# staking pools
+
+type StakingPool @entity {
+  id: Bytes! # {poolAddress} same as on the LP
+  allocPoints: BigInt!
+  totalDeposit: BigInt!
+  totalDepositUSD: BigInt!
+  totalRewardUSD: BigInt!
+  stakingAPR: BigInt!
+  liquidityPool: Pool! @derivedFrom(field: "stakingPool")
 }

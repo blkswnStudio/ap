@@ -35,6 +35,8 @@ interface IStakingOperations {
   event Deposit(address indexed user, ISwapPair indexed pid, uint amount);
   event Withdraw(address indexed user, ISwapPair indexed pid, uint amount);
   event Claim(address indexed user, ISwapPair indexed pid, uint amount);
+  event RewardsPerSecondChanged(uint rewardsPerSecond);
+
   event StakingOperationsInitialized(address swapOperations, address tokenManager);
 
   // --- Config functions ---

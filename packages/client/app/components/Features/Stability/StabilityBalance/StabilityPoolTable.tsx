@@ -19,7 +19,6 @@ import {
   GET_BORROWER_DEBT_TOKENS,
   GET_BORROWER_STABILITY_HISTORY,
 } from '../../../../queries';
-import { manualSubgraphSyncTimeout } from '../../../../utils/contants';
 import {
   dangerouslyConvertBigIntToNumber,
   displayPercentage,
@@ -97,13 +96,7 @@ function StabilityPoolTable() {
             });
           },
           waitForResponseOf: [],
-          reloadQueriesAferMined: [GET_BORROWER_DEBT_TOKENS],
-          actionAfterMined: (client) => {
-            setTimeout(() => {
-              // Manually waits for subgraph sync
-              client.refetchQueries({ include: [GET_BORROWER_STABILITY_HISTORY] });
-            }, manualSubgraphSyncTimeout);
-          },
+          reloadQueriesAfterMined: [GET_BORROWER_DEBT_TOKENS, GET_BORROWER_STABILITY_HISTORY],
         },
       },
     ]);
@@ -176,11 +169,9 @@ function StabilityPoolTable() {
                     <TableCell sx={{ borderBottom: 'none' }}></TableCell>
 
                     <TableCell sx={{ borderBottom: 'none' }} colSpan={2} align="right">
-                      {address
-                        ? `+ ${displayPercentage(
-                            percentageChange(rewardsTotalInUSD, lossTotalInUSD),
-                          )} (≈ ${roundCurrency(rewardsTotalInUSD - lossTotalInUSD)} $)`
-                        : null}
+                      {`+ ${displayPercentage(
+                        percentageChange(rewardsTotalInUSD, lossTotalInUSD),
+                      )} (≈ ${roundCurrency(rewardsTotalInUSD - lossTotalInUSD)} $)`}
                     </TableCell>
                   </TableRow>
                 </>

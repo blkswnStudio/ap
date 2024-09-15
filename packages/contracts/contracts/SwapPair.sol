@@ -122,7 +122,7 @@ contract SwapPair is ISwapPair, SwapERC20, CheckContract, LiquityBase {
     stakingOperations.depositFor(ISwapPair(address(this)), to, liquidity);
     _update(balance0, balance1, _reserve0, _reserve1);
 
-    emit Mint(msg.sender, amount0, amount1);
+    emit Mint(to, amount0, amount1);
   }
 
   // this low-level function should be called from a contract which performs important safety checks
@@ -159,14 +159,14 @@ contract SwapPair is ISwapPair, SwapERC20, CheckContract, LiquityBase {
     if (burned1 != 0) IDebtToken(token1).burn(address(this), burned1);
 
     // payout whats left
-    _safeTransfer(token0, to, amount0 - burned0);
-    _safeTransfer(token1, to, amount1 - burned1);
+    if (amount0 > burned0) _safeTransfer(token0, to, amount0 - burned0);
+    if (amount1 > burned1) _safeTransfer(token1, to, amount1 - burned1);
 
     balance0 = IERC20(token0).balanceOf(address(this));
     balance1 = IERC20(token1).balanceOf(address(this));
     _update(balance0, balance1, _reserve0, _reserve1);
 
-    emit Burn(msg.sender, amount0, amount1, to);
+    emit Burn(to, amount0, amount1);
   }
 
   function _getDexPrice(uint reserve0_, uint reserve1_) internal view returns (uint) {
@@ -175,20 +175,25 @@ contract SwapPair is ISwapPair, SwapERC20, CheckContract, LiquityBase {
     return (reserve0_ * 10 ** token1Decimal * DECIMAL_PRECISION) / reserve1_ / 10 ** token0Decimal;
   }
 
-  function _calcFee(uint val) internal pure returns (uint fee) {
-    if (val < 0.02e18) return 0;
-    else if (val < 0.05e18) return ((val - 0.02e18) * 0.00066e18) / DECIMAL_PRECISION;
-    else if (val < 0.07e18) return 0.002e18 + ((val - 0.05e18) * 0.00525e18) / DECIMAL_PRECISION;
-    else if (val < 0.1e18) return 0.0125e18 + ((val - 0.07e18) * 0.0125e18) / DECIMAL_PRECISION;
-    else if (val < 0.11e18) return 0.05e18 + ((val - 0.1e18) * 0.025e18) / DECIMAL_PRECISION;
-    else return 0.075e18;
+  function _calcFee(uint val) internal view returns (uint fee) {
+    if (tokenManager.disableDebtMinting(token1)) return 0;
+    if (val < 0.02e18) return 0.0001e18;
+    else if (val < 0.03e18) return 0.0001e18 + ((val - 0.02e18) * 0.0004e18) / DECIMAL_PRECISION;
+    else if (val < 0.05e18) return 0.0005e18 + ((val - 0.03e18) * 0.00075e18) / DECIMAL_PRECISION;
+    else if (val < 0.06e18) return 0.002e18 + ((val - 0.05e18) * 0.002e18) / DECIMAL_PRECISION;
+    else if (val < 0.07e18) return 0.004e18 + ((val - 0.06e18) * 0.004e18) / DECIMAL_PRECISION;
+    else if (val < 0.08e18) return 0.008e18 + ((val - 0.07e18) * 0.008e18) / DECIMAL_PRECISION;
+    else if (val < 0.09e18) return 0.016e18 + ((val - 0.08e18) * 0.016e18) / DECIMAL_PRECISION;
+    else if (val < 0.1e18) return 0.032e18 + ((val - 0.09e18) * 0.018e18) / DECIMAL_PRECISION;
+    else return 0.050e18;
   }
 
   function getSwapFee(uint postReserve0, uint postReserve1) public view override returns (uint feePercentage) {
     address nonStableCoin = token1; // find stable coin
     if (tokenManager.isDebtToken(nonStableCoin) && totalSupply > 0) {
       // query prices
-      (uint oraclePrice, ) = priceFeed.getPrice(nonStableCoin);
+      (uint oraclePrice, bool oracleTrusted, ) = priceFeed.getPrice(nonStableCoin);
+      if (!priceFeed.checkPriceUsable(nonStableCoin, oracleTrusted)) revert UntrustedOracle(nonStableCoin); // fail on outdated prices
       uint preDexPrice = _getDexPrice(reserve0, reserve1);
       uint postDexPrice = _getDexPrice(postReserve0, postReserve1);
 

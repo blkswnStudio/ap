@@ -191,7 +191,7 @@ const userDebtTokenMeta = [
 
 // Generate pools once for each pair of tokens
 
-export const pools: Omit<Pool, 'borrowerAmount' | 'swapFee'>[] = [];
+export const pools: Omit<Pool, 'borrowerAmount' | 'swapFee' | 'pendingRewards'>[] = [];
 
 const allTokens = tokens.concat(collateralTokens);
 
@@ -417,7 +417,7 @@ export const handlers = [
     );
 
     const liqudityPoolsWithBorrower: Query['pools'] = borrowerLiquidityPools.map<
-      Omit<Pool, 'borrowerAmount' | 'swapFee'>
+      Omit<Pool, 'borrowerAmount' | 'swapFee' | 'pendingRewards'>
     >((pool) => {
       return {
         ...pool,
@@ -538,9 +538,13 @@ export const handlers = [
         bars.push({
           timestamp: timestamp.toString(),
           open: ethers.parseEther(open.toString()).toString(),
+          openOracle: ethers.parseEther(open.toString()).toString(),
           high: ethers.parseEther(high.toString()).toString(),
+          highOracle: ethers.parseEther(high.toString()).toString(),
           low: ethers.parseEther(low.toString()).toString(),
+          lowOracle: ethers.parseEther(low.toString()).toString(),
           close: ethers.parseEther(close.toString()).toString(),
+          closeOracle: ethers.parseEther(close.toString()).toString(),
           volume: ethers.parseEther(volume.toString()).toString(),
         });
 
@@ -579,12 +583,18 @@ export const handlers = [
         id,
         __typename: 'TokenCandleSingleton',
         timestamp: Date.now().toString(),
-        token: tokens[0].address,
+        token: {
+          ...(tokens[0] as Token),
+        },
         candleSize: 60,
         open: ethers.parseEther(open.toString()).toString(),
+        openOracle: ethers.parseEther(open.toString()).toString(),
         close: ethers.parseEther(close.toString()).toString(),
+        closeOracle: ethers.parseEther(close.toString()).toString(),
         high: ethers.parseEther(high.toString()).toString(),
+        highOracle: ethers.parseEther(high.toString()).toString(),
         low: ethers.parseEther(low.toString()).toString(),
+        lowOracle: ethers.parseEther(low.toString()).toString(),
         volume: ethers.parseEther(volume.toString()).toString(),
       };
 
@@ -614,9 +624,13 @@ export const handlers = [
           token: token as Token,
           candleSize: 60,
           open: ethers.parseEther(open.toString()).toString(),
+          openOracle: ethers.parseEther(open.toString()).toString(),
           close: ethers.parseEther(close.toString()).toString(),
+          closeOracle: ethers.parseEther(close.toString()).toString(),
           high: ethers.parseEther(high.toString()).toString(),
+          highOracle: ethers.parseEther(high.toString()).toString(),
           low: ethers.parseEther(low.toString()).toString(),
+          lowOracle: ethers.parseEther(low.toString()).toString(),
           volume: ethers.parseEther(volume.toString()).toString(),
         };
 

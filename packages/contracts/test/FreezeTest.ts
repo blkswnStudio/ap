@@ -63,46 +63,101 @@ describe('Freeze', () => {
       await expect(tokenManager.connect(owner).setEnableMinting(false)).to.not.be.reverted;
     });
 
-    it('Redemption / Liquidation', async () => {
+    it('Minting specific', async () => {
       // fail
-      await expect(troveManager.connect(alice).setEnableLiquidationAndRedeeming(false)).to.be.revertedWithCustomError(
+      await expect(tokenManager.connect(alice).setDisableDebtMinting(STABLE, true)).to.be.revertedWithCustomError(
         tokenManager,
         'OwnableUnauthorizedAccount'
       );
 
       // success
-      await expect(troveManager.connect(owner).setEnableLiquidationAndRedeeming(false)).to.not.be.reverted;
+      await expect(tokenManager.connect(owner).setDisableDebtMinting(STABLE, true)).to.not.be.reverted;
+    });
+
+    it('Redemption', async () => {
+      // fail
+      await expect(troveManager.connect(alice).setEnableRedeeming(false)).to.be.revertedWithCustomError(
+        tokenManager,
+        'OwnableUnauthorizedAccount'
+      );
+
+      // success
+      await expect(troveManager.connect(owner).setEnableRedeeming(false)).to.not.be.reverted;
+    });
+
+    it('Liquidation', async () => {
+      // fail
+      await expect(troveManager.connect(alice).setEnableLiquidation(false)).to.be.revertedWithCustomError(
+        tokenManager,
+        'OwnableUnauthorizedAccount'
+      );
+
+      // success
+      await expect(troveManager.connect(owner).setEnableLiquidation(false)).to.not.be.reverted;
     });
   });
 
   describe('Freeze Minting', () => {
-    it('Mint before freeze (succeed)', async () => {
-      // mint without freeze
-      await openTrove({
-        from: alice,
-        contracts,
-        colls: [{ tokenAddress: BTC, amount: parseUnits('1', 8) }],
-        debts: [{ tokenAddress: STABLE, amount: parseUnits('8000') }],
-      });
-      expect(await STABLE.balanceOf(alice)).to.be.equal(parseUnits('8000'));
-
-      // freeze
-      await tokenManager.connect(owner).setEnableMinting(false);
-    });
-
-    it('Mint after freeze (fail)', async () => {
-      // freeze
-      await tokenManager.connect(owner).setEnableMinting(false);
-
-      // mint after freeze
-      expect(
-        openTrove({
+    describe('Complete', () => {
+      it('Mint before freeze (succeed)', async () => {
+        // mint without freeze
+        await openTrove({
           from: alice,
           contracts,
           colls: [{ tokenAddress: BTC, amount: parseUnits('1', 8) }],
           debts: [{ tokenAddress: STABLE, amount: parseUnits('8000') }],
-        })
-      ).to.be.revertedWithCustomError(STABLE, 'MintingDisabled');
+        });
+        expect(await STABLE.balanceOf(alice)).to.be.equal(parseUnits('8000'));
+
+        // freeze
+        await tokenManager.connect(owner).setEnableMinting(false);
+      });
+
+      it('Mint after freeze (fail)', async () => {
+        // freeze
+        await tokenManager.connect(owner).setEnableMinting(false);
+
+        // mint after freeze
+        expect(
+          openTrove({
+            from: alice,
+            contracts,
+            colls: [{ tokenAddress: BTC, amount: parseUnits('1', 8) }],
+            debts: [{ tokenAddress: STABLE, amount: parseUnits('8000') }],
+          })
+        ).to.be.revertedWithCustomError(STABLE, 'MintingDisabled');
+      });
+    });
+
+    describe('Specific', () => {
+      it('Mint before freeze (succeed)', async () => {
+        // mint without freeze
+        await openTrove({
+          from: alice,
+          contracts,
+          colls: [{ tokenAddress: BTC, amount: parseUnits('1', 8) }],
+          debts: [{ tokenAddress: STABLE, amount: parseUnits('8000') }],
+        });
+        expect(await STABLE.balanceOf(alice)).to.be.equal(parseUnits('8000'));
+
+        // freeze
+        await tokenManager.connect(owner).setDisableDebtMinting(STABLE, true);
+      });
+
+      it('Mint after freeze (fail)', async () => {
+        // freeze
+        await tokenManager.connect(owner).setDisableDebtMinting(STABLE, true);
+
+        // mint after freeze
+        expect(
+          openTrove({
+            from: alice,
+            contracts,
+            colls: [{ tokenAddress: BTC, amount: parseUnits('1', 8) }],
+            debts: [{ tokenAddress: STABLE, amount: parseUnits('8000') }],
+          })
+        ).to.be.revertedWithCustomError(STABLE, 'MintingDisabledForToken');
+      });
     });
   });
 
@@ -124,7 +179,7 @@ describe('Freeze', () => {
       await setPrice('BTC', '5000', contracts);
 
       // freeze
-      await troveManager.connect(owner).setEnableLiquidationAndRedeeming(false);
+      await troveManager.connect(owner).setEnableLiquidation(false);
 
       // liquidate
       await expect(
@@ -147,7 +202,7 @@ describe('Freeze', () => {
       await whaleShrimpTroveInit(contracts, signers, false);
 
       // freeze
-      await troveManager.connect(owner).setEnableLiquidationAndRedeeming(false);
+      await troveManager.connect(owner).setEnableRedeeming(false);
 
       // redeem
       await expect(redeem(bob, parseUnits('100.5'), contracts)).to.be.revertedWithCustomError(

@@ -21,7 +21,21 @@ contract MockBorrowerOperations is BorrowerOperations {
     }
 
     _openTrove(_borrower, _colls, _priceUpdateData);
-    _increaseDebt(_borrower, _borrower, _debts, MintMeta(address(0), address(0), MAX_BORROWING_FEE), _priceUpdateData);
+
+    (ContractsCache memory contractsCache, LocalVariables_adjustTrove memory vars) = _prepareTroveAdjustment(
+      _borrower,
+      _priceUpdateData,
+      false,
+      false
+    );
+    _increaseDebt(
+      contractsCache,
+      vars,
+      _borrower,
+      _borrower,
+      _debts,
+      MintMeta(address(0), address(0), MAX_BORROWING_FEE)
+    );
   }
 
   function increaseDebts(
@@ -32,10 +46,15 @@ contract MockBorrowerOperations is BorrowerOperations {
     // separate minting is allowed for better testing
     // _requireCallerIsSwapOperations();
 
-    // prod borrowerOps would skip the price updates on _increaseDebt() because it already gets handled in the swapOps
-    priceFeed.updatePythPrices{ value: msg.value }(_priceUpdateData);
+    address borrower = msg.sender;
 
-    _increaseDebt(msg.sender, msg.sender, _debts, _meta, _priceUpdateData);
+    (ContractsCache memory contractsCache, LocalVariables_adjustTrove memory vars) = _prepareTroveAdjustment(
+      borrower,
+      _priceUpdateData,
+      false,
+      true
+    );
+    _increaseDebt(contractsCache, vars, borrower, borrower, _debts, _meta);
   }
 
   // Payable fallback function

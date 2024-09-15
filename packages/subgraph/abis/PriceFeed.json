@@ -91,31 +91,6 @@
     "anonymous": false,
     "inputs": [
       {
-        "components": [
-          {
-            "internalType": "address",
-            "name": "tokenAddress",
-            "type": "address"
-          },
-          {
-            "internalType": "uint256",
-            "name": "amount",
-            "type": "uint256"
-          }
-        ],
-        "indexed": false,
-        "internalType": "struct IBase.TokenAmount[]",
-        "name": "tokenPrices",
-        "type": "tuple[]"
-      }
-    ],
-    "name": "FallbackPriceChanged",
-    "type": "event"
-  },
-  {
-    "anonymous": false,
-    "inputs": [
-      {
         "indexed": true,
         "internalType": "address",
         "name": "previousOwner",
@@ -148,6 +123,19 @@
       }
     ],
     "name": "PriceFeedInitialized",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": false,
+        "internalType": "address",
+        "name": "altPriceFeed",
+        "type": "address"
+      }
+    ],
+    "name": "SetAltPriceFeed",
     "type": "event"
   },
   {
@@ -217,6 +205,19 @@
   },
   {
     "inputs": [],
+    "name": "MIN_REDEMPTION",
+    "outputs": [
+      {
+        "internalType": "uint256",
+        "name": "",
+        "type": "uint256"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
     "name": "NAME",
     "outputs": [
       {
@@ -262,6 +263,32 @@
         "internalType": "uint256",
         "name": "",
         "type": "uint256"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "SWAP_POOL_AMOUNT_CAP",
+    "outputs": [
+      {
+        "internalType": "uint256",
+        "name": "",
+        "type": "uint256"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "altFeed",
+    "outputs": [
+      {
+        "internalType": "contract IAlternativePriceFeed",
+        "name": "",
+        "type": "address"
       }
     ],
     "stateMutability": "view",
@@ -341,30 +368,6 @@
         "internalType": "struct IBase.PriceCache",
         "name": "cache",
         "type": "tuple"
-      }
-    ],
-    "stateMutability": "view",
-    "type": "function"
-  },
-  {
-    "inputs": [
-      {
-        "internalType": "address",
-        "name": "",
-        "type": "address"
-      }
-    ],
-    "name": "fallbackPrices",
-    "outputs": [
-      {
-        "internalType": "uint256",
-        "name": "price",
-        "type": "uint256"
-      },
-      {
-        "internalType": "uint256",
-        "name": "timestamp",
-        "type": "uint256"
       }
     ],
     "stateMutability": "view",
@@ -1027,24 +1030,12 @@
   {
     "inputs": [
       {
-        "components": [
-          {
-            "internalType": "address",
-            "name": "tokenAddress",
-            "type": "address"
-          },
-          {
-            "internalType": "uint256",
-            "name": "amount",
-            "type": "uint256"
-          }
-        ],
-        "internalType": "struct IBase.TokenAmount[]",
-        "name": "tokenPrices",
-        "type": "tuple[]"
+        "internalType": "address",
+        "name": "_altFeed",
+        "type": "address"
       }
     ],
-    "name": "setFallbackPrices",
+    "name": "setAlternativePriceFeed",
     "outputs": [],
     "stateMutability": "nonpayable",
     "type": "function"
