@@ -6,8 +6,7 @@ interface IBase {
   enum PoolType {
     Active, // assets in active troves
     Default, // assets from redistributions, which are not yet claimed by the trove owners
-    GasCompensation, // stableCoin from gas compensation
-    Unassigned // assets from a trove liquidation of the last coll type, can be claimed by anyone
+    GasCompensation // stableCoin from gas compensation
   }
 
   error FeeExceedMaxPercentage();

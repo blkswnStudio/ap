@@ -1,8 +1,14 @@
-import { makeVar } from '@apollo/client';
-import { AddressLike } from 'ethers';
-import { Contracts_Localhost, isStableCoinAddress } from '../../../../config';
+import { InMemoryCache, makeVar } from '@apollo/client';
+import { AddressLike, ethers } from 'ethers';
+import { Contracts_Localhost, isGOVTokenAddress, isStableCoinAddress } from '../../../../config';
 import { CollSurplusPool, ERC20, PriceFeed, StabilityPoolManager, TroveManager } from '../../../../generated/types';
+import {
+  GetBorrowerCollateralTokensQuery,
+  GetBorrowerCollateralTokensQueryVariables,
+} from '../../../generated/gql-types';
+import { GET_BORROWER_COLLATERAL_TOKENS } from '../../../queries';
 import { getCheckSum } from '../../../utils/crypto';
+import { convertToEtherPrecission } from '../../../utils/math';
 import {
   ContractDataFreshnessManager_LOCALHOST,
   SchemaDataFreshnessManager_LOCALHOST,
@@ -26,16 +32,41 @@ const ERC20_USDT = {
       },
       value: makeVar(defaultFieldValue),
       lastFetched: 0,
-      timeout: 1000 * 10,
+      timeout: 1000 * 5,
     },
 
     borrowingRate: {
-      fetch: async (troveManagerContract: TroveManager) => {
+      fetch: async (troveManagerContract: TroveManager, cache: InMemoryCache, borrower: string) => {
         SchemaDataFreshnessManager_LOCALHOST.ERC20[Contracts_Localhost.ERC20.USDT].borrowingRate.lastFetched =
           Date.now();
 
+        const data = cache.readQuery<GetBorrowerCollateralTokensQuery, GetBorrowerCollateralTokensQueryVariables>({
+          query: GET_BORROWER_COLLATERAL_TOKENS,
+          variables: { borrower },
+        });
+
+        let percentageGovToken = 0n;
+        if (data) {
+          const totalCollateralValue = data.collateralTokenMetas.reduce(
+            (acc, { troveLockedAmount, token }) =>
+              acc +
+              (convertToEtherPrecission(troveLockedAmount, token.decimals) * token.priceUSDOracle) /
+                ethers.parseEther('1'),
+            0n,
+          );
+          const govToken = data?.collateralTokenMetas.find(({ token }) => isGOVTokenAddress(token.address));
+          const govTokenValue = govToken
+            ? (convertToEtherPrecission(govToken.troveLockedAmount, govToken.token.decimals) *
+                govToken.token.priceUSDOracle) /
+              ethers.parseEther('1')
+            : 0n;
+
+          percentageGovToken = (govTokenValue * ethers.parseEther('1')) / totalCollateralValue;
+        }
+
         const borrowingRate = await troveManagerContract.getBorrowingRate(
           isStableCoinAddress(Contracts_Localhost.ERC20.USDT),
+          percentageGovToken,
         );
 
         SchemaDataFreshnessManager_LOCALHOST.ERC20[Contracts_Localhost.ERC20.USDT].borrowingRate.value(borrowingRate);
@@ -43,7 +74,8 @@ const ERC20_USDT = {
       value: makeVar(defaultFieldValue),
       lastFetched: 0,
       timeout: 1000 * 2,
-      periodic: 1000 * 30,
+      periodic: 1000 * 15,
+      initDelayed: 1000 * 3,
     },
 
     walletAmount: {
@@ -73,14 +105,11 @@ const ERC20_USDT = {
           );
         }
 
-        const tokenAmount = ContractDataFreshnessManager_LOCALHOST.TroveManager.getTroveWithdrawableColls.value.find(
-          ({ tokenAddress }) => getCheckSum(tokenAddress) === getCheckSum(Contracts_Localhost.ERC20.USDT),
-        )?.amount;
-        if (tokenAmount) {
-          SchemaDataFreshnessManager_LOCALHOST.ERC20[Contracts_Localhost.ERC20.USDT].troveLockedAmount.value(
-            tokenAmount,
-          );
-        }
+        const tokenAmount =
+          ContractDataFreshnessManager_LOCALHOST.TroveManager.getTroveWithdrawableColls.value.find(
+            ({ tokenAddress }) => getCheckSum(tokenAddress) === getCheckSum(Contracts_Localhost.ERC20.USDT),
+          )?.amount ?? defaultFieldValue;
+        SchemaDataFreshnessManager_LOCALHOST.ERC20[Contracts_Localhost.ERC20.USDT].troveLockedAmount.value(tokenAmount);
       },
       value: makeVar(defaultFieldValue),
       lastFetched: 0,
@@ -103,12 +132,10 @@ const ERC20_USDT = {
         const tokenAmount =
           ContractDataFreshnessManager_LOCALHOST.StabilityPoolManager.getDepositorCollGains.value.find(
             ({ tokenAddress }) => getCheckSum(tokenAddress) === getCheckSum(Contracts_Localhost.ERC20.USDT),
-          )?.amount;
-        if (tokenAmount) {
-          SchemaDataFreshnessManager_LOCALHOST.ERC20[Contracts_Localhost.ERC20.USDT].stabilityGainedAmount.value(
-            tokenAmount,
-          );
-        }
+          )?.amount ?? defaultFieldValue;
+        SchemaDataFreshnessManager_LOCALHOST.ERC20[Contracts_Localhost.ERC20.USDT].stabilityGainedAmount.value(
+          tokenAmount,
+        );
       },
       value: makeVar(defaultFieldValue),
       lastFetched: 0,
@@ -128,14 +155,11 @@ const ERC20_USDT = {
           );
         }
 
-        const tokenAmount = ContractDataFreshnessManager_LOCALHOST.CollSurplusPool.getCollateral.value.find(
-          ({ tokenAddress }) => getCheckSum(tokenAddress) === getCheckSum(Contracts_Localhost.ERC20.USDT),
-        )?.amount;
-        if (tokenAmount) {
-          SchemaDataFreshnessManager_LOCALHOST.ERC20[Contracts_Localhost.ERC20.USDT].collSurplusAmount.value(
-            tokenAmount,
-          );
-        }
+        const tokenAmount =
+          ContractDataFreshnessManager_LOCALHOST.CollSurplusPool.getCollateral.value.find(
+            ({ tokenAddress }) => getCheckSum(tokenAddress) === getCheckSum(Contracts_Localhost.ERC20.USDT),
+          )?.amount ?? defaultFieldValue;
+        SchemaDataFreshnessManager_LOCALHOST.ERC20[Contracts_Localhost.ERC20.USDT].collSurplusAmount.value(tokenAmount);
       },
       value: makeVar(defaultFieldValue),
       lastFetched: 0,

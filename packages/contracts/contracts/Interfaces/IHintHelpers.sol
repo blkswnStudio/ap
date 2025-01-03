@@ -12,12 +12,14 @@ interface IHintHelpers is IBase {
     address _priceFeedAddress
   );
 
-  function getCurrentICR(address _borrower) external view returns (uint ICR, uint IMCR, uint currentDebtInUSD);
+  function getCurrentICR(
+    address _borrower
+  ) external view returns (uint ICR, uint IMCR, uint currentDebtInUSD, uint currentCollInUSD);
 
   function getCurrentICR(
     PriceCache memory _priceCache,
     address _borrower
-  ) external view returns (uint ICR, uint IMCR, uint currentDebtInUSD);
+  ) external view returns (uint ICR, uint IMCR, uint currentDebtInUSD, uint currentCollInUSD);
 
   function getICRIncludingPatch(
     address _borrower,

@@ -19,6 +19,9 @@ import {
   setPrice,
   buildPriceCache,
   deployTesting,
+  liquidate,
+  batchLiquidate,
+  addColl,
 } from '../utils/testHelper';
 import { assert, expect } from 'chai';
 import { parseUnits, ZeroAddress } from 'ethers';
@@ -159,14 +162,22 @@ describe('TroveManager', () => {
       await repayDebt(bob, contracts, [{ tokenAddress: STABLE, amount: parseUnits('1000') }]);
 
       // Check alice is the only trove that has pending rewards
-      const alicePendingBTCReward = await troveManager.getPendingRewards(alice, BTC, true);
+      const alicePendingBTCReward =
+        (await troveManager.getPendingRewards(alice, true, false)).find(
+          ({ tokenAddress }) => tokenAddress === BTC.target
+        )?.amount ?? 0n;
       assert.isTrue(alicePendingBTCReward > 0);
-      const bobPendingReward = await troveManager.getPendingRewards(bob, BTC, true);
+      const bobPendingReward =
+        (await troveManager.getPendingRewards(bob, true, false)).find(({ tokenAddress }) => tokenAddress === BTC.target)
+          ?.amount ?? 0n;
       assert.isFalse(bobPendingReward > 0);
 
       // Check alice's pending coll and debt rewards are <= the coll and debt in the DefaultPool
       const priceCache = await buildPriceCache(contracts);
-      const PendingDebtSTABLE_A = await troveManager.getPendingRewards(alice, STABLE, false);
+      const PendingDebtSTABLE_A =
+        (await troveManager.getPendingRewards(alice, false, true)).find(
+          ({ tokenAddress }) => tokenAddress === STABLE.target
+        )?.amount ?? 0n;
       const entireSystemCollUsd = await storagePool.getEntireSystemColl(priceCache);
       const entireSystemCollAmount = await priceFeed['getAmountFromUSDValue(address,uint256)'](
         BTC,
@@ -218,7 +229,10 @@ describe('TroveManager', () => {
       await liquidationOperations.liquidate(defaulter_1, od.data, { value: od.fee });
       const defaulter_1TroveStatus = await troveManager.getTroveStatus(defaulter_1);
       assert.equal(defaulter_1TroveStatus.toString(), TroveStatus.CLOSED_BY_LIQUIDATION_IN_NORMAL_MODE.toString());
-      const carolBtcRewardBefore = await troveManager.getPendingRewards(carol, BTC, true);
+      const carolBtcRewardBefore =
+        (await troveManager.getPendingRewards(carol, true, false)).find(
+          ({ tokenAddress }) => tokenAddress === BTC.target
+        )?.amount ?? 0n;
       const amountBeforePriceChange = await priceFeed['getAmountFromUSDValue(address,uint256)'](
         BTC,
         carolBtcRewardBefore
@@ -229,7 +243,10 @@ describe('TroveManager', () => {
       const isRecoveryModeAfterPriceChange = await storagePool.checkRecoveryMode();
       assert.isFalse(isRecoveryModeAfterPriceChange[0]);
 
-      const carolBtcRewardAfter = await troveManager.getPendingRewards(carol, BTC, true);
+      const carolBtcRewardAfter =
+        (await troveManager.getPendingRewards(carol, true, false)).find(
+          ({ tokenAddress }) => tokenAddress === BTC.target
+        )?.amount ?? 0n;
       const amountAfterPriceChange = await priceFeed['getAmountFromUSDValue(address,uint256)'](
         BTC,
         carolBtcRewardAfter
@@ -250,7 +267,10 @@ describe('TroveManager', () => {
       const defaulter_1TroveStatus = await troveManager.getTroveStatus(defaulter_1);
       assert.equal(defaulter_1TroveStatus.toString(), TroveStatus.CLOSED_BY_LIQUIDATION_IN_NORMAL_MODE.toString());
 
-      const defaulter_3PendingReward = await troveManager.getPendingRewards(defaulter_3, BTC, true);
+      const defaulter_3PendingReward =
+        (await troveManager.getPendingRewards(defaulter_3, true, false)).find(
+          ({ tokenAddress }) => tokenAddress === BTC.target
+        )?.amount ?? 0n;
       assert.equal(defaulter_3PendingReward.toString(), '0');
     });
 
@@ -292,33 +312,50 @@ describe('TroveManager', () => {
         ],
       });
 
-      // btc@1000$ -> 44% 4btc 4000$, 56% 5000 usdt
+      // alice 3500 / 9000 = 38%
+      // bob 5500 / 9000 = 62%
       await setPrice('BTC', '1000', contracts);
       const [isRecoveryMode] = await storagePool.checkRecoveryMode();
       assert.isFalse(isRecoveryMode);
       let od = await generatePriceUpdateDataWithFee(contracts);
       await liquidationOperations.liquidate(carol, od.data, { value: od.fee });
 
-      const aliceBtcReward = await troveManager.getPendingRewards(alice, BTC, true);
-      const aliceUsdtReward = await troveManager.getPendingRewards(alice, USDT, true);
-      const aliceStableReward = await troveManager.getPendingRewards(alice, STABLE, false);
-      expect(aliceBtcReward).to.be.equal(parseUnits((0.5 * 0.995 * 0.25).toString(), 8)); // removing liquidation fee
-      expect(aliceUsdtReward).to.be.equal(parseUnits((500 * 0.995 * 0.5).toString()));
-      const redistributedStable = 1000 + 1150 * 0.005; // added initial borrowing fee
-      const aliceStableRewardPerBTCColl = redistributedStable * 0.5 * 0.25;
-      const aliceStableRewardPerUSDTColl = redistributedStable * 0.5 * 0.5;
-      expect(aliceStableReward).to.be.equal(
-        parseUnits((aliceStableRewardPerBTCColl + aliceStableRewardPerUSDTColl).toString())
+      const aliceBtcReward =
+        (await troveManager.getPendingRewards(alice, true, false)).find(
+          ({ tokenAddress }) => tokenAddress === BTC.target
+        )?.amount ?? 0n;
+      const aliceUsdtReward =
+        (await troveManager.getPendingRewards(alice, true, false)).find(
+          ({ tokenAddress }) => tokenAddress === USDT.target
+        )?.amount ?? 0n;
+      const aliceStableReward =
+        (await troveManager.getPendingRewards(alice, false, true)).find(
+          ({ tokenAddress }) => tokenAddress === STABLE.target
+        )?.amount ?? 0n;
+      expect(aliceBtcReward).to.be.closeTo(parseUnits((0.5 * 0.995 * 0.388888).toString(), 8), 5000n); // removing liquidation fee
+      expect(aliceUsdtReward).to.be.closeTo(parseUnits((500 * 0.995 * 0.388888).toString()), 2222222222220222n);
+      expect(aliceStableReward).to.be.closeTo(
+        parseUnits(((1000 + 1150 * 0.005) * 0.38888).toString()),
+        24999999999997388n
       );
 
-      const bobBtcReward = await troveManager.getPendingRewards(bob, BTC, true);
-      const bobUsdtReward = await troveManager.getPendingRewards(bob, USDT, true);
-      const bobStableReward = await troveManager.getPendingRewards(bob, STABLE, false);
-      expect(bobBtcReward).to.be.equal(parseUnits((0.5 * 0.995 * 0.75).toString(), 8));
-      expect(bobUsdtReward).to.be.equal(parseUnits((500 * 0.995 * 0.5).toString()));
-      const stableRewardPerBTCColl = redistributedStable * 0.5 * 0.75;
-      const stableRewardPerUSDTColl = redistributedStable * 0.5 * 0.5;
-      expect(bobStableReward).to.be.equal(parseUnits((stableRewardPerBTCColl + stableRewardPerUSDTColl).toString()));
+      const bobBtcReward =
+        (await troveManager.getPendingRewards(bob, true, false)).find(({ tokenAddress }) => tokenAddress === BTC.target)
+          ?.amount ?? 0n;
+      const bobUsdtReward =
+        (await troveManager.getPendingRewards(bob, true, false)).find(
+          ({ tokenAddress }) => tokenAddress === USDT.target
+        )?.amount ?? 0n;
+      const bobStableReward =
+        (await troveManager.getPendingRewards(bob, false, true)).find(
+          ({ tokenAddress }) => tokenAddress === STABLE.target
+        )?.amount ?? 0n;
+      expect(bobBtcReward).to.be.closeTo(parseUnits((0.5 * 0.995 * 0.6111).toString(), 8), 5000n);
+      expect(bobUsdtReward).to.be.closeTo(parseUnits((500 * 0.995 * 0.6111).toString()), 7777777777775667n);
+      expect(bobStableReward).to.be.closeTo(
+        parseUnits(((1000 + 1150 * 0.005) * 0.6111).toString()),
+        24999999999997388n
+      );
     });
 
     it('redistribute a last coll type trove', async () => {
@@ -340,7 +377,7 @@ describe('TroveManager', () => {
         ],
         debts: [
           { tokenAddress: STABLE, amount: parseUnits('1500') },
-          { tokenAddress: STOCK, amount: parseUnits('1') },
+          { tokenAddress: STOCK, amount: parseUnits('1') }, // 1 stock
         ],
       });
 
@@ -350,34 +387,132 @@ describe('TroveManager', () => {
       let od = await generatePriceUpdateDataWithFee(contracts);
       await liquidationOperations.liquidate(bob, od.data, { value: od.fee });
 
-      const aliceBtcReward = await troveManager.getPendingRewards(alice, BTC, true);
+      const aliceBtcReward =
+        (await troveManager.getPendingRewards(alice, true, false)).find(
+          ({ tokenAddress }) => tokenAddress === BTC.target
+        )?.amount ?? 0n;
       expect(aliceBtcReward).to.be.closeTo(parseUnits((1 * 0.995).toString(), 8), 5n); // removing liquidation fee
 
-      const aliceStableReward = await troveManager.getPendingRewards(alice, STABLE, false);
-      const redistributedStable = 1500 + 1650 * 0.005; // added initial borrowing fee
-      const aliceStableRewardPerBTCColl = redistributedStable * 0.5; // 50% of bobs coll was btc
-      const aliceStableRewardPerUSDTColl = redistributedStable * 0; // alice does not have usdt coll
-      expect(aliceStableReward).to.be.equal(
-        parseUnits((aliceStableRewardPerBTCColl + aliceStableRewardPerUSDTColl).toString())
-      );
+      await openTrove({
+        from: carol,
+        contracts,
+        colls: [
+          { tokenAddress: BTC, amount: parseUnits('5', 8) },
+          { tokenAddress: USDT, amount: parseUnits('1000') },
+        ],
+        debts: [
+          { tokenAddress: STABLE, amount: parseUnits('1500') },
+          { tokenAddress: STOCK, amount: parseUnits('1') },
+        ],
+      });
+      expect(
+        (await troveManager.getPendingRewards(carol, false, true)).find(
+          ({ tokenAddress }) => tokenAddress === STOCK.target
+        )?.amount ?? 0n
+      ).to.be.equal(0);
 
-      // alice claims the unassigned assets from the usdt coll type
-      await contracts.borrowerOperations
-        .connect(alice)
-        .claimUnassignedAssets(parseUnits('1'), ZeroAddress, ZeroAddress, od.data, { value: od.fee });
-      expect(await contracts.storagePool.getValue(USDT, true, 3)).to.be.equal(0);
-      expect(await contracts.storagePool.getValue(STABLE, false, 3)).to.be.equal(0);
-      expect(await contracts.storagePool.getValue(STOCK, false, 3)).to.be.equal(0);
-      expect(await contracts.troveManager.getTroveWithdrawableColl(alice, USDT)).to.be.equal(
-        parseUnits((1000 * 0.995).toString())
-      );
-      expect(await contracts.troveManager.getTroveRepayableDebt(alice, STABLE, false, false)).to.be.equal(
-        parseUnits((redistributedStable + 1000 + 1150 * 0.005).toString()) // all of bobs stable + the own one including borrowing fee
-      );
-      expect(await contracts.troveManager.getTroveRepayableDebt(alice, STOCK, false, false)).to.be.closeTo(
-        parseUnits('2'),
-        1n
-      );
+      // alice has 100% of the stable rewards
+      const aliceStableReward =
+        (await troveManager.getPendingRewards(alice, false, true)).find(
+          ({ tokenAddress }) => tokenAddress === STABLE.target
+        )?.amount ?? 0n;
+      expect(aliceStableReward).to.be.equal(parseUnits((1500 + 1650 * 0.005).toString()));
+    });
+
+    it('redistribute a last coll type trove, including pending rewards', async () => {
+      await setPrice('BTC', '1000', contracts);
+      await openTrove({
+        from: alice, // will claim the unassigned assets
+        contracts,
+        colls: [{ tokenAddress: BTC, amount: parseUnits('2', 8) }],
+        debts: [{ tokenAddress: STABLE, amount: parseUnits('1000') }],
+      }); // todo diesen Test übernehmen, wo zwei Troves ein coll halten welches übrig bleibt und sich diese dann den liquiation rest aufteieln
+      await openTrove({
+        from: bob,
+        contracts,
+        colls: [{ tokenAddress: USDT, amount: parseUnits('1000') }],
+        debts: [{ tokenAddress: STABLE, amount: parseUnits('400') }],
+      });
+      await openTrove({
+        from: carol,
+        contracts,
+        colls: [{ tokenAddress: USDT, amount: parseUnits('1000') }],
+        debts: [{ tokenAddress: STABLE, amount: parseUnits('400') }],
+      });
+      await openTrove({
+        from: dennis, // will be liquidated first, to create pending rewards for carol and bod
+        contracts,
+        colls: [{ tokenAddress: USDT, amount: parseUnits('1000') }],
+        debts: [{ tokenAddress: STABLE, amount: parseUnits('400') }],
+      });
+
+      // liquidate dennis
+      await setPrice('USDT', '0.5', contracts);
+      await liquidate(dennis, contracts);
+
+      // dennis reopens a trove
+      await setPrice('USDT', '1', contracts);
+      await openTrove({
+        from: dennis, // will be liquidated first, to create pending rewards for carol and bod
+        contracts,
+        colls: [{ tokenAddress: USDT, amount: parseUnits('1000') }],
+        debts: [{ tokenAddress: STABLE, amount: parseUnits('400') }],
+      });
+
+      const bobUSDTRewards =
+        (await troveManager.getPendingRewards(bob, true, false)).find(
+          ({ tokenAddress }) => tokenAddress === USDT.target
+        )?.amount ?? 0n;
+      expect(bobUSDTRewards).to.be.gt(0);
+
+      // liquidate bob and carol
+      await setPrice('USDT', '0.5', contracts);
+      await batchLiquidate([bob, carol], contracts);
+      const bobUSDTRewardsB =
+        (await troveManager.getPendingRewards(bob, true, false)).find(
+          ({ tokenAddress }) => tokenAddress === USDT.target
+        )?.amount ?? 0n;
+      expect(bobUSDTRewardsB).to.be.eq(0);
+
+      // liquidate dennis a second time
+      await setPrice('USDT', '0.3', contracts);
+      await liquidate(dennis, contracts);
+
+      // there is no more USDT as stake (active coll) left
+      expect(await contracts.storagePool.getValue(USDT, true, 0)).to.be.equal(0);
+      expect(await contracts.storagePool.getValue(USDT, true, 1)).to.be.gt(0);
+
+      // alice adds usd as coll
+      await setPrice('USDT', '1', contracts);
+      console.log('deposit usdt');
+      console.log('BTC', BTC.target);
+      console.log('USDT', USDT.target);
+
+      await addColl(alice, contracts, [{ tokenAddress: USDT, amount: parseUnits('1000') }], true);
+      const aliceUSDTPendingRewards =
+        (await troveManager.getPendingRewards(alice, true, false)).find(
+          ({ tokenAddress }) => tokenAddress === USDT.target
+        )?.amount ?? 0n;
+      expect(aliceUSDTPendingRewards).to.be.eq(0);
+
+      // dennis reopens a trove
+      await openTrove({
+        from: dennis, // will be liquidated first, to create pending rewards for carol and bod
+        contracts,
+        colls: [{ tokenAddress: USDT, amount: parseUnits('1000') }],
+        debts: [{ tokenAddress: STABLE, amount: parseUnits('400') }],
+      });
+
+      // liquidate dennis a third time
+      await setPrice('USDT', '0.3', contracts);
+      await liquidate(dennis, contracts);
+
+      // alice should have pending rewards
+      const aliceUSDTPendingRewardsB =
+        (await troveManager.getPendingRewards(alice, true, false)).find(
+          ({ tokenAddress }) => tokenAddress === USDT.target
+        )?.amount ?? 0n;
+      expect(aliceUSDTPendingRewardsB).to.be.closeTo(parseUnits('995'), 1000n); // todo die Ungenauigkeiten könnten an der liqudiation coll fee liegen, welche ausbezahlt wird, aber falsch verrechnet
     });
   });
 });

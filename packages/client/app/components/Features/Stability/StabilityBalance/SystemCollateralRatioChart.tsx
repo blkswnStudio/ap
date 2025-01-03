@@ -1,7 +1,10 @@
 import { useQuery } from '@apollo/client';
 import { Box, Typography, useTheme } from '@mui/material';
+import { parseEther } from 'ethers';
+import { useSnackbar } from 'notistack';
 import { useMemo } from 'react';
 import { CartesianGrid, Line, LineChart, Tooltip } from 'recharts';
+import { useErrorMonitoring } from '../../../../context/ErrorMonitoringContext';
 import {
   GetCollateralUsdHistoryQuery,
   GetCollateralUsdHistoryQueryVariables,
@@ -15,21 +18,42 @@ import ChartTooltip from '../../../Label/ChartTooltip';
 import DiagramPlaceholder from '../../../Loader/DiagramPlaceholder';
 
 function SystemCollateralRatioChart() {
+  const { enqueueSnackbar } = useSnackbar();
+
+  const { Sentry } = useErrorMonitoring();
   const theme = useTheme();
+
   const isDarkMode = theme.palette.mode === 'dark';
 
   const { data: collateralLockedData } = useQuery<GetCollateralUsdHistoryQuery, GetCollateralUsdHistoryQueryVariables>(
     GET_COLLATERAL_USD_HISTORY,
+    {
+      onError: (error) => {
+        enqueueSnackbar('Error requesting the subgraph. Please reload the page and try again.');
+        Sentry.captureException(error);
+      },
+    },
   );
 
   const { data: debtMintedData } = useQuery<GetDebtUsdHistoryQuery, GetDebtUsdHistoryQueryVariables>(
     GET_DEBT_USD_HISTORY,
+    {
+      onError: (error) => {
+        enqueueSnackbar('Error requesting the subgraph. Please reload the page and try again.');
+        Sentry.captureException(error);
+      },
+    },
   );
 
   const chartData = useMemo(() => {
     return debtMintedData && collateralLockedData
       ? collateralLockedData.totalValueLockedUSDHistoryChunks.map(({ timestamp, value: collateralLocked }, index) => {
-          const valueMinted = debtMintedData.totalValueMintedUSDHistoryChunks[index].value;
+          // When there isnt a daily value for minted yet use the value from last day or nothing.
+          const valueMinted =
+            debtMintedData.totalValueMintedUSDHistoryChunks[index]?.value ??
+            debtMintedData.totalValueMintedUSDHistoryChunks[debtMintedData.totalValueMintedUSDHistoryChunks.length - 1]
+              ?.value ??
+            parseEther('1').toString();
 
           const delta = bigIntStringToFloat(collateralLocked) / bigIntStringToFloat(valueMinted);
           return {

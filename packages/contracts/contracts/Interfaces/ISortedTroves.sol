@@ -25,7 +25,14 @@ interface ISortedTroves {
 
   // --- Functions ---
 
-  function update(address _id, uint256 _newCR, uint _redeemableDebt, address _prevId, address _nextId) external;
+  function update(
+    address _id,
+    uint256 _newCR,
+    uint _redeemableDebt,
+    uint _newRedeemableCollInUSD,
+    address _prevId,
+    address _nextId
+  ) external;
 
   function remove(address _id) external;
 

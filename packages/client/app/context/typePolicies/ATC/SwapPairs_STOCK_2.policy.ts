@@ -39,7 +39,7 @@ const SwapPairs_STOCK_2 = {
       fetch: async (swapPairContract: SwapPair, reserve0: bigint, reserve1: bigint) => {
         SchemaDataFreshnessManager_ATC.SwapPairs[Contracts_ATC.SwapPairs.STOCK_2].swapFee.lastFetched = Date.now();
 
-        const swapFee = await swapPairContract.getSwapFee(reserve0, reserve1);
+        const [swapFee] = await swapPairContract.getSwapFee(reserve0, reserve1);
 
         SchemaDataFreshnessManager_ATC.SwapPairs[Contracts_ATC.SwapPairs.STOCK_2].swapFee.value(swapFee);
       },

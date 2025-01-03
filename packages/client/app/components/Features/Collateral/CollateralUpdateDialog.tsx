@@ -15,6 +15,8 @@ import Button, { ButtonProps } from '@mui/material/Button';
 import Tab from '@mui/material/Tab';
 import Tabs from '@mui/material/Tabs';
 import Typography from '@mui/material/Typography';
+import { parseUnits } from 'ethers';
+import { useSnackbar } from 'notistack';
 import { SyntheticEvent, useCallback, useEffect, useState } from 'react';
 import { FormProvider, useForm } from 'react-hook-form';
 import { Contracts_ATC, Contracts_Localhost, isCollateralTokenAddress, isDebtTokenAddress } from '../../../../config';
@@ -31,8 +33,8 @@ import {
   GetBorrowerDebtTokensQueryVariables,
 } from '../../../generated/gql-types';
 import { GET_BORROWER_COLLATERAL_TOKENS, GET_BORROWER_DEBT_TOKENS, GET_SYSTEMINFO } from '../../../queries';
-import { getHints } from '../../../utils/crypto';
-import { dangerouslyConvertBigIntToNumber, displayPercentage, floatToBigInt, roundCurrency } from '../../../utils/math';
+import { getCheckSum, getHints } from '../../../utils/crypto';
+import { dangerouslyConvertBigIntToNumber, displayPercentage, roundCurrency } from '../../../utils/math';
 import RecoveryModeMarketCloseWrapper from '../../Buttons/RecoveryModeWrapper';
 import NumberInput from '../../FormControls/NumberInput';
 import CrossIcon from '../../Icons/CrossIcon';
@@ -55,7 +57,12 @@ type FieldValues = {
   [Contracts_ATC.ERC20.USDT]: string;
 };
 
+const troveHullDebtUSD =
+  process.env.NEXT_PUBLIC_ENVIRONMENT === 'staging' || process.env.NEXT_PUBLIC_ENVIRONMENT === 'development' ? 200 : 5;
+
 const CollateralUpdateDialog = ({ buttonVariant, buttonSx = {} }: Props) => {
+  const { enqueueSnackbar } = useSnackbar();
+
   const { Sentry } = useErrorMonitoring();
   const { getPythUpdateData } = usePriceFeedData();
   const { getAllowance } = useUtilities();
@@ -83,6 +90,10 @@ const CollateralUpdateDialog = ({ buttonVariant, buttonSx = {} }: Props) => {
       borrower: address,
     },
     skip: !address,
+    onError: (error) => {
+      enqueueSnackbar('Error requesting the subgraph. Please reload the page and try again.');
+      Sentry.captureException(error);
+    },
   });
 
   const { data: debtTokenData } = useQuery<GetBorrowerDebtTokensQuery, GetBorrowerDebtTokensQueryVariables>(
@@ -90,6 +101,10 @@ const CollateralUpdateDialog = ({ buttonVariant, buttonSx = {} }: Props) => {
     {
       variables: { borrower: address },
       skip: !address,
+      onError: (error) => {
+        enqueueSnackbar('Error requesting the subgraph. Please reload the page and try again.');
+        Sentry.captureException(error);
+      },
     },
   );
 
@@ -188,9 +203,17 @@ const CollateralUpdateDialog = ({ buttonVariant, buttonSx = {} }: Props) => {
       .filter(([_, amount]) => amount !== '' && parseFloat(amount) > 0)
       .map<{ tokenAddress: string; amount: bigint }>(([address, amount]) => {
         const tokenMeta = collateralToDeposit.find(({ token }) => token.address === address)!;
+
+        // If the input is very close to the max amount we use the max to not leave rest.
+        const tokenMaxAmount = tabValue === 'DEPOSIT' ? tokenMeta.walletAmount : tokenMeta.troveLockedAmount;
+
         return {
           tokenAddress: address,
-          amount: floatToBigInt(parseFloat(amount), tokenMeta.token.decimals),
+          amount:
+            tokenMaxAmount - parseUnits(amount, tokenMeta.token.decimals) <
+            parseUnits('0.000001', tokenMeta.token.decimals)
+              ? tokenMaxAmount
+              : parseUnits(amount, tokenMeta.token.decimals),
         };
       });
 
@@ -216,7 +239,8 @@ const CollateralUpdateDialog = ({ buttonVariant, buttonSx = {} }: Props) => {
       setSteps([
         ...needsAllowance.map(({ tokenAddress, amount }) => ({
           title: `Approve ${
-            Object.entries(currentNetwork!.contracts.ERC20).find(([_, value]) => value === tokenAddress)![0]
+            collateralToDeposit.find(({ token }) => getCheckSum(token.address) === getCheckSum(tokenAddress))!.token
+              .symbol
           } spending.`,
           transaction: {
             methodCall: async () => {
@@ -305,6 +329,7 @@ const CollateralUpdateDialog = ({ buttonVariant, buttonSx = {} }: Props) => {
     }
 
     setTimeout(() => {
+      setTabValue('DEPOSIT');
       reset();
     }, 100);
     setIsOpen(false);
@@ -582,7 +607,11 @@ const CollateralUpdateDialog = ({ buttonVariant, buttonSx = {} }: Props) => {
                   </div>
                 </Box>
 
-                <CollateralRatioVisualization addedCollateral={allTokenAmountUSD} callback={ratioChangeCallback} />
+                <CollateralRatioVisualization
+                  addedCollateral={allTokenAmountUSD}
+                  addedDebtUSD={hasNoOpenTrove ? troveHullDebtUSD : undefined}
+                  callback={ratioChangeCallback}
+                />
               </Box>
             </DialogContent>
             <DialogActions
@@ -602,10 +631,11 @@ const CollateralUpdateDialog = ({ buttonVariant, buttonSx = {} }: Props) => {
                     variant="outlined"
                     sx={{ borderColor: 'primary.contrastText' }}
                     disabled={
-                      tabValue === 'WITHDRAW' &&
-                      Boolean(newRatio) &&
-                      Boolean(oldCriticalRatio) &&
-                      newRatio! <= oldCriticalRatio!
+                      (tabValue === 'WITHDRAW' &&
+                        Boolean(newRatio) &&
+                        Boolean(oldCriticalRatio) &&
+                        newRatio! <= oldCriticalRatio!) ||
+                      (hasNoOpenTrove && newRatio! <= oldCriticalRatio!)
                     }
                   >
                     Change

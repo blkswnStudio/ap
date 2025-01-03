@@ -20,6 +20,14 @@ contract MockERC20 is ERC20Permit, IMockERC20 {
     _mint(_account, _amount);
   }
 
+  function unprotectedBurn(address _account, uint256 _amount) external override {
+    _burn(_account, _amount);
+  }
+
+  function burn(uint256 _amount) external override {
+    _burn(msg.sender, _amount);
+  }
+
   function unprotectedMintApprove(address _account, uint256 _amount, address _spender) external override {
     _mint(_account, _amount);
     _approve(_account, _spender, _amount);

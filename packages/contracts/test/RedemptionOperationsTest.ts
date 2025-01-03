@@ -71,11 +71,23 @@ describe('RedemptionOperations', () => {
         btcStableBalanceBefore = await storagePool.getValue(BTC, true, 0);
 
         const priceCache = await buildPriceCache(contracts);
-        defaulterTroveStableDebtBefore = await troveManager.getTroveRepayableDebt(defaulter_1, STABLE, true, true);
-        defaulterTroveBTCBefore = await troveManager.getTroveWithdrawableColl(defaulter_1, BTC);
+        defaulterTroveStableDebtBefore =
+          (await troveManager.getTroveRepayableDebts(defaulter_1, true)).find(
+            ({ tokenAddress }) => tokenAddress === STABLE.target
+          )?.amount ?? 0n;
+        defaulterTroveBTCBefore =
+          (await troveManager.getTroveWithdrawableColls(defaulter_1)).find(
+            ({ tokenAddress }) => tokenAddress === BTC.target
+          )?.amount ?? 0n;
 
-        defaulter2TroveStableDebtBefore = await troveManager.getTroveRepayableDebt(defaulter_2, STABLE, true, true);
-        defaulter2TroveBTCBefore = await troveManager.getTroveWithdrawableColl(defaulter_2, BTC);
+        defaulter2TroveStableDebtBefore =
+          (await troveManager.getTroveRepayableDebts(defaulter_2, true)).find(
+            ({ tokenAddress }) => tokenAddress === STABLE.target
+          )?.amount ?? 0n;
+        defaulter2TroveBTCBefore =
+          (await troveManager.getTroveWithdrawableColls(defaulter_2)).find(
+            ({ tokenAddress }) => tokenAddress === BTC.target
+          )?.amount ?? 0n;
       });
 
       it('one partial', async () => {
@@ -96,7 +108,6 @@ describe('RedemptionOperations', () => {
 
       afterEach(async () => {
         redemptionMeta = await getRedemptionMeta(await redeem(bob, toRedeem, contracts), contracts);
-        const priceCache = await buildPriceCache(contracts);
 
         const bobStableBalanceAfter = await STABLE.balanceOf(bob);
         expect(bobStableBalanceAfter).to.be.equal(bobStableBalanceBefore - toRedeem);
@@ -115,15 +126,17 @@ describe('RedemptionOperations', () => {
 
         // checking defaulter 1
         const [, stableDrawn, collDrawn] = redemptionMeta.redemptions.find((f: any) => f[0] === defaulter_1.address);
-        const defaulterTroveStableDebtAfter = await troveManager.getTroveRepayableDebt(
-          defaulter_1,
-          STABLE,
-          true,
-          false
-        );
+
+        const defaulterTroveStableDebtAfter =
+          (await troveManager.getTroveRepayableDebts(defaulter_1, true)).find(
+            ({ tokenAddress }) => tokenAddress === STABLE.target
+          )?.amount ?? 0n;
         expect(defaulterTroveStableDebtAfter).to.be.equal(defaulterTroveStableDebtBefore - stableDrawn);
 
-        const defaulterTroveBTCAfter = await troveManager.getTroveWithdrawableColl(defaulter_1, BTC);
+        const defaulterTroveBTCAfter =
+          (await troveManager.getTroveWithdrawableColls(defaulter_1)).find(
+            ({ tokenAddress }) => tokenAddress === BTC.target
+          )?.amount ?? 0n;
         expect(defaulterTroveBTCAfter).to.be.equal(
           defaulterTroveBTCBefore - collDrawn.find((f: any) => f[0] === BTC.target)[1]
         );
@@ -133,15 +146,16 @@ describe('RedemptionOperations', () => {
           const [, stableDrawn2, collDrawn2] = redemptionMeta.redemptions.find(
             (f: any) => f[0] === defaulter_2.address
           );
-          const defaulter2TroveStableDebtAfter = await troveManager.getTroveRepayableDebt(
-            defaulter_2,
-            STABLE,
-            true,
-            false
-          );
+          const defaulter2TroveStableDebtAfter =
+            (await troveManager.getTroveRepayableDebts(defaulter_2, true)).find(
+              ({ tokenAddress }) => tokenAddress === STABLE.target
+            )?.amount ?? 0n;
           expect(defaulter2TroveStableDebtAfter).to.be.equal(defaulter2TroveStableDebtBefore - stableDrawn2);
 
-          const defaulter2TroveBTCAfter = await troveManager.getTroveWithdrawableColl(defaulter_2, BTC);
+          const defaulter2TroveBTCAfter =
+            (await troveManager.getTroveWithdrawableColls(defaulter_2)).find(
+              ({ tokenAddress }) => tokenAddress === BTC.target
+            )?.amount ?? 0n;
           expect(defaulter2TroveBTCAfter).to.be.equal(
             defaulter2TroveBTCBefore - collDrawn2.find((f: any) => f[0] === BTC.target)[1]
           );

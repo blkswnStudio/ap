@@ -4,14 +4,16 @@ import {
   MockDebtToken,
   MockERC20,
   MockPyth,
-  StakingOperations,
+  MockStakingOperations,
+  StakingVestingOperations,
+  StakingVestingOperations__factory,
   SwapOperations,
   SwapPair,
   TokenManager,
 } from '../typechain';
 import { expect } from 'chai';
 import { createPoolPair, deployTesting, getLatestBlockTimestamp } from '../utils/testHelper';
-import { parseUnits } from 'ethers';
+import { parseUnits, ZeroAddress } from 'ethers';
 import { OracleUpdateDataAndFee, generatePriceUpdateData, generatePriceUpdateDataWithFee } from '../utils/pythHelper';
 import { Contracts } from '../utils/deployTestBase';
 import { increaseTo } from '@nomicfoundation/hardhat-network-helpers/dist/src/helpers/time';
@@ -32,8 +34,9 @@ describe('StakingOps', () => {
   let contracts: Contracts;
   let pyth: MockPyth;
   let tokenMgr: TokenManager;
-  let stakingOps: StakingOperations;
+  let stakingOps: MockStakingOperations;
   let swapOps: SwapOperations;
+  let vestOps: StakingVestingOperations;
   let oracleData: OracleUpdateDataAndFee;
 
   before(async () => {
@@ -49,6 +52,7 @@ describe('StakingOps', () => {
     stakingOps = contracts.stakingOperations;
     swapOps = contracts.swapOperations;
     tokenMgr = contracts.tokenManager;
+    vestOps = StakingVestingOperations__factory.connect(await stakingOps.vesting(), owner);
 
     STABLE = contracts.STABLE;
     STOCK = contracts.STOCK;
@@ -127,6 +131,29 @@ describe('StakingOps', () => {
   };
 
   describe('Config', () => {
+    describe('setRedistributeAddress', () => {
+      it('Only callable from token Manager', async () => {
+        // fail
+        await expect(stakingOps.connect(owner).setRedistributeAddress(bob)).to.be.revertedWithCustomError(
+          stakingOps,
+          'CallerIsNotTokenManager'
+        );
+
+        // fail
+        await expect(tokenMgr.connect(alice).setBurnRedistributeAddress(bob)).to.be.revertedWithCustomError(
+          tokenMgr,
+          'OwnableUnauthorizedAccount'
+        );
+      });
+
+      it('Set', async () => {
+        //success
+        expect(await stakingOps.redistributeAddress()).to.be.equal(ZeroAddress);
+        await expect(tokenMgr.connect(owner).setBurnRedistributeAddress(bob)).to.not.be.reverted;
+        expect(await stakingOps.redistributeAddress()).to.be.equal(bob);
+      });
+    });
+
     describe('setRewardsPerSecond', () => {
       it('Only callable from token Manager', async () => {
         // fail
@@ -259,7 +286,7 @@ describe('StakingOps', () => {
 
       // claim
       const t1 = await getLatestBlockTimestamp();
-      await stakingOps.connect(bob).claim(pair);
+      await stakingOps.connect(bob).claim(pair, false, false);
       const t2 = await getLatestBlockTimestamp();
 
       return pending + BigInt(t2 - t1) * rewardPerSecond; //because claim caused time change
@@ -267,6 +294,7 @@ describe('StakingOps', () => {
 
     it('Claim (all unclaimable)', async () => {
       const pending = await prepare();
+      await stakingOps.connect(bob).untrustedHarvestAll();
       expect(await stakingOps.unclaimedReward(bob)).to.be.equal(pending);
       expect(await GOV.balanceOf(bob)).to.be.equal(0n);
     });
@@ -275,6 +303,7 @@ describe('StakingOps', () => {
       const claimable = rewardPerSecond * (passedTime / 2n);
       await GOV.unprotectedMint(stakingOps, claimable);
       const pending = await prepare();
+      await stakingOps.connect(bob).untrustedHarvestAll();
       expect(await stakingOps.unclaimedReward(bob)).to.be.equal(pending - claimable);
       expect(await GOV.balanceOf(bob)).to.be.equal(claimable);
     });
@@ -283,6 +312,7 @@ describe('StakingOps', () => {
       const claimable = rewardPerSecond * passedTime * 2n;
       await GOV.unprotectedMint(stakingOps, claimable);
       const pending = await prepare();
+      await stakingOps.connect(bob).untrustedHarvestAll();
       expect(await stakingOps.unclaimedReward(bob)).to.be.equal(0n);
       expect(await GOV.balanceOf(bob)).to.be.equal(pending);
     });
@@ -293,30 +323,123 @@ describe('StakingOps', () => {
 
       const pending = await prepare();
       expect(await stakingOps.unclaimedReward(bob)).to.be.equal(0n);
-      expect(await GOV.balanceOf(bob)).to.be.equal(pending);
+      expect(await stakingOps.pendingHarvest(bob)).to.be.equal(pending);
 
       // multi claim
       expect(await stakingOps.pendingReward(pair, bob)).to.be.eq(0n);
       await network.provider.send('evm_setAutomine', [false]); // stop automine
-      await stakingOps.connect(bob).claim(pair);
-      await stakingOps.connect(bob).claim(pair);
-      await stakingOps.connect(bob).claim(pair);
+      await stakingOps.connect(bob).claim(pair, false, false);
+      await stakingOps.connect(bob).claim(pair, false, false);
+      await stakingOps.connect(bob).claim(pair, false, false);
       await network.provider.send('evm_mine'); // manually mine all at once
       await network.provider.send('evm_setAutomine', [true]); // start automine
-      expect(await GOV.balanceOf(bob)).to.be.approximately(pending + rewardPerSecond, 1n); // rounding diff
+      expect(await stakingOps.pendingHarvest(bob)).to.be.approximately(pending + rewardPerSecond, 1n); // rounding diff
     });
 
     it('Claim (partial, then unclaimed)', async () => {
       const claimable = rewardPerSecond * (passedTime / 2n);
       await GOV.unprotectedMint(stakingOps, claimable);
       const pending = await prepare();
+      await stakingOps.connect(bob).untrustedHarvestAll();
       expect(await stakingOps.unclaimedReward(bob)).to.be.equal(pending - claimable);
       expect(await GOV.balanceOf(bob)).to.be.equal(claimable);
 
       // stock up and claim
       await GOV.unprotectedMint(stakingOps, pending * 2n);
-      await stakingOps.connect(bob).claim(pair);
+      await stakingOps.connect(bob).claim(pair, false, false);
+      await stakingOps.connect(bob).untrustedHarvestAll();
       expect(await stakingOps.unclaimedReward(bob)).to.be.equal(0n);
+    });
+  });
+
+  describe('Harvest', () => {
+    let pair: SwapPair;
+    let rewardPerSecond: bigint;
+    let passedTime: bigint;
+
+    beforeEach(async () => {
+      rewardPerSecond = parseUnits('1');
+      passedTime = 60n;
+      await createPoolPair(contracts, STABLE, STOCK);
+      const pairAddress = await swapOps.getPair(STABLE, STOCK);
+      pair = await ethers.getContractAt('SwapPair', pairAddress);
+      tokenMgr.connect(owner).setStakingRewardsPerSecond(rewardPerSecond);
+      tokenMgr.connect(owner).setStakingAllocPoint(pair, 100n);
+    });
+
+    const prepare = async () => {
+      // deposit
+      await add(bob, STOCK, parseUnits('150'), parseUnits('1'), true, false);
+      const start = (await stakingOps.poolInfo(pair)).lastRewardTime;
+
+      // increase time
+      await increaseTo(start + passedTime);
+      expect(await getLatestBlockTimestamp()).to.be.equal(start + passedTime);
+
+      // check pending
+      const pending = await stakingOps.pendingReward(pair, bob);
+      expect(pending).to.be.approximately(rewardPerSecond * passedTime, 1n); // rounding diff
+
+      // claim
+      const t1 = await getLatestBlockTimestamp();
+      await stakingOps.connect(bob).claim(pair, false, false);
+      const t2 = await getLatestBlockTimestamp();
+
+      return pending + BigInt(t2 - t1) * rewardPerSecond; //because claim caused time change
+    };
+
+    it('Harvest (instant full)', async () => {
+      const claimable = rewardPerSecond * passedTime * 2n;
+      await GOV.unprotectedMint(stakingOps, claimable);
+      const pending = await prepare();
+      await stakingOps.connect(bob).harvest(true);
+      expect(await GOV.balanceOf(bob)).to.be.equal(pending - pending / 2n);
+    });
+
+    it('Harvest (instant partial unclaimable)', async () => {
+      const claimable = rewardPerSecond * (passedTime / 2n);
+      await GOV.unprotectedMint(stakingOps, claimable);
+      const pending = await prepare();
+      await stakingOps.connect(bob).harvest(true);
+      const harvestable = claimable / 2n;
+      expect(await stakingOps.unclaimedReward(bob)).to.be.equal(pending - claimable);
+      expect(await GOV.balanceOf(bob)).to.be.equal(harvestable);
+    });
+
+    it('Harvest (vested full)', async () => {
+      const claimable = rewardPerSecond * passedTime * 2n;
+      await GOV.unprotectedMint(stakingOps, claimable);
+      const pending = await prepare();
+      await stakingOps.connect(bob).harvest(false);
+      expect((await vestOps.checkVesting(GOV, bob)).amount).to.be.equal(pending);
+
+      // increase time & claim
+      await increaseTo(BigInt(await getLatestBlockTimestamp()) + (await vestOps.checkVesting(GOV, bob)).remainingTime);
+      await vestOps.connect(bob).claim(GOV, false);
+      expect(await GOV.balanceOf(bob)).to.be.equal(pending);
+    });
+
+    it('Harvest (vested full early)', async () => {
+      const claimable = rewardPerSecond * passedTime * 2n;
+      await GOV.unprotectedMint(stakingOps, claimable);
+      const pending = await prepare();
+      await stakingOps.connect(bob).harvest(false);
+      expect((await vestOps.checkVesting(GOV, bob)).amount).to.be.equal(pending);
+
+      // increase time & claim
+      const remain = (await vestOps.checkVesting(GOV, bob)).remainingTime;
+      await increaseTo(BigInt(await getLatestBlockTimestamp()) + remain / 2n - 1n);
+      await vestOps.connect(bob).claim(GOV, true);
+      expect(await GOV.balanceOf(bob)).to.be.approximately(pending - pending / 4n, 1n);
+    });
+
+    it('Harvest (vested partial unclaimable)', async () => {
+      const claimable = rewardPerSecond * (passedTime / 2n);
+      await GOV.unprotectedMint(stakingOps, claimable);
+      const pending = await prepare();
+      await stakingOps.connect(bob).harvest(false);
+      expect(await stakingOps.unclaimedReward(bob)).to.be.equal(pending - claimable);
+      expect((await vestOps.checkVesting(GOV, bob)).amount).to.be.equal(claimable);
     });
   });
 
@@ -335,9 +458,12 @@ describe('StakingOps', () => {
 
     // functions
     const claim = async (_pair: SwapPair) => {
-      await stakingOps.connect(alice).claim(_pair);
-      await stakingOps.connect(bob).claim(_pair);
-      await stakingOps.connect(carol).claim(_pair);
+      await stakingOps.connect(alice).claim(_pair, false, false);
+      await stakingOps.connect(alice).untrustedHarvestAll();
+      await stakingOps.connect(bob).claim(_pair, false, false);
+      await stakingOps.connect(bob).untrustedHarvestAll();
+      await stakingOps.connect(carol).claim(_pair, false, false);
+      await stakingOps.connect(carol).untrustedHarvestAll();
     };
     const compareShares = async (_pair: SwapPair, _alice: bigint, _bob: bigint, _carol: bigint) => {
       const s_a = (await stakingOps.userInfo(_pair, alice)).amount;

@@ -10,7 +10,8 @@ import {
   IconButton,
   Typography,
 } from '@mui/material';
-import { ethers } from 'ethers';
+import { ethers, parseEther } from 'ethers';
+import { useSnackbar } from 'notistack';
 import { useEffect, useState } from 'react';
 import { FormProvider, useForm } from 'react-hook-form';
 import { Contracts_ATC, Contracts_Localhost } from '../../../../config';
@@ -22,6 +23,7 @@ import { useTransactionDialog } from '../../../context/TransactionDialogProvider
 import { GetRedemptionsOperationsQuery, GetRedemptionsOperationsQueryVariables } from '../../../generated/gql-types';
 import { GET_BORROWER_DEBT_TOKENS, GET_REDEMPTIONS_OPERATIONS } from '../../../queries';
 import { dangerouslyConvertBigIntToNumber, displayPercentage, roundCurrency } from '../../../utils/math';
+import RecoveryModeMarketCloseWrapper from '../../Buttons/RecoveryModeWrapper';
 import NumberInput from '../../FormControls/NumberInput';
 import CrossIcon from '../../Icons/CrossIcon';
 import DiamondIcon from '../../Icons/DiamondIcon';
@@ -39,6 +41,8 @@ type Props = {
 };
 
 function RedemptionDialog({ buttonVariant = 'outlined', buttonSx = {} }: Props) {
+  const { enqueueSnackbar } = useSnackbar();
+
   const { Sentry } = useErrorMonitoring();
   const { getPythUpdateData } = usePriceFeedData();
 
@@ -52,6 +56,12 @@ function RedemptionDialog({ buttonVariant = 'outlined', buttonSx = {} }: Props) 
 
   const { data: redemptionData } = useQuery<GetRedemptionsOperationsQuery, GetRedemptionsOperationsQueryVariables>(
     GET_REDEMPTIONS_OPERATIONS,
+    {
+      onError: (error) => {
+        enqueueSnackbar('Error requesting the subgraph. Please reload the page and try again.');
+        Sentry.captureException(error);
+      },
+    },
   );
 
   const { JUSDToken } = useSelectedToken();
@@ -89,7 +99,11 @@ function RedemptionDialog({ buttonVariant = 'outlined', buttonSx = {} }: Props) 
     });
 
     const maxFeePercentage = formData.redemptionFee;
-    const redemptionAmount = formData[currentNetwork!.contracts.DebtToken.STABLE];
+    const amount = formData[currentNetwork!.contracts.DebtToken.STABLE];
+    const tokenMaxAmount = JUSDToken!.walletAmount;
+
+    const redemptionAmount =
+      tokenMaxAmount - parseEther(amount) < parseEther('0.000001') ? tokenMaxAmount : parseEther(amount);
 
     setSteps([
       {
@@ -98,7 +112,7 @@ function RedemptionDialog({ buttonVariant = 'outlined', buttonSx = {} }: Props) 
           methodCall: async () => {
             const amountStableTroves = await sortedTrovesContract.getSize();
             const iterations = await hintHelpersContract.getRedemptionIterationHints(
-              ethers.parseEther(redemptionAmount),
+              redemptionAmount,
               Math.round(Math.min(4000, 15 * Math.sqrt(Number(amountStableTroves)))),
               Math.round(Math.random() * 100000000000),
             );
@@ -107,7 +121,7 @@ function RedemptionDialog({ buttonVariant = 'outlined', buttonSx = {} }: Props) 
 
             return redemptionOperationsContract
               .redeemCollateral(
-                ethers.parseEther(redemptionAmount),
+                redemptionAmount,
                 iterations.map((iteration) => ({
                   trove: iteration[0],
                   upperHint: iteration[1],
@@ -131,7 +145,13 @@ function RedemptionDialog({ buttonVariant = 'outlined', buttonSx = {} }: Props) 
     ]);
 
     setTimeout(() => {
-      reset();
+      reset({
+        [currentNetwork!.contracts.DebtToken.STABLE]: '',
+        redemptionFee: (
+          2 +
+          dangerouslyConvertBigIntToNumber(redemptionData!.getRedemtionOperations.redemptionRateWithDecay, 12, 6 - 2)
+        ).toString(),
+      });
     }, 100);
     setIsOpen(false);
   };
@@ -149,23 +169,40 @@ function RedemptionDialog({ buttonVariant = 'outlined', buttonSx = {} }: Props) 
 
   return (
     <>
-      <Button
-        onClick={() => setIsOpen(true)}
-        variant={buttonVariant}
-        sx={{
-          width: 'auto',
-          padding: '0 50px',
-          ...buttonSx,
-        }}
-        disabled={!address}
-      >
-        Redeem
-      </Button>
+      {/* TODO: Can be later removed with fallback price feed */}
+      <RecoveryModeMarketCloseWrapper respectRecoveryMode>
+        <Button
+          onClick={() => setIsOpen(true)}
+          variant={buttonVariant}
+          sx={{
+            width: 'auto',
+            padding: '0 50px',
+            ...buttonSx,
+          }}
+          disabled={!address}
+        >
+          Redeem
+        </Button>
+      </RecoveryModeMarketCloseWrapper>
 
       <Dialog
         open={isOpen}
         onClose={() => {
-          reset();
+          if (redemptionData) {
+            reset({
+              [currentNetwork!.contracts.DebtToken.STABLE]: '',
+              redemptionFee: (
+                2 +
+                dangerouslyConvertBigIntToNumber(
+                  redemptionData.getRedemtionOperations.redemptionRateWithDecay,
+                  12,
+                  6 - 2,
+                )
+              ).toString(),
+            });
+          } else {
+            reset(undefined);
+          }
           setIsOpen(false);
         }}
         fullWidth
@@ -232,7 +269,8 @@ function RedemptionDialog({ buttonVariant = 'outlined', buttonSx = {} }: Props) 
                           fullWidth
                           rules={{
                             required: 'This field is required.',
-                            min: { value: 0, message: 'Amount needs to be positive.' },
+                            // if (_stableCoinAmount < MIN_REDEMPTION) revert LessThanMinRedemption();
+                            min: { value: 1, message: 'Amount needs to be higher that the minimum allowed amount.' },
                             max: {
                               value: dangerouslyConvertBigIntToNumber(JUSDToken.walletAmount, 9, 9),
                               message: 'Your wallet does not contain the specified amount.',

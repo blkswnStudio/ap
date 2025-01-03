@@ -7,7 +7,7 @@ import ApollonLogo from './components/Icons/ApollonLogo';
 
 function Error(props: { error: Error; reset: () => void }) {
   useEffect(() => {
-    Sentry.captureException(Error);
+    Sentry.captureException(props.error);
   }, [props.error]);
 
   return (

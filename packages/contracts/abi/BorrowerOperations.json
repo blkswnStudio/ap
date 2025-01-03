@@ -335,19 +335,6 @@
     },
     {
         "inputs": [],
-        "name": "MAX_DEBTS_AS_COLLATERAL",
-        "outputs": [
-            {
-                "internalType": "uint256",
-                "name": "",
-                "type": "uint256"
-            }
-        ],
-        "stateMutability": "view",
-        "type": "function"
-    },
-    {
-        "inputs": [],
         "name": "MCR",
         "outputs": [
             {
@@ -529,34 +516,6 @@
         "name": "claimCollateral",
         "outputs": [],
         "stateMutability": "nonpayable",
-        "type": "function"
-    },
-    {
-        "inputs": [
-            {
-                "internalType": "uint256",
-                "name": "_percentage",
-                "type": "uint256"
-            },
-            {
-                "internalType": "address",
-                "name": "_upperHint",
-                "type": "address"
-            },
-            {
-                "internalType": "address",
-                "name": "_lowerHint",
-                "type": "address"
-            },
-            {
-                "internalType": "bytes[]",
-                "name": "_priceUpdateData",
-                "type": "bytes[]"
-            }
-        ],
-        "name": "claimUnassignedAssets",
-        "outputs": [],
-        "stateMutability": "payable",
         "type": "function"
     },
     {
@@ -942,6 +901,19 @@
         "outputs": [
             {
                 "internalType": "contract IStoragePool",
+                "name": "",
+                "type": "address"
+            }
+        ],
+        "stateMutability": "view",
+        "type": "function"
+    },
+    {
+        "inputs": [],
+        "name": "swapOperations",
+        "outputs": [
+            {
+                "internalType": "address",
                 "name": "",
                 "type": "address"
             }

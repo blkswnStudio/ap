@@ -1,6 +1,8 @@
 import { useQuery } from '@apollo/client';
 import { ButtonProps, Tooltip } from '@mui/material';
+import { useSnackbar } from 'notistack';
 import { ReactElement, cloneElement } from 'react';
+import { useErrorMonitoring } from '../../context/ErrorMonitoringContext';
 import { usePriceFeedData } from '../../context/PriceFeedDataProvider';
 import { GetSystemInfoQuery, GetSystemInfoQueryVariables } from '../../generated/gql-types';
 import { GET_SYSTEMINFO } from '../../queries';
@@ -17,8 +19,15 @@ export default function RecoveryModeMarketCloseWrapper({
   children,
 }: Props) {
   const { isMarketClosed } = usePriceFeedData();
+  const { enqueueSnackbar } = useSnackbar();
+  const { Sentry } = useErrorMonitoring();
 
-  const { data: systemInfo } = useQuery<GetSystemInfoQuery, GetSystemInfoQueryVariables>(GET_SYSTEMINFO);
+  const { data: systemInfo } = useQuery<GetSystemInfoQuery, GetSystemInfoQueryVariables>(GET_SYSTEMINFO, {
+    onError: (error) => {
+      enqueueSnackbar('Error requesting the subgraph. Please reload the page and try again.');
+      Sentry.captureException(error);
+    },
+  });
 
   if (respectRecoveryMode && systemInfo?.getSystemInfo.recoveryModeActive) {
     return (

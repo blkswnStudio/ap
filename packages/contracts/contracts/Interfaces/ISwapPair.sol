@@ -17,7 +17,6 @@ interface ISwapPair is ISwapERC20 {
   error InvalidTo();
   error K();
   error NotFromSwapOperations();
-  error UntrustedOracle(address token);
 
   event Mint(address indexed to, uint amount0, uint amount1);
   event Burn(address indexed from, uint amount0, uint amount1);
@@ -47,7 +46,10 @@ interface ISwapPair is ISwapERC20 {
 
   function price1CumulativeLast() external view returns (uint);
 
-  function getSwapFee(uint postReserve0, uint postReserve1) external view returns (uint feePercentage);
+  function getSwapFee(
+    uint postReserve0,
+    uint postReserve1
+  ) external view returns (uint feePercentage, bool isUsablePrice);
 
   // **** OPERATIONS ****
 

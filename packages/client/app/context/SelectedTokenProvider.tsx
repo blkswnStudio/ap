@@ -2,12 +2,14 @@
 
 import { useQuery } from '@apollo/client';
 import { ethers } from 'ethers';
+import { useSnackbar } from 'notistack';
 import { PropsWithChildren, createContext, useContext, useState } from 'react';
 import { isStableCoinAddress } from '../../config';
 import { GetBorrowerDebtTokensQuery, GetBorrowerDebtTokensQueryVariables } from '../generated/gql-types';
 import { GET_BORROWER_DEBT_TOKENS } from '../queries';
-import { standardDataPollInterval } from '../utils/contants';
+import { standardDataPollInterval } from '../utils/constants';
 import { convertToEtherPrecission } from '../utils/math';
+import { useErrorMonitoring } from './ErrorMonitoringContext';
 import { useEthers } from './EthersProvider';
 
 export type SelectedToken = {
@@ -46,7 +48,10 @@ export const SelectedTokenContext = createContext<{
 });
 
 export default function SelectedTokenProvider({ children }: PropsWithChildren): JSX.Element {
+  const { enqueueSnackbar } = useSnackbar();
+
   const { address } = useEthers();
+  const { Sentry } = useErrorMonitoring();
 
   const [selectedToken, setSelectedToken] = useState<SelectedToken | null>(null);
 
@@ -57,6 +62,10 @@ export default function SelectedTokenProvider({ children }: PropsWithChildren): 
       borrower: address,
     },
     pollInterval: standardDataPollInterval,
+    onError: (error) => {
+      enqueueSnackbar('Error requesting the subgraph. Please reload the page and try again.');
+      Sentry.captureException(error);
+    },
   });
 
   const STABLE = data?.debtTokenMetas.find(({ token }) => isStableCoinAddress(token.address));

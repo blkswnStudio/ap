@@ -22,7 +22,7 @@ const getSecret = (secretKey: string, defaultValue = '') => {
 
 export default {
   solidity: {
-    compilers: [{ version: '0.8.20', settings: { optimizer: { enabled: true, runs: 200 } } }],
+    compilers: [{ version: '0.8.20', settings: { optimizer: { enabled: true, runs: 50 } } }],
   },
   paths: {
     sources: './contracts',

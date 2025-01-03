@@ -1,5 +1,7 @@
 import { Address, BigInt, ethereum } from '@graphprotocol/graph-ts';
 import { Staking, StakingPool } from '../../generated/schema';
+import { SwapPair } from '../../generated/templates/SwapPairTemplate/SwapPair';
+import { handleUpdatePoolDailyStats } from './pool-daily-stats-entity';
 import { oneEther } from './token-candle-entity';
 
 export function handleCreateStakingPool(event: ethereum.Event, address: Address): void {
@@ -29,9 +31,15 @@ export function handleUpdateStakingPool_allocPoints(
 
   stakingPool.allocPoints = allocPoints;
   stakingPool.save();
+  handleUpdateStakingPool_totalDepositUSD_totalRewardUSD_stakingAPR(poolAddress, event);
 }
 
-export function handleUpdateStakingPool_totalDeposit(isDeposit: boolean, poolAddress: Address, amount: BigInt): void {
+export function handleUpdateStakingPool_totalDeposit(
+  isDeposit: boolean,
+  poolAddress: Address,
+  amount: BigInt,
+  event: ethereum.Event,
+): void {
   const pool = StakingPool.load(poolAddress)!;
 
   if (isDeposit) pool.totalDeposit = pool.totalDeposit.plus(amount);
@@ -39,18 +47,27 @@ export function handleUpdateStakingPool_totalDeposit(isDeposit: boolean, poolAdd
 
   pool.save();
 
-  handleUpdateStakingPool_totalDepositUSD_totalRewardUSD_stakingAPR(poolAddress);
+  handleUpdateStakingPool_totalDepositUSD_totalRewardUSD_stakingAPR(poolAddress, event);
 }
 
-export function handleUpdateStakingPool_totalDepositUSD_totalRewardUSD_stakingAPR(poolAddress: Address): void {
+export function handleUpdateStakingPool_totalDepositUSD_totalRewardUSD_stakingAPR(
+  poolAddress: Address,
+  event: ethereum.Event,
+): void {
   const staking = Staking.load(`Staking`)!;
   const stakingPool = StakingPool.load(poolAddress)!;
-  // Is this correct instead of an array?
-  const lp = stakingPool.liquidityPool.load()[0];
+  const pools = stakingPool.liquidityPool.load();
 
-  stakingPool.totalDepositUSD = lp.totalSupply.equals(BigInt.fromI32(0))
-    ? BigInt.fromI32(0)
-    : lp.totalValueUSD.times(stakingPool.totalDeposit).div(lp.totalSupply); // totalDeposit should always be totalSupply, but just to be sure
+  if (pools.length > 0) {
+    const lp = stakingPool.liquidityPool.load()[0];
+
+    stakingPool.totalDepositUSD = lp.totalSupply.equals(BigInt.fromI32(0))
+      ? BigInt.fromI32(0)
+      : lp.totalValueUSD.times(stakingPool.totalDeposit).div(lp.totalSupply); // totalDeposit should always be totalSupply, but just to be sure
+  } else {
+    stakingPool.totalDepositUSD = BigInt.fromI32(0);
+  }
+
   stakingPool.totalRewardUSD = staking.totalAllocPoints.equals(BigInt.fromI32(0))
     ? BigInt.fromI32(0)
     : staking.rewardsPerYearUSD.times(stakingPool.allocPoints).div(staking.totalAllocPoints);
@@ -59,4 +76,6 @@ export function handleUpdateStakingPool_totalDepositUSD_totalRewardUSD_stakingAP
     : stakingPool.totalRewardUSD.times(oneEther).div(stakingPool.totalDepositUSD);
 
   stakingPool.save();
+
+  handleUpdatePoolDailyStats(SwapPair.bind(poolAddress).token1(), event);
 }

@@ -48,7 +48,7 @@ const SwapPairs_BTC = {
         SchemaDataFreshnessManager_LOCALHOST.SwapPairs[Contracts_Localhost.SwapPairs.BTC].swapFee.lastFetched =
           Date.now();
 
-        const swapFee = await swapPairContract.getSwapFee(reserve0, reserve1);
+        const [swapFee] = await swapPairContract.getSwapFee(reserve0, reserve1);
 
         SchemaDataFreshnessManager_LOCALHOST.SwapPairs[Contracts_Localhost.SwapPairs.BTC].swapFee.value(swapFee);
       },

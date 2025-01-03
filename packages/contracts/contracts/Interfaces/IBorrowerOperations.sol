@@ -113,11 +113,4 @@ interface IBorrowerOperations is IBBase {
   function closeTrove(bytes[] memory _priceUpdateData) external payable;
 
   function claimCollateral() external;
-
-  function claimUnassignedAssets(
-    uint _percentage,
-    address _upperHint,
-    address _lowerHint,
-    bytes[] memory _priceUpdateData
-  ) external payable;
 }

@@ -204,7 +204,7 @@ contract LiquidationOperations is LiquityBase, Ownable(msg.sender), CheckContrac
         vars.troveCollInUSD += inUSD;
         maxDebtInUSD += LiquityMath._computeMaxDebtValue(
           inUSD,
-          outerVars.priceCache.collPrices[i - debtTokenLength].supportedCollateralRatio
+          outerVars.priceCache.collPrices[i].supportedCollateralRatio
         );
       } else {
         if (i == stableCoinIndex) {

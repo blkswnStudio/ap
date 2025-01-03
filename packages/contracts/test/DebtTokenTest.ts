@@ -115,12 +115,12 @@ describe('DebtToken', () => {
 
   it("name(): returns the token's name", async () => {
     const name = await STABLE.name();
-    assert.equal(name, 'STABLE');
+    assert.equal(name, 'jUSD');
   });
 
   it("symbol(): returns the token's symbol", async () => {
     const symbol = await STABLE.symbol();
-    assert.equal(symbol, 'STABLE');
+    assert.equal(symbol, 'jUSD');
   });
 
   it('decimal(): returns the number of decimal digits used', async () => {

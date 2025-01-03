@@ -12,6 +12,7 @@ import './Interfaces/ITokenManager.sol';
 import './Dependencies/CheckContract.sol';
 import './Interfaces/IPriceFeed.sol';
 import './Interfaces/ITroveManager.sol';
+import './Interfaces/IDynamicFee.sol';
 import './Interfaces/IStakingOperations.sol';
 
 contract SwapOperations is ISwapOperations, Ownable(msg.sender), CheckContract, LiquityBase {
@@ -22,6 +23,7 @@ contract SwapOperations is ISwapOperations, Ownable(msg.sender), CheckContract, 
   IPriceFeed public priceFeed;
   ITokenManager public tokenManager;
   IStakingOperations public stakingOperations;
+  IDynamicFee public dynamicFee;
 
   // --- Data structures ---
 
@@ -39,19 +41,22 @@ contract SwapOperations is ISwapOperations, Ownable(msg.sender), CheckContract, 
     address _troveManagerAddress,
     address _priceFeedAddress,
     address _tokenManager,
-    address _stakingOperations
+    address _stakingOperations,
+    address _dynamicFee
   ) external onlyOwner {
     checkContract(_borrowerOperationsAddress);
     checkContract(_troveManagerAddress);
     checkContract(_priceFeedAddress);
     checkContract(_tokenManager);
     checkContract(_stakingOperations);
+    checkContract(_dynamicFee);
 
     borrowerOperations = IBorrowerOperations(_borrowerOperationsAddress);
     troveManager = ITroveManager(_troveManagerAddress);
     priceFeed = IPriceFeed(_priceFeedAddress);
     tokenManager = ITokenManager(_tokenManager);
     stakingOperations = IStakingOperations(_stakingOperations);
+    dynamicFee = IDynamicFee(_dynamicFee);
 
     emit SwapOperationsInitialized(
       _borrowerOperationsAddress,
@@ -115,6 +120,15 @@ contract SwapOperations is ISwapOperations, Ownable(msg.sender), CheckContract, 
     govSwapFee = _govSwapFee;
   }
 
+  function setDynamicFeeAddress(address _dynamicFee) external onlyOwner {
+    checkContract(_dynamicFee);
+    dynamicFee = IDynamicFee(_dynamicFee);
+  }
+
+  function calcDynamicSwapFee(uint val) external view returns (uint fee) {
+    return dynamicFee.calcDynamicSwapFee(val);
+  }
+
   // --- Getter functions ---
 
   function quote(uint amountA, uint reserveA, uint reserveB) public pure virtual override returns (uint amountB) {
@@ -127,35 +141,17 @@ contract SwapOperations is ISwapOperations, Ownable(msg.sender), CheckContract, 
   function getAmountsOut(
     uint amountIn,
     address[] memory path
-  ) public view virtual override returns (SwapAmount[] memory amounts) {
+  ) public view virtual override returns (SwapAmount[] memory amounts, bool isUsablePrice) {
     if (path.length < 2) revert InvalidPath();
 
     amounts = new SwapAmount[](path.length);
     for (uint i; i < path.length - 1; i++) {
       if (amountIn == 0) revert InsufficientInputAmount();
 
-      (address token0, address token1) = sortTokens(path[i], path[i + 1]);
-      address pairAddress = getPair[token0][token1];
-      if (pairAddress == address(0)) revert PairDoesNotExist();
-
-      ISwapPair pair = ISwapPair(pairAddress);
-      (uint reserve0, uint reserve1, ) = pair.getReserves();
-      if (reserve0 == 0 || reserve1 == 0) revert InsufficientLiquidity();
-
       uint feePercentage;
       uint reserveIn;
       uint reserveOut;
-      if (path[i] == token0) {
-        // amountIn is token0 of the pool pair
-        feePercentage = pair.getSwapFee(reserve0 + amountIn, (uint(reserve1) * reserve0) / (reserve0 + amountIn));
-        reserveIn = reserve0;
-        reserveOut = reserve1;
-      } else {
-        // amountIn is token1 of the pool pair
-        feePercentage = pair.getSwapFee((uint(reserve0) * reserve1) / (reserve1 + amountIn), reserve1 + amountIn);
-        reserveIn = reserve1;
-        reserveOut = reserve0;
-      }
+      (feePercentage, reserveIn, reserveOut, isUsablePrice) = _getAmountsOutDeep(path[i], path[i + 1], amountIn);
 
       uint amountInFee = (amountIn * feePercentage) / DECIMAL_PRECISION;
       amounts[i] = SwapAmount(amountIn, amountInFee);
@@ -166,13 +162,45 @@ contract SwapOperations is ISwapOperations, Ownable(msg.sender), CheckContract, 
     }
     amounts[amounts.length - 1] = SwapAmount(amountIn, 0);
 
-    return amounts;
+    return (amounts, isUsablePrice);
+  }
+
+  function _getAmountsOutDeep(
+    address tokenA,
+    address tokenB,
+    uint amountIn
+  ) internal view returns (uint feePercentage, uint reserveIn, uint reserveOut, bool isUsablePrice) {
+    (address token0, address token1) = sortTokens(tokenA, tokenB);
+    address pairAddress = getPair[token0][token1];
+    if (pairAddress == address(0)) revert PairDoesNotExist();
+
+    ISwapPair pair = ISwapPair(pairAddress);
+    (uint reserve0, uint reserve1, ) = pair.getReserves();
+    if (reserve0 == 0 || reserve1 == 0) revert InsufficientLiquidity();
+
+    if (tokenA == token0) {
+      // amountIn is token0 of the pool pair
+      (feePercentage, isUsablePrice) = pair.getSwapFee(
+        reserve0 + amountIn,
+        (uint(reserve1) * reserve0) / (reserve0 + amountIn)
+      );
+      reserveIn = reserve0;
+      reserveOut = reserve1;
+    } else {
+      // amountIn is token1 of the pool pair
+      (feePercentage, isUsablePrice) = pair.getSwapFee(
+        (uint(reserve0) * reserve1) / (reserve1 + amountIn),
+        reserve1 + amountIn
+      );
+      reserveIn = reserve1;
+      reserveOut = reserve0;
+    }
   }
 
   function getAmountsIn(
     uint amountOut,
     address[] memory path
-  ) public view virtual override returns (SwapAmount[] memory amounts) {
+  ) public view virtual override returns (SwapAmount[] memory amounts, bool isUsablePrice) {
     if (path.length < 2) revert InvalidPath();
 
     amounts = new SwapAmount[](path.length);
@@ -191,13 +219,19 @@ contract SwapOperations is ISwapOperations, Ownable(msg.sender), CheckContract, 
       uint feePercentage;
       if (path[i] == token0) {
         // amountOut is token0 of the pool pair
-        feePercentage = pair.getSwapFee(reserve0 - amountOut, (uint(reserve0) * reserve1) / (reserve0 - amountOut));
+        (feePercentage, isUsablePrice) = pair.getSwapFee(
+          reserve0 - amountOut,
+          (uint(reserve0) * reserve1) / (reserve0 - amountOut)
+        );
 
         // calculate amountIn, which will be amountOut in the next iteration
         amountOut = ((reserve1 * amountOut) / (reserve0 - amountOut)) + 1;
       } else {
         // amountOut is token1 of the pool pair
-        feePercentage = pair.getSwapFee((uint(reserve0) * reserve1) / (reserve1 - amountOut), reserve1 - amountOut);
+        (feePercentage, isUsablePrice) = pair.getSwapFee(
+          (uint(reserve0) * reserve1) / (reserve1 - amountOut),
+          reserve1 - amountOut
+        );
 
         // calculate amountIn, which will be amountOut in the next iteration
         amountOut = ((reserve0 * amountOut) / (reserve1 - amountOut)) + 1;
@@ -208,7 +242,7 @@ contract SwapOperations is ISwapOperations, Ownable(msg.sender), CheckContract, 
       amounts[i - 1] = SwapAmount(amountOut, amountInFee);
     }
 
-    return amounts;
+    return (amounts, isUsablePrice);
   }
 
   // --- Liquidity functions ---
@@ -379,16 +413,15 @@ contract SwapOperations is ISwapOperations, Ownable(msg.sender), CheckContract, 
 
     // receive tokens from pair
     vars.pair = getPair[_params.tokenA][_params.tokenB];
+
+    // check if there are some debts which has to be repaid first, skipping borrowing fee interest calculation here, to safe gas
+    (uint debt0, uint debt1) = troveManager.getTroveRepayableDebtExcludingStableFee(msg.sender, vars.token1);
     (vars.amount0, vars.amount1, vars.burned0, vars.burned1) = ISwapPair(vars.pair).burn(
       msg.sender,
       _params.liquidity,
       // check if there are some debts which has to be repaid first, skipping borrowing fee interest calculation here, to safe gas
-      tokenManager.isDebtToken(vars.token0)
-        ? troveManager.getTroveRepayableDebt(msg.sender, vars.token0, false, false)
-        : 0,
-      tokenManager.isDebtToken(vars.token1)
-        ? troveManager.getTroveRepayableDebt(msg.sender, vars.token1, false, false)
-        : 0
+      debt0,
+      debt1
     );
 
     // handle trove debt repayment
@@ -467,8 +500,10 @@ contract SwapOperations is ISwapOperations, Ownable(msg.sender), CheckContract, 
   ) public payable virtual override ensure(deadline) returns (SwapAmount[] memory amounts) {
     priceFeed.updatePythPrices{ value: msg.value }(_priceUpdateData);
 
-    amounts = getAmountsOut(amountIn, path);
+    bool isUsablePrice;
+    (amounts, isUsablePrice) = getAmountsOut(amountIn, path);
     if (amounts[amounts.length - 1].amount < amountOutMin) revert InsufficientOutputAmount();
+    if (!isUsablePrice) revert UntrustedOracle();
 
     safeTransferFrom(path[0], msg.sender, getPair[path[0]][path[1]], amounts[0].amount);
     _swap(amounts, path, to);
@@ -484,8 +519,10 @@ contract SwapOperations is ISwapOperations, Ownable(msg.sender), CheckContract, 
   ) public payable virtual override ensure(deadline) returns (SwapAmount[] memory amounts) {
     priceFeed.updatePythPrices{ value: msg.value }(_priceUpdateData);
 
-    amounts = getAmountsIn(amountOut, path);
+    bool isUsablePrice;
+    (amounts, isUsablePrice) = getAmountsIn(amountOut, path);
     if (amounts[0].amount > amountInMax) revert ExcessiveInputAmount();
+    if (!isUsablePrice) revert UntrustedOracle();
 
     safeTransferFrom(path[0], msg.sender, getPair[path[0]][path[1]], amounts[0].amount);
     _swap(amounts, path, to);
@@ -554,8 +591,10 @@ contract SwapOperations is ISwapOperations, Ownable(msg.sender), CheckContract, 
     address pair = getPair[path[0]][path[1]];
     if (pair == address(0)) revert PairDoesNotExist();
 
-    amounts = getAmountsOut(amountIn, path);
+    bool isUsablePrice;
+    (amounts, isUsablePrice) = getAmountsOut(amountIn, path);
     if (amounts[amounts.length - 1].amount < amountOutMin) revert InsufficientOutputAmount();
+    if (!isUsablePrice) revert UntrustedOracle();
 
     tokenManager.getDebtToken(path[0]); //check if debt token
 

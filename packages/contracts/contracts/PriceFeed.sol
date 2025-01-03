@@ -55,7 +55,7 @@ contract PriceFeed is Ownable(msg.sender), CheckContract, LiquityBase, IPriceFee
   }
 
   function initiateNewOracleId(address _tokenAddress, bytes32 _oracleId) external override {
-    if (msg.sender != address(tokenManager)) revert NotFromTokenManager();
+    if (msg.sender != address(tokenManager) && msg.sender != this.owner()) revert NotFromTokenManager();
     tokenToOracleId[_tokenAddress] = _oracleId;
     if (uint(_oracleId) != 0) oracleIdToToken[_oracleId] = _tokenAddress;
   }
@@ -158,7 +158,7 @@ contract PriceFeed is Ownable(msg.sender), CheckContract, LiquityBase, IPriceFee
 
     // check for alternative price feed
     if (
-      _allowSecondary &&
+      (_allowSecondary || oracleId == 0) && // in case there is no oracle id, the alternative feed becomes primary
       (!isTrusted || priceTime < block.timestamp - OLD_PYTH_PRICE_TIMEOUT) &&
       address(altFeed) != address(0)
     ) {

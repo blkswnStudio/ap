@@ -296,9 +296,18 @@ type RedemptionOperations {
   redemptionRateWithDecay: bigint!
 }
 
+type StakingVestingOperations {
+  id: ID!
+  remainingTime: bigint!
+  totalAmount: bigint!
+  claimableAmount: bigint!
+  burnedAmount: bigint!
+}
+
 type Query {
   getSystemInfo: SystemInfo!
   getRedemtionOperations: RedemptionOperations!
+  getStakingVestingOperations(token: String!): StakingVestingOperations!
 }
 
 # TRADING VIEW

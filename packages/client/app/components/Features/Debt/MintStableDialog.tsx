@@ -14,6 +14,7 @@ import { useTransactionDialog } from '../../../context/TransactionDialogProvider
 import { GET_BORROWER_COLLATERAL_TOKENS, GET_BORROWER_DEBT_TOKENS } from '../../../queries';
 import { getHints } from '../../../utils/crypto';
 import { dangerouslyConvertBigIntToNumber, displayPercentage, roundCurrency } from '../../../utils/math';
+import RecoveryModeMarketCloseWrapper from '../../Buttons/RecoveryModeWrapper';
 import NumberInput from '../../FormControls/NumberInput';
 import CrossIcon from '../../Icons/CrossIcon';
 import DiamondIcon from '../../Icons/DiamondIcon';
@@ -86,7 +87,6 @@ function MintStableDialog({ buttonSx = {}, buttonVariant = 'outlined' }: Props) 
       amount: ethers.parseEther(formData.stableAmount),
     };
     const maxFeePercentage = formData.borrowingRate;
-
     setSteps([
       {
         title: 'Mint Stable Token.',
@@ -107,7 +107,8 @@ function MintStableDialog({ buttonSx = {}, buttonVariant = 'outlined' }: Props) 
                 {
                   upperHint,
                   lowerHint,
-                  maxFeePercentage: maxFeePercentage,
+                  // parse back to percentage
+                  maxFeePercentage: ethers.parseUnits(maxFeePercentage, 18 - 2),
                 },
                 updateDataInBytes,
                 { value: priceUpdateFee },
@@ -123,7 +124,10 @@ function MintStableDialog({ buttonSx = {}, buttonVariant = 'outlined' }: Props) 
     ]);
 
     setTimeout(() => {
-      reset();
+      reset({
+        stableAmount: '',
+        borrowingRate: (2 + dangerouslyConvertBigIntToNumber(JUSDToken!.borrowingRate, 12, 6 - 2)).toString(),
+      });
     }, 100);
     setIsOpen(false);
   };
@@ -153,23 +157,28 @@ function MintStableDialog({ buttonSx = {}, buttonVariant = 'outlined' }: Props) 
 
   return (
     <>
-      <Button
-        onClick={() => setIsOpen(true)}
-        variant={buttonVariant}
-        sx={{
-          width: 'auto',
-          padding: '0 50px',
-          ...buttonSx,
-        }}
-        disabled={!address || !JUSDToken}
-      >
-        Mint Stable
-      </Button>
+      <RecoveryModeMarketCloseWrapper respectMarketClose respectRecoveryMode>
+        <Button
+          onClick={() => setIsOpen(true)}
+          variant={buttonVariant}
+          sx={{
+            width: 'auto',
+            padding: '0 50px',
+            ...buttonSx,
+          }}
+          disabled={!address || !JUSDToken}
+        >
+          Mint Stable
+        </Button>
+      </RecoveryModeMarketCloseWrapper>
 
       <Dialog
         open={isOpen}
         onClose={() => {
-          reset();
+          reset({
+            stableAmount: '',
+            borrowingRate: (2 + dangerouslyConvertBigIntToNumber(JUSDToken!.borrowingRate, 12, 6 - 2)).toString(),
+          });
           setIsOpen(false);
         }}
         fullWidth
@@ -233,10 +242,6 @@ function MintStableDialog({ buttonSx = {}, buttonVariant = 'outlined' }: Props) 
                       rules={{
                         required: 'This field is required.',
                         min: { value: 0, message: 'Amount needs to be positive.' },
-                        max: {
-                          value: dangerouslyConvertBigIntToNumber(JUSDToken!.walletAmount, 12, 6),
-                          message: 'Your wallet does not contain the specified amount.',
-                        },
                       }}
                     />
 
@@ -281,7 +286,7 @@ function MintStableDialog({ buttonSx = {}, buttonVariant = 'outlined' }: Props) 
                         },
                         required: 'This field is required.',
                         max: {
-                          value: 100,
+                          value: 5,
                           message: 'No bigger value possible.',
                         },
                       }}

@@ -1,10 +1,12 @@
 import { useQuery } from '@apollo/client';
-import { parseEther } from 'ethers';
+import { parseEther, parseUnits } from 'ethers';
+import { useSnackbar } from 'notistack';
 import { PropsWithChildren, useContext, useEffect } from 'react';
 import { Contracts_ATC, isCollateralTokenAddress, isDebtTokenAddress } from '../../config';
 import { GetTokenOraclesQuery, GetTokenOraclesQueryVariables } from '../generated/gql-types';
 import { GET_TOKEN_ORACLES } from '../queries';
 import { ContractDataFreshnessManagerType, isFieldOutdated } from './CustomApolloProvider';
+import { useErrorMonitoring } from './ErrorMonitoringContext';
 import { useEthers } from './EthersProvider';
 import { PriceFeedDataContext } from './PriceFeedDataProvider';
 import { getActiveDataManger } from './utils';
@@ -13,12 +15,21 @@ import { getActiveDataManger } from './utils';
  * Mocked Provider for all local development and testing purposes.
  */
 function PriceFeedDataProvider_DevMode({ children }: PropsWithChildren) {
+  const { enqueueSnackbar } = useSnackbar();
+
   const {
     currentNetwork,
-    contracts: { priceFeedContract },
+    provider,
+    contracts: { priceFeedContract, mockPythContract },
   } = useEthers();
+  const { Sentry } = useErrorMonitoring();
 
-  const { data: tokenOracleData } = useQuery<GetTokenOraclesQuery, GetTokenOraclesQueryVariables>(GET_TOKEN_ORACLES);
+  const { data: tokenOracleData } = useQuery<GetTokenOraclesQuery, GetTokenOraclesQueryVariables>(GET_TOKEN_ORACLES, {
+    onError: (error) => {
+      enqueueSnackbar('Error requesting the subgraph. Please reload the page and try again.');
+      Sentry.captureException(error);
+    },
+  });
 
   const activeDataManager = getActiveDataManger(currentNetwork!) as ContractDataFreshnessManagerType<
     typeof Contracts_ATC
@@ -80,19 +91,70 @@ function PriceFeedDataProvider_DevMode({ children }: PropsWithChildren) {
 
   const getPythUpdateData = async () => {
     if (tokenOracleData) {
-      // This is the mocked priceFeed from local development, adjust it when more tokens are attached
-      const mockedUpdateData: string[] = [
-        '0x000000000000000000000000000000000000000000000000000000000000000100000000000000000000000000000000000000000000000000000004e3b2920000000000000000000000000000000000000000000000000000000030e4f9b400fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffa00000000000000000000000000000000000000000000000000000000662fa97200000000000000000000000000000000000000000000000000000004e3b2920000000000000000000000000000000000000000000000000000000030e4f9b400fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffa00000000000000000000000000000000000000000000000000000000662fa97200000000000000000000000000000000000000000000000000000000662fa972',
-        '0x000000000000000000000000000000000000000000000000000000000000000200000000000000000000000000000000000000000000000000000000000f42400000000000000000000000000000000000000000000000000000000000989680fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffa00000000000000000000000000000000000000000000000000000000662fa97200000000000000000000000000000000000000000000000000000000000f42400000000000000000000000000000000000000000000000000000000000989680fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffa00000000000000000000000000000000000000000000000000000000662fa97200000000000000000000000000000000000000000000000000000000662fa972',
-        '0x000000000000000000000000000000000000000000000000000000000000000300000000000000000000000000000000000000000000000000000000004c4b400000000000000000000000000000000000000000000000000000000002faf080fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffa00000000000000000000000000000000000000000000000000000000662fa97200000000000000000000000000000000000000000000000000000000004c4b400000000000000000000000000000000000000000000000000000000002faf080fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffa00000000000000000000000000000000000000000000000000000000662fa97200000000000000000000000000000000000000000000000000000000662fa972',
-        '0x000000000000000000000000000000000000000000000000000000000000000400000000000000000000000000000000000000000000000000000000000f42400000000000000000000000000000000000000000000000000000000000989680fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffa00000000000000000000000000000000000000000000000000000000662fa97200000000000000000000000000000000000000000000000000000000000f42400000000000000000000000000000000000000000000000000000000000989680fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffa00000000000000000000000000000000000000000000000000000000662fa97200000000000000000000000000000000000000000000000000000000662fa972',
-        '0x00000000000000000000000000000000000000000000000000000000000000050000000000000000000000000000000000000000000000000000000008f0d1800000000000000000000000000000000000000000000000000000000059682f00fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffa00000000000000000000000000000000000000000000000000000000662fa9720000000000000000000000000000000000000000000000000000000008f0d1800000000000000000000000000000000000000000000000000000000059682f00fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffa00000000000000000000000000000000000000000000000000000000662fa97200000000000000000000000000000000000000000000000000000000662fa972',
-        '0x00000000000000000000000000000000000000000000000000000000000000060000000000000000000000000000000000000000000000000000000014dc938000000000000000000000000000000000000000000000000000000000d09dc300fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffa00000000000000000000000000000000000000000000000000000000662fa9720000000000000000000000000000000000000000000000000000000014dc938000000000000000000000000000000000000000000000000000000000d09dc300fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffa00000000000000000000000000000000000000000000000000000000662fa97200000000000000000000000000000000000000000000000000000000662fa972',
+      const priceData = [
+        {
+          token: 'BTC',
+          id: '0xe62df6c8b4a85fe1a67db44dc12de5db330f7ac66b72dc658afedf0f4a415b43',
+          price: 21000,
+        },
+        {
+          token: 'USDT',
+          id: '0x2b89b9dc8fdf9f34709a5b106b472f0f39bb6ca9ce04b0fd7f2e971688e2e53b',
+          price: 1,
+        },
+        {
+          token: 'STOCK',
+          id: '0x49f6b65cb1de6b10eaf75e7c03ca029c306d0357e91b5311b175084a5ad55688',
+          price: 150,
+        },
+        {
+          token: 'STOCK_2',
+          id: '0x16dad506d7db8da01c87581c87ca897a012a153557d4d578c3b9c9e1bc0632f1',
+          price: 350,
+        },
+        {
+          token: 'STABLE',
+          id: '0x0000000000000000000000000000000000000000000000000000000000000000',
+          price: 1,
+        },
+        {
+          token: 'GOV',
+          id: '0x2b89b9dc8fdf9f34709a5b106b472f0f39bb6ca9ce04b0fd7f2e971688e2e53b',
+          price: 5,
+        },
       ];
 
-      const priceUpdateFee = await priceFeedContract.getPythUpdateFee(mockedUpdateData);
+      const generatePriceUpdateDataWithFee = async (timeOffset: number = 0) => {
+        const ret: any[] = await generatePriceUpdateData(timeOffset);
+        const fee = await priceFeedContract.getPythUpdateFee(ret);
+        return {
+          data: ret,
+          fee: fee,
+          payableData: { value: fee, gasLimit: 15000000n },
+        };
+      };
 
-      return { updateDataInBytes: mockedUpdateData, priceUpdateFee };
+      const generatePriceUpdateData = async (timeOffset: number = 0): Promise<any> => {
+        let ret: any[] = [];
+
+        const latestBlock = await provider!.getBlock('latest');
+        const now = latestBlock!.timestamp;
+        console.log('latestBlock: ', latestBlock);
+        console.log('now: ', now);
+
+        for (let n = 0; n < priceData.length; n++) {
+          const d = priceData[n];
+          const p = parseUnits(d.price.toFixed(6), 6);
+          const u = await mockPythContract.createPriceFeedUpdateData(d.id, p, 10n * p, -6, p, 10n * p, now, now);
+          ret.push(u);
+        }
+        return ret;
+      };
+      // This is the mocked priceFeed from local development, adjust it when more tokens are attached, from "generatePriceUpdateDataWithFee"
+      const { data, fee } = await generatePriceUpdateDataWithFee();
+      console.log('data: ', data);
+
+      return { updateDataInBytes: data, priceUpdateFee: fee };
     } else {
       throw new Error('Calling "getPythUpdateData" without cache data, too early.');
     }

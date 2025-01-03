@@ -105,7 +105,7 @@ function NetworkSwitch() {
     return () => {
       if (typeof window.ethereum !== 'undefined') {
         // @ts-ignore
-        window.ethereum.removeListener('chainChanged', handleNetworkChange);
+        window.ethereum.removeListener?.('chainChanged', handleNetworkChange);
       }
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps

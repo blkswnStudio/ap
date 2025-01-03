@@ -7,7 +7,9 @@ import TableContainer from '@mui/material/TableContainer';
 import TableHead from '@mui/material/TableHead';
 import TableRow from '@mui/material/TableRow';
 import Typography from '@mui/material/Typography';
+import { useSnackbar } from 'notistack';
 import { useMemo } from 'react';
+import { useErrorMonitoring } from '../../../context/ErrorMonitoringContext';
 import { useEthers } from '../../../context/EthersProvider';
 import { GetBorrowerDebtTokensQuery, GetBorrowerDebtTokensQueryVariables } from '../../../generated/gql-types';
 import { GET_BORROWER_DEBT_TOKENS } from '../../../queries';
@@ -38,6 +40,10 @@ const generateColorPalette = (paletteLength: number) => {
 
 function DebtTable() {
   const theme = useTheme();
+  const { enqueueSnackbar } = useSnackbar();
+
+  const { Sentry } = useErrorMonitoring();
+
   const isDarkMode = theme.palette.mode === 'dark';
 
   const { address } = useEthers();
@@ -45,6 +51,10 @@ function DebtTable() {
   const { data } = useQuery<GetBorrowerDebtTokensQuery, GetBorrowerDebtTokensQueryVariables>(GET_BORROWER_DEBT_TOKENS, {
     variables: { borrower: address },
     skip: !address,
+    onError: (error) => {
+      enqueueSnackbar('Error requesting the subgraph. Please reload the page and try again.');
+      Sentry.captureException(error);
+    },
   });
 
   const borrowerDebtTokens = useMemo(() => {
@@ -52,14 +62,14 @@ function DebtTable() {
 
     return (
       data?.debtTokenMetas
-        .filter(({ troveMintedAmount, walletAmount }) => walletAmount! > 0 || troveMintedAmount! > 0)
+        .filter(({ walletAmount, troveDebtAmount }) => walletAmount! > 0 || troveDebtAmount! > 0)
         .map((token) => ({
           ...token,
-          troveMintedUSD: token.troveMintedAmount
-            ? roundNumber(dangerouslyConvertBigIntToNumber(token.troveMintedAmount * token.token.priceUSDOracle, 30, 6))
+          troveDebtUSD: token.troveDebtAmount
+            ? roundNumber(dangerouslyConvertBigIntToNumber(token.troveDebtAmount * token.token.priceUSDOracle, 30, 6))
             : 0,
         }))
-        .sort((a, b) => b.troveMintedUSD - a.troveMintedUSD)
+        .sort((a, b) => b.troveDebtUSD - a.troveDebtUSD)
         // need to assign the color after sorting
         .map((token) => ({
           ...token,
@@ -79,7 +89,7 @@ function DebtTable() {
         }}
       >
         <DebtPieVisualization
-          borrowerDebtTokens={borrowerDebtTokens.filter(({ troveMintedAmount }) => troveMintedAmount > 0)}
+          borrowerDebtTokens={borrowerDebtTokens.filter(({ troveDebtAmount }) => troveDebtAmount > 0)}
         />
       </Box>
       <Box sx={{ width: '100%', borderLeft: '1px solid', borderColor: 'table.border' }}>
@@ -108,7 +118,7 @@ function DebtTable() {
                 </TableRow>
               </TableHead>
               <TableBody>
-                {borrowerDebtTokens.map(({ token, walletAmount, troveMintedAmount, chartColor }) => (
+                {borrowerDebtTokens.map(({ token, walletAmount, chartColor, troveDebtAmount }) => (
                   <TableRow hover key={token.address}>
                     <TableCell align="right">
                       <div style={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'center', gap: 10 }}>
@@ -119,7 +129,7 @@ function DebtTable() {
                           />
                         </svg>
                         <Typography color="primary.contrastText" fontWeight={400}>
-                          {roundCurrency(dangerouslyConvertBigIntToNumber(troveMintedAmount!, 12, 6), 5, 5)}
+                          {roundCurrency(dangerouslyConvertBigIntToNumber(troveDebtAmount, 12, 6), 5, 5)}
                         </Typography>
                       </div>
                     </TableCell>

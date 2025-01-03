@@ -4,11 +4,11 @@ schema:
 dataSources:
   - kind: ethereum
     name: TroveManager
-    network: localhost
+    network: sei-atlantic
     source:
-      address: '0xCf7Ed3AccA5a467e9e704C703E8D87F634fB0Fc9'
+      address: '0x70829AdD66Bf095fff0F04BF7E1D00123af28664'
       abi: TroveManager
-      startBlock: 0
+      startBlock: 131550000
     mapping:
       kind: ethereum/events
       apiVersion: 0.0.7
@@ -31,18 +31,64 @@ dataSources:
         - name: StabilityPool
           file: ./abis/StabilityPool.json
       eventHandlers:
-        - event: TroveCollChanged(address,address[])
+        - event: TroveCollChanged(address,(address,uint256)[],bool)
           handler: handleCollChanged
         - event: PaidBorrowingFee(indexed address,uint256,uint256)
           handler: handlePaidBorrowingFee
       file: ./src/trove-manager.ts
   - kind: ethereum
-    name: StoragePool
-    network: localhost
+    name: Pyth
+    network: sei-atlantic
     source:
-      address: '0xa513E6E4b8f2a923D98304ec87F64353C4D5C853'
+      # SeiEVM-0x2880aB155794e7179c9eE2e38200202908C17B43
+      # SeiEVMtestnet-0x2880aB155794e7179c9eE2e38200202908C17B43
+      address: '0x2880aB155794e7179c9eE2e38200202908C17B43'
+      abi: IPyth
+      startBlock: 131550000
+    mapping:
+      kind: ethereum/events
+      apiVersion: 0.0.7
+      language: wasm/assemblyscript
+      entities:
+        - Placeholder
+      abis:
+        - name: IPyth
+          file: ./abis/IPyth.json
+        - name: PriceFeed
+          file: ./abis/PriceFeed.json
+      eventHandlers:
+        - event: PriceFeedUpdate(indexed bytes32,uint64,int64,uint64)
+          handler: handlePriceFeedUpdate
+      file: ./src/pyth.ts
+  - kind: ethereum
+    name: LiquidationOperations
+    network: sei-atlantic
+    source:
+      address: '0x9408576fA419d338F33d8e9cDfD63A22d6E80fA7'
+      abi: LiquidationOperations
+      startBlock: 131550000
+    mapping:
+      kind: ethereum/events
+      apiVersion: 0.0.7
+      language: wasm/assemblyscript
+      entities:
+        - Placeholder
+      abis:
+        - name: LiquidationOperations
+          file: ./abis/LiquidationOperations.json
+        - name: PriceFeed
+          file: ./abis/PriceFeed.json
+      eventHandlers:
+        - event: LiquidationSummary((address,uint256)[],(address,uint256)[],uint256,(address,uint256)[])
+          handler: handleLiquidationSummary
+      file: ./src/liquidation-operations.ts
+  - kind: ethereum
+    name: StoragePool
+    network: sei-atlantic
+    source:
+      address: '0xa572227BFd085ff11988BbeFD18B5E80d0DAF481'
       abi: StoragePool
-      startBlock: 0
+      startBlock: 131550000
     mapping:
       kind: ethereum/events
       apiVersion: 0.0.7
@@ -60,11 +106,11 @@ dataSources:
       file: ./src/storage-pool.ts
   - kind: ethereum
     name: StabilityPoolManager
-    network: localhost
+    network: sei-atlantic
     source:
-      address: '0x0165878A594ca255338adfa4d48449f69242Eb8F'
+      address: '0x2be197b9Db57CAd4E59e74622c737060cf87cfce'
       abi: StabilityPoolManager
-      startBlock: 0
+      startBlock: 131550000
     mapping:
       kind: ethereum/events
       apiVersion: 0.0.7
@@ -82,11 +128,11 @@ dataSources:
       file: ./src/stability-pool-manager.ts
   - kind: ethereum
     name: PriceFeed
-    network: localhost
+    network: sei-atlantic
     source:
-      address: '0xB7f8BC63BbcaD18155201308C8f3540b07f84F5e'
+      address: '0x2eA326623a323940BcA88bdA24dDc2e8D657749c'
       abi: PriceFeed
-      startBlock: 0
+      startBlock: 131550000
     mapping:
       kind: ethereum/events
       apiVersion: 0.0.7
@@ -102,11 +148,11 @@ dataSources:
       file: ./src/price-feed.ts
   - kind: ethereum
     name: BorrowerOperations
-    network: localhost
+    network: sei-atlantic
     source:
-      address: '0x5FbDB2315678afecb367f032d93F642f64180aa3'
+      address: '0xb005fC27a8404d0AE7FB5081F57573d2c45CB7E0'
       abi: BorrowerOperations
-      startBlock: 0
+      startBlock: 131550000
     mapping:
       kind: ethereum/events
       apiVersion: 0.0.7
@@ -135,11 +181,11 @@ dataSources:
       file: ./src/borrower-operations.ts
   - kind: ethereum
     name: SwapOperations
-    network: localhost
+    network: sei-atlantic
     source:
-      address: '0x0DCd1Bf9A1b36cE34237eEaFef220932846BCD82'
+      address: '0xB89536EF8e99B3b6F3db2A6D369A95ad1338Fbfa'
       abi: SwapOperations
-      startBlock: 0
+      startBlock: 131550000
     mapping:
       kind: ethereum/events
       apiVersion: 0.0.7
@@ -159,11 +205,11 @@ dataSources:
       file: ./src/swap-operations.ts
   - kind: ethereum
     name: ReservePool
-    network: localhost
+    network: sei-atlantic
     source:
-      address: '0x8A791620dd6260079BF849Dc5567aDC3F2FdC318'
+      address: '0x3CF25dE8716b66188206418B0819e37E5761634B'
       abi: ReservePool
-      startBlock: 0
+      startBlock: 131550000
     mapping:
       kind: ethereum/events
       apiVersion: 0.0.7
@@ -193,11 +239,11 @@ dataSources:
       file: ./src/reserve-pool.ts
   - kind: ethereum
     name: TokenManager
-    network: localhost
+    network: sei-atlantic
     source:
-      address: '0x610178dA211FEF7D417bC0e6FeD39F05609AD788'
+      address: '0x55cFe185028A55143376c271D4daAFDca57d7fA8'
       abi: TokenManager
-      startBlock: 0
+      startBlock: 131550000
     mapping:
       kind: ethereum/events
       apiVersion: 0.0.7
@@ -224,6 +270,8 @@ dataSources:
         - name: StoragePool
           file: ./abis/StoragePool.json
       eventHandlers:
+        - event: TokenManagerInitialized(address,address,address,address)
+          handler: handleTokenManagerInitiated
         - event: CollTokenAdded(address,uint256,bool,bytes32)
           handler: handleCollTokenAdded
         - event: CollTokenSupportedCollateralRatioSet(address,uint256)
@@ -233,11 +281,11 @@ dataSources:
       file: ./src/token-manager.ts
   - kind: ethereum
     name: StakingOperations
-    network: localhost
+    network: sei-atlantic
     source:
-      address: '0x9A676e781A523b5d0C0e43731313A708CB607508'
+      address: '0x84F4a68Ca8a8dA244D36276Fc1C5775D7Ff6ED57'
       abi: StakingOperations
-      startBlock: 0
+      startBlock: 131550000
     mapping:
       kind: ethereum/events
       apiVersion: 0.0.7
@@ -251,8 +299,10 @@ dataSources:
           file: ./abis/PriceFeed.json
         - name: SwapPair
           file: ./abis/SwapPair.json
+        - name: ERC20
+          file: ./abis/ERC20.json
       eventHandlers:
-        - event: StakingOperationsInitialized(address,address)
+        - event: StakingOperationsInitialized(address,address,address)
           handler: handleInit
         - event: AddPool(indexed address)
           handler: handleAddPool
@@ -268,7 +318,7 @@ dataSources:
 templates:
   - kind: ethereum/contract
     name: SwapPairTemplate
-    network: localhost
+    network: sei-atlantic
     source:
       abi: SwapPair
     mapping:
@@ -286,6 +336,10 @@ templates:
           file: ./abis/PriceFeed.json
         - name: DebtToken
           file: ./abis/DebtToken.json
+        - name: TokenManager
+          file: ./abis/TokenManager.json
+        - name: ERC20
+          file: ./abis/ERC20.json
       eventHandlers:
         - event: Approval(indexed address,indexed address,uint256)
           handler: handleApproval
@@ -302,7 +356,7 @@ templates:
       file: ./src/swap-pair.ts
   - kind: ethereum/contract
     name: ERC20Template
-    network: localhost
+    network: sei-atlantic
     source:
       abi: ERC20
     mapping:
@@ -314,10 +368,19 @@ templates:
       abis:
         - name: ERC20
           file: ./abis/ERC20.json
+        - name: PriceFeed
+          file: ./abis/PriceFeed.json
+        - name: DebtToken
+          file: ./abis/DebtToken.json
+        - name: TokenManager
+          file: ./abis/TokenManager.json
+      eventHandlers:
+        - event: Transfer(indexed address,indexed address,uint256)
+          handler: handleTransfer
       file: ./src/erc-20.ts
   - kind: ethereum/contract
     name: DebtTokenTemplate
-    network: localhost
+    network: sei-atlantic
     source:
       abi: DebtToken
     mapping:
@@ -345,7 +408,7 @@ templates:
       file: ./src/debt-token.ts
   - kind: ethereum/contract
     name: StabilityPoolTemplate
-    network: localhost
+    network: sei-atlantic
     source:
       abi: StabilityPool
     mapping:

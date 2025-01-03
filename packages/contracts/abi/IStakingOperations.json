@@ -16,6 +16,11 @@
     },
     {
         "inputs": [],
+        "name": "CantVestAsStillVested",
+        "type": "error"
+    },
+    {
+        "inputs": [],
         "name": "DepositZero",
         "type": "error"
     },
@@ -147,6 +152,19 @@
             {
                 "indexed": false,
                 "internalType": "address",
+                "name": "target",
+                "type": "address"
+            }
+        ],
+        "name": "SetRedistributeAddress",
+        "type": "event"
+    },
+    {
+        "anonymous": false,
+        "inputs": [
+            {
+                "indexed": false,
+                "internalType": "address",
                 "name": "swapOperations",
                 "type": "address"
             },
@@ -154,6 +172,12 @@
                 "indexed": false,
                 "internalType": "address",
                 "name": "tokenManager",
+                "type": "address"
+            },
+            {
+                "indexed": false,
+                "internalType": "address",
+                "name": "vesting",
                 "type": "address"
             }
         ],
@@ -215,6 +239,16 @@
                 "internalType": "contract ISwapPair[]",
                 "name": "_pids",
                 "type": "address[]"
+            },
+            {
+                "internalType": "bool",
+                "name": "_harvestPending",
+                "type": "bool"
+            },
+            {
+                "internalType": "bool",
+                "name": "_instantClaim",
+                "type": "bool"
             }
         ],
         "name": "batchClaim",
@@ -228,6 +262,16 @@
                 "internalType": "contract ISwapPair",
                 "name": "_pid",
                 "type": "address"
+            },
+            {
+                "internalType": "bool",
+                "name": "_harvestPending",
+                "type": "bool"
+            },
+            {
+                "internalType": "bool",
+                "name": "_instantClaim",
+                "type": "bool"
             }
         ],
         "name": "claim",
@@ -261,6 +305,19 @@
     {
         "inputs": [
             {
+                "internalType": "bool",
+                "name": "_instantClaim",
+                "type": "bool"
+            }
+        ],
+        "name": "harvest",
+        "outputs": [],
+        "stateMutability": "nonpayable",
+        "type": "function"
+    },
+    {
+        "inputs": [
+            {
                 "internalType": "contract ISwapPair",
                 "name": "_pid",
                 "type": "address"
@@ -283,6 +340,19 @@
         "type": "function"
     },
     {
+        "inputs": [],
+        "name": "rewardToken",
+        "outputs": [
+            {
+                "internalType": "contract IERC20",
+                "name": "",
+                "type": "address"
+            }
+        ],
+        "stateMutability": "view",
+        "type": "function"
+    },
+    {
         "inputs": [
             {
                 "internalType": "contract ISwapPair",
@@ -296,6 +366,19 @@
             }
         ],
         "name": "setPool",
+        "outputs": [],
+        "stateMutability": "nonpayable",
+        "type": "function"
+    },
+    {
+        "inputs": [
+            {
+                "internalType": "address",
+                "name": "_target",
+                "type": "address"
+            }
+        ],
+        "name": "setRedistributeAddress",
         "outputs": [],
         "stateMutability": "nonpayable",
         "type": "function"

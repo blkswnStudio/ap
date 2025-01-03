@@ -61,7 +61,7 @@ describe('Reserve Pool', () => {
       });
 
       let reserveBal = await STABLE.balanceOf(reservePool);
-      const aliceFee = await contracts.troveManager.getBorrowingFee(aliceDebt, true);
+      const aliceFee = await contracts.troveManager.getBorrowingFee(aliceDebt, true, 0);
       expect(reserveBal).to.be.equal(aliceFee);
 
       const bobDebt = parseUnits('13000');
@@ -72,7 +72,7 @@ describe('Reserve Pool', () => {
         debts: [{ tokenAddress: STABLE, amount: bobDebt }],
       });
       let reserveBalAfter = await STABLE.balanceOf(reservePool);
-      const bobFee = await contracts.troveManager.getBorrowingFee(bobDebt, true);
+      const bobFee = await contracts.troveManager.getBorrowingFee(bobDebt, true, 0);
       expect(reserveBalAfter).to.be.equal(bobFee + reserveBal);
     });
 

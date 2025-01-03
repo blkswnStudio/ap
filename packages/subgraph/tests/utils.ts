@@ -3,6 +3,7 @@ import { Address as EventAddress } from '@graphprotocol/graph-ts/common/numbers'
 import { newMockEvent } from 'matchstick-as';
 import { SystemInfo, Token } from '../generated/schema';
 
+export const ZeroAddress = EventAddress.fromString('0x0000000000000000000000000000000000000000');
 export const MockDebtTokenAddress = EventAddress.fromString('0x0000000000000000000000000000000000000100');
 export const MockDebtToken_STABLE_Address = EventAddress.fromString('0x0000000000000000000000000000000000000101');
 export const MockCollToken_GOV_Address = EventAddress.fromString('0x0000000000000000000000000000000000000102');
@@ -39,6 +40,7 @@ export const initSystemInfo = (): void => {
   systemInfo.reservePoolUSDHistoryIndex = 0;
   systemInfo.govToken = MockCollToken_GOV_Address;
   systemInfo.stabilityPoolManager = MockStabilityPoolManagerAddress;
+  systemInfo.tokenManager = MockTokenManagerAddress;
 
   const now = newMockEvent().block.timestamp;
 

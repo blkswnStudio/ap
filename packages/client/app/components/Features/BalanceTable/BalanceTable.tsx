@@ -4,7 +4,9 @@ import { useQuery } from '@apollo/client';
 import { Box, Typography } from '@mui/material';
 import Tab from '@mui/material/Tab';
 import Tabs from '@mui/material/Tabs';
+import { useSnackbar } from 'notistack';
 import { SyntheticEvent, useState } from 'react';
+import { useErrorMonitoring } from '../../../context/ErrorMonitoringContext';
 import { useEthers } from '../../../context/EthersProvider';
 import { GetBorrowerSwapEventsQuery, GetBorrowerSwapEventsQueryVariables } from '../../../generated/gql-types';
 import { GET_BORROWER_SWAPS } from '../../../queries';
@@ -14,6 +16,9 @@ import DebtTable from '../Debt/DebtTable';
 import HistoryTable from './HistoryTable';
 
 const BalanceTable = () => {
+  const { enqueueSnackbar } = useSnackbar();
+  const { Sentry } = useErrorMonitoring();
+
   const [tabValue, setTabValue] = useState<'DEBT' | 'COLLATERAL' | 'HISTORY'>('DEBT');
 
   const { address } = useEthers();
@@ -40,6 +45,10 @@ const BalanceTable = () => {
     },
     // Guest mode. Avoid hitting the API with invalid parameters.
     skip: !address,
+    onError: (error) => {
+      enqueueSnackbar('Error requesting the subgraph. Please reload the page and try again.');
+      Sentry.captureException(error);
+    },
   });
 
   const handleChange = (_: SyntheticEvent, newValue: 'DEBT' | 'COLLATERAL' | 'HISTORY') => {

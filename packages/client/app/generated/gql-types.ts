@@ -123,6 +123,7 @@ export type Query = {
   collateralTokenMetas: Array<CollateralTokenMeta>;
   debtTokenMetas: Array<DebtTokenMeta>;
   getRedemtionOperations: RedemptionOperations;
+  getStakingVestingOperations: StakingVestingOperations;
   getSystemInfo: SystemInfo;
   pools: Array<Pool>;
   reservePoolUSDHistoryChunks: Array<ReservePoolUsdHistoryChunk>;
@@ -152,6 +153,11 @@ export type QueryCollateralTokenMetasArgs = {
 
 export type QueryDebtTokenMetasArgs = {
   borrower?: InputMaybe<Scalars['String']['input']>;
+};
+
+
+export type QueryGetStakingVestingOperationsArgs = {
+  token: Scalars['String']['input'];
 };
 
 
@@ -260,6 +266,15 @@ export type StakingPool = {
   totalDeposit: Scalars['BigInt']['output'];
   totalDepositUSD: Scalars['BigInt']['output'];
   totalRewardUSD: Scalars['BigInt']['output'];
+};
+
+export type StakingVestingOperations = {
+  __typename: 'StakingVestingOperations';
+  burnedAmount: Scalars['bigint']['output'];
+  claimableAmount: Scalars['bigint']['output'];
+  id: Scalars['ID']['output'];
+  remainingTime: Scalars['bigint']['output'];
+  totalAmount: Scalars['bigint']['output'];
 };
 
 export type SwapEvent = {
@@ -536,3 +551,10 @@ export type GetRedemptionsOperationsQueryVariables = Exact<{ [key: string]: neve
 
 
 export type GetRedemptionsOperationsQuery = { __typename: 'Query', getRedemtionOperations: { __typename: 'RedemptionOperations', id: string, redemptionRateWithDecay: bigint } };
+
+export type GetStakingVestingOperationsQueryVariables = Exact<{
+  token: Scalars['String']['input'];
+}>;
+
+
+export type GetStakingVestingOperationsQuery = { __typename: 'Query', getStakingVestingOperations: { __typename: 'StakingVestingOperations', id: string, remainingTime: bigint, totalAmount: bigint, claimableAmount: bigint, burnedAmount: bigint } };

@@ -4,21 +4,14 @@ import { getCheckSum } from './app/utils/crypto';
 // first one is the default network
 export const NETWORKS = [
   {
-    // chainName: 'Arbitrum Sepolia',
-    // chainId: '0x66eee',
-    // chainIdNumber: 421614,
-    // rpcUrls: ['https://sepolia-rollup.arbitrum.io/rpc'],
-    // nativeCurrency: { name: 'ETH', symbol: 'ETH', decimals: 18 },
-    // blockExplorerUrls: ['https://polygonscan.com/'],
-    // graphEndpoint: 'https://api.studio.thegraph.com/query/75729/apollonseidevnetv1/version/latest',
     environment: ['development', 'staging'],
-    chainName: 'Sei Testnet',
+    chainName: 'Sei Atlantic',
     chainId: '0x530',
     chainIdNumber: 1328,
     rpcUrls: ['https://evm-rpc-testnet.sei-apis.com'],
     nativeCurrency: { name: 'SEI', symbol: 'SEI', decimals: 18 },
     blockExplorerUrls: ['https://seitrace.com/?chain=atlantic-2'],
-    graphEndpoint: 'https://api.goldsky.com/api/public/project_clyov5gbzku2e01yob93efovj/subgraphs/apollon/0.3/gn',
+    graphEndpoint: 'https://api.studio.thegraph.com/query/75729/jassets/version/latest',
     authorizationHeader: '',
     featureFlags: {
       seedCollateralEnabled: true,
@@ -26,36 +19,37 @@ export const NETWORKS = [
     image: 'https://s3.coinmarketcap.com/static-gravity/image/992744cfbd5e40f5920018ee7a830b98.png',
     contracts: {
       ERC20: {
-        BTC: '0x066a77fec273cf6d4b53b06a021da16334df72f2',
-        USDT: '0xa0133a037f653a0d5088f505e72657c28b71c9fb',
-        GOV: '0x14aa69724a741ce294c56fa8e432b1fffe617bf3',
-        STABLE: '0xe2fe7ab7e53efdb85ae4eb3c2dedc9bbf44c005e',
-        STOCK_1: '0x50233a98e3beba470a593c7b6ffc712e6f8758c7',
-        STOCK_2: '0xc47f75cf47590753b0adcf8ea8ad7d586e21720d',
+        BTC: '0x4aa1e095302bbcf0639763e38206fe9fa6e0b1c9',
+        USDT: '0x061aaecfc4c9da3e29b4ba289fd8f94b4f09630f',
+        GOV: '0x23a948c465e15913be002899f4c3c80831cadb53',
+        STABLE: '0xbb59243bd1b037a715aee76e49abb22186e95a58',
+        STOCK_1: '0x2aeb4b537e9c2a50a5c07dc2fdd54ece77b340b7',
+        STOCK_2: '0xa8ac39bdd767e54c870057bb2bee26e89a34f9c3',
       },
       DebtToken: {
-        STABLE: '0xe2fe7ab7e53efdb85ae4eb3c2dedc9bbf44c005e',
-        STOCK_1: '0xc47f75cf47590753b0adcf8ea8ad7d586e21720d',
-        STOCK_2: '0x50233a98e3beba470a593c7b6ffc712e6f8758c7',
+        STABLE: '0xbb59243bd1b037a715aee76e49abb22186e95a58',
+        STOCK_1: '0x2aeb4b537e9c2a50a5c07dc2fdd54ece77b340b7',
+        STOCK_2: '0xa8ac39bdd767e54c870057bb2bee26e89a34f9c3',
       },
       SwapPairs: {
-        BTC: '0x179e78fdc2d02f6763aaba620d5de671574a1c7a',
-        USDT: '0x01334ca3d329cdf230c6c9bfd9dfba6df672f7ae',
-        GOV: '0x8a795dcb8641a041de41b0031affd0dce24694e7',
-        STOCK_1: '0x86b3f303aa8ac5ac77b85c1fbc8bcf22b1bd811d',
-        STOCK_2: '0x272ebea9357d89e22f7f96459894c4c501f70643',
+        BTC: '0xa2605f4bda29b22545a3e8c1dab16b81c79717c0',
+        USDT: '0xa0b137fd397d7fe38db7f6b181e69e1c3d8e0fda',
+        GOV: '0x20cc7eced581a8e4fb8341a7dd67d01b7b7c16d9',
+        STOCK_1: '0xee9afdc89f0fc6859a7561753bd40a6ffe07aec4',
+        STOCK_2: '0x46e168f1d0c26e87ba33460a0bec556076a9f692',
       },
-      TroveManager: '0x7ad92eb4f7e85d2a33fce3e8b6d0d510fc3ec9d8',
-      StabilityPoolManager: '0xb2de6ff38ece15b64de08892b4e42e6c3de4aeae',
-      SwapOperations: '0x07fee975953066b1c8ca15996c731916b941da45',
-      BorrowerOperations: '0x50f4a680c0a248bb0e11f09204d4b56896ae30c6',
-      StoragePool: '0xbcf093318929f1abe4aa133c00c78d667a822c69',
-      SortedTroves: '0xfcf98f6d248a03580bfd1ca9f2ef8d895318cc83',
-      HintHelpers: '0x01c8fcfedc8b9738559b51789da05876b26bbc6e',
-      PriceFeed: '0x2b0c1a7588bc05042deb8e68d22b89f2fbb66859',
-      RedemptionOperations: '0xfb550547062685dfee004f701fda395fc393b84b',
-      CollSurplus: '0xe7ab3f9a88e2a1c2d91e422fcec0a8c2099b3f39',
-      StakingOperations: '0x7613e79cdb63216c1e5c6be13e2c4b117c0182c0',
+      TroveManager: '0xfd24360a5807d4833f2e75c430d44df921beeb5e',
+      StabilityPoolManager: '0xa6d768cb77a799dbed4cf3dbec0a2d1028a6970c',
+      SwapOperations: '0x1cb7bfd62dc8f0232047bac561ec30b879d6e596',
+      BorrowerOperations: '0xb4adcfd9b139b79df74800b66e273c1a927c0231',
+      StoragePool: '0xadd2f6546059800baccbc1183be6db4f90b5f919',
+      SortedTroves: '0x745ca8d3e1e0b27dd73be2fb0aa2cf5801561d23',
+      HintHelpers: '0x5341b19454c9ca15c86a84b4d8a2144291dfc0fd',
+      PriceFeed: '0x2c938b4091918ebe78ec1741898d39c321d7f72d',
+      RedemptionOperations: '0x7e42a84e6114091fbfa6255fb22568e070049ed8',
+      CollSurplus: '0xdc6a3bf135a64292cf572cc19c0c154ce709ca27',
+      StakingOperations: '0x8dd13d9857d4f1d4151da43de49ade96d7c530aa',
+      StakingVestingOperations: '0x0B306BF915C4d645ff596e518fAf3F9669b97016',
     },
   },
   {
@@ -74,21 +68,24 @@ export const NETWORKS = [
     image: '',
     contracts: {
       ERC20: {
-        BTC: '0x68b1d87f95878fe05b998f19b66f4baba5de1aed',
-        USDT: '0x3aa5ebb10dc797cac828524e59a333d0a371443c',
-        GOV: '0x9a9f2ccfde556a7e9ff0848998aa4a0cfd8863ae',
+        BTC: '0x3aa5ebb10dc797cac828524e59a333d0a371443c',
+        USDT: '0xc6e7df5e7b4f2a278906862b61205850344d4e7d',
+        GOV: '0x68b1d87f95878fe05b998f19b66f4baba5de1aed',
+        STABLE: '0x9a9f2ccfde556a7e9ff0848998aa4a0cfd8863ae',
+        STOCK_1: '0x59b670e9fa9d0a427751af201d676719a970857b',
+        STOCK_2: '0x4ed7c70f96b99c776995fb64377f0d4ab3b0e1c1',
       },
       DebtToken: {
-        STABLE: '0x959922be3caee4b8cd9a407cc3ac1c251c2007b1',
-        STOCK_1: '0xc6e7df5e7b4f2a278906862b61205850344d4e7d',
-        STOCK_2: '0x59b670e9fa9d0a427751af201d676719a970857b',
+        STABLE: '0x9a9f2ccfde556a7e9ff0848998aa4a0cfd8863ae',
+        STOCK_1: '0x59b670e9fa9d0a427751af201d676719a970857b',
+        STOCK_2: '0x4ed7c70f96b99c776995fb64377f0d4ab3b0e1c1',
       },
       SwapPairs: {
-        BTC: '0x1291be112d480055dafd8a610b7d1e203891c274',
-        USDT: '0xcbeaf3bde82155f56486fb5a1072cb8baaf547cc',
-        GOV: '0x21df544947ba3e8b3c32561399e88b52dc8b2823',
-        STOCK_1: '0x172076e0166d1f9cc711c77adf8488051744980c',
-        STOCK_2: '0x4c2f7092c2ae51d986befee378e50bd4db99c901',
+        BTC: '0x922d6956c99e12dfeb3224dea977d0939758a1fe',
+        USDT: '0xd8a5a9b31c3c0232e196d518e89fd8bf83acad43',
+        GOV: '0x172076e0166d1f9cc711c77adf8488051744980c',
+        STOCK_1: '0x1c85638e118b37167e9298c2268758e058ddfda0',
+        STOCK_2: '0xf953b3a269d80e3eb0f2947630da976b896a8c5b',
       },
       TroveManager: '0xcf7ed3acca5a467e9e704c703e8d87f634fb0fc9',
       StabilityPoolManager: '0x0165878a594ca255338adfa4d48449f69242eb8f',
@@ -101,6 +98,8 @@ export const NETWORKS = [
       RedemptionOperations: '0xe7f1725e7734ce288f8367e1bb143e90bb3f0512',
       CollSurplus: '0x2279B7A0a67DB372996a5FaB50D91eAA73d2eBe6',
       StakingOperations: '0x9A676e781A523b5d0C0e43731313A708CB607508',
+      StakingVestingOperations: '0x0B306BF915C4d645ff596e518fAf3F9669b97016',
+      MockPyth: '0x959922bE3CAee4b8Cd9a407cc3ac1C251C2007B1',
     },
   },
 ] as const;
@@ -113,11 +112,11 @@ export const Contracts_Localhost = NETWORKS[1].contracts as unknown as typeof Co
 export const isPoolAddress = (
   address: string,
 ): address is
-  | '0x179e78fdc2d02f6763aaba620d5de671574a1c7a'
-  | '0x01334ca3d329cdf230c6c9bfd9dfba6df672f7ae'
-  | '0x8a795dcb8641a041de41b0031affd0dce24694e7'
-  | '0x86b3f303aa8ac5ac77b85c1fbc8bcf22b1bd811d'
-  | '0x272ebea9357d89e22f7f96459894c4c501f70643' => {
+  | '0xa2605f4bda29b22545a3e8c1dab16b81c79717c0'
+  | '0xa0b137fd397d7fe38db7f6b181e69e1c3d8e0fda'
+  | '0x20cc7eced581a8e4fb8341a7dd67d01b7b7c16d9'
+  | '0xee9afdc89f0fc6859a7561753bd40a6ffe07aec4'
+  | '0x46e168f1d0c26e87ba33460a0bec556076a9f692' => {
   return [...Object.values(Contracts_ATC.SwapPairs)]
     .map((address) => getCheckSum(address))
     .includes(getCheckSum(address) as any);
@@ -126,26 +125,29 @@ export const isPoolAddress = (
 export const isDebtTokenAddress = (
   address: string,
 ): address is
-  | '0xe2fe7ab7e53efdb85ae4eb3c2dedc9bbf44c005e'
-  | '0xc47f75cf47590753b0adcf8ea8ad7d586e21720d'
-  | '0x50233a98e3beba470a593c7b6ffc712e6f8758c7' => {
+  | '0xbb59243bd1b037a715aee76e49abb22186e95a58'
+  | '0x2aeb4b537e9c2a50a5c07dc2fdd54ece77b340b7'
+  | '0xa8ac39bdd767e54c870057bb2bee26e89a34f9c3' => {
   return [...Object.values(Contracts_ATC.DebtToken)]
     .map((address) => getCheckSum(address))
     .includes(getCheckSum(address) as any);
 };
-export const isStableCoinAddress = (address: string): address is '0xe2fe7ab7e53efdb85ae4eb3c2dedc9bbf44c005e' => {
+export const isStableCoinAddress = (address: string): address is '0xbb59243bd1b037a715aee76e49abb22186e95a58' => {
   return getCheckSum(Contracts_ATC.DebtToken.STABLE) === getCheckSum(address);
+};
+export const isGOVTokenAddress = (address: string): address is '0x23a948c465e15913be002899f4c3c80831cadb53' => {
+  return getCheckSum(Contracts_ATC.ERC20.GOV) === getCheckSum(address);
 };
 
 export const isCollateralTokenAddress = (
   address: string,
 ): address is
-  | '0x066a77fec273cf6d4b53b06a021da16334df72f2'
-  | '0xa0133a037f653a0d5088f505e72657c28b71c9fb'
-  | '0x14aa69724a741ce294c56fa8e432b1fffe617bf3'
-  | '0xe2fe7ab7e53efdb85ae4eb3c2dedc9bbf44c005e'
-  | '0x50233a98e3beba470a593c7b6ffc712e6f8758c7'
-  | '0xc47f75cf47590753b0adcf8ea8ad7d586e21720d' => {
+  | '0x4aa1e095302bbcf0639763e38206fe9fa6e0b1c9'
+  | '0x061aaecfc4c9da3e29b4ba289fd8f94b4f09630f'
+  | '0x23a948c465e15913be002899f4c3c80831cadb53'
+  | '0xbb59243bd1b037a715aee76e49abb22186e95a58'
+  | '0x2aeb4b537e9c2a50a5c07dc2fdd54ece77b340b7'
+  | '0xa8ac39bdd767e54c870057bb2bee26e89a34f9c3' => {
   return [...Object.values(Contracts_ATC.ERC20)]
     .map((address) => getCheckSum(address))
     .includes(getCheckSum(address) as any);

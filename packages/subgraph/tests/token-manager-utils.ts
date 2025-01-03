@@ -13,6 +13,15 @@ export const mockTokenManager_getStableCoin = (address: Address = MockDebtToken_
   ]);
 };
 
+export const mockTokenManager_isDebtToken = (
+  address: Address = MockDebtToken_STABLE_Address,
+  isDebtToken: boolean = true,
+): void => {
+  createMockedFunction(MockTokenManagerAddress, 'isDebtToken', 'isDebtToken(address):(bool)')
+    .withArgs([ethereum.Value.fromAddress(address)])
+    .returns([ethereum.Value.fromBoolean(isDebtToken)]);
+};
+
 export function createCollTokenAddedEvent(
   _tokenAddress: Address,
   _supportedCollateralRatio: BigInt,

@@ -9,6 +9,7 @@ type SystemInfo @entity {
   stakingOps: Bytes!
   priceFeed: Bytes!
   reservePool: Bytes!
+  tokenManager: Bytes!
   stabilityPoolManager: Bytes!
 
   # Chart indexes
@@ -17,7 +18,6 @@ type SystemInfo @entity {
   reservePoolUSDHistoryIndex: Int!
 }
 
-# TODO: wasa mapper for swap pools PairCreated event
 type Token @entity {
   # contract address
   id: Bytes!
@@ -27,6 +27,14 @@ type Token @entity {
   oracleId: Bytes!
   isPoolToken: Boolean!
   decimals: Int!
+}
+
+# Relational lookup for the update of the oracle price
+# FIXME: Why can this not be immutable? I only get bugs.
+type Oracle @entity {
+  # oracleId as Bytes
+  id: Bytes!
+  token: Token! @relation(name: "TokenToOracle")
 }
 
 type DebtTokenMeta @entity {
@@ -375,4 +383,66 @@ type StakingPool @entity {
   totalRewardUSD: BigInt!
   stakingAPR: BigInt!
   liquidityPool: Pool! @derivedFrom(field: "stakingPool")
+}
+
+# trading info
+
+type TradingUserStats @entity {
+  id: String! # {userAddress}
+  profitUSD: BigInt!
+  volumeUSD: BigInt!
+  feesUSD: BigInt!
+  swapCount: BigInt!
+  profitToVolume: BigInt!
+}
+
+type TradingUserPosition @entity {
+  id: String! # {userAddress-tokenAddress}
+  buyAmount: BigInt!
+  buyValue: BigInt!
+  sellAmount: BigInt!
+  sellValue: BigInt!
+  profitUSD: BigInt!
+}
+
+# METRICS
+
+type PoolDailyStat @entity {
+  id: String! #{nonStableToken Address}-{timestamp}
+  token1: String!
+  timestamp: BigInt!
+  liquidityPool: Pool! @relation(name: "PoolToPoolDailyStat")
+
+  # APR
+  stakingAPR: BigInt!
+  swapAPR: BigInt!
+  feeUSD: BigInt!
+
+  # Liquidity
+  totalLiquidityUSD: BigInt!
+  totalLiquidity: BigInt!
+  token0Amount: BigInt!
+  token1Amount: BigInt!
+
+  # Price
+  poolPrice: BigInt!
+  oraclePrice: BigInt!
+}
+
+# LIQUIDATIONS
+
+type Liquidation @entity {
+  id: String! #{TxHash}
+  timestamp: BigInt!
+  debtUSD: BigInt!
+  collUSD: BigInt!
+  assets: [LiquidationAsset!]! @relation(name: "LiquidationAssetToLiquidation")
+}
+
+type LiquidationAsset @entity {
+  id: String! #{TxHash}-{isDebt(true|false)}-{TokenAddress}
+  isDebt: Boolean!
+  token: Token! @relation(name: "TokenLiquidationAsset")
+  amount: BigInt!
+  valueUSD: BigInt!
 }

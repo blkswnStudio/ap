@@ -23,8 +23,9 @@ import { ReactNode, createContext, useContext, useEffect, useRef, useState } fro
 import Draggable from 'react-draggable';
 import CrossIcon from '../components/Icons/CrossIcon';
 import DiamondIcon from '../components/Icons/DiamondIcon';
-import { manualSubgraphSyncTimeout } from '../utils/contants';
+import { manualSubgraphSyncTimeout } from '../utils/constants';
 import { useErrorMonitoring } from './ErrorMonitoringContext';
+import { useEthers } from './EthersProvider';
 
 export type TransactionStep = {
   title: string;
@@ -89,6 +90,7 @@ export const TransactionDialogContext = createContext<{
 export default function TransactionDialogProvider({ children }: { children: React.ReactNode }): JSX.Element {
   const { Sentry } = useErrorMonitoring();
   const { enqueueSnackbar } = useSnackbar();
+  const { contracts } = useEthers();
   const client = useApolloClient();
 
   const [steps, setSteps] = useState<TransactionStep[]>([]);
@@ -182,32 +184,17 @@ export default function TransactionDialogProvider({ children }: { children: Reac
               }, 10000);
             };
 
-            if (error.cause) {
-              // Get the "data" bytes to parse the error message
-              const dataRegex = /data="([^"]*)"/;
-              const match = error.message.match(dataRegex);
-              if (match && match[1]) {
-                // Sometimes rejects because of: RangeError: cannot slice beyond data bounds (buffer=0x, length=0, offset=4, code=BUFFER_OVERRUN, version=6.7.0)
-                try {
-                  const errorMessage = error.cause.interface.parseError(match[1]);
-                  if (errorMessage) {
-                    Sentry.captureException(`${error}: ${errorMessage}`);
-                    enqueueSnackbar(`Error: ${errorMessage.name}`, { variant: 'error' });
-                    showError(errorMessage.name);
-                    return;
-                  }
-                } catch {
-                  Sentry.captureException(error);
-                  enqueueSnackbar('Transaction was rejected.', { variant: 'error' });
-                  showError('Transaction was rejected.');
-                  return;
-                }
-              }
+            const errorMessage = decodeContractError(error, contracts);
+            if (errorMessage) {
+              Sentry.captureException(`${error}: ${errorMessage}`);
+              enqueueSnackbar(`Error: ${errorMessage}`, { variant: 'error' });
+              showError(errorMessage);
+              return;
+            } else {
+              Sentry.captureException(error);
+              enqueueSnackbar('Transaction was rejected.', { variant: 'error' });
+              showError('Transaction was rejected.');
             }
-
-            Sentry.captureException(error);
-            enqueueSnackbar('Transaction was rejected.', { variant: 'error' });
-            showError('Transaction was rejected.');
           });
       });
     }
@@ -382,4 +369,51 @@ export function useTransactionDialog(): {
     throw new Error('useTransactionDialog must be used within an TransactionDialogContextProvider');
   }
   return context;
+}
+
+export function decodeContractError(
+  error: any,
+  contracts: ReturnType<typeof useEthers>['contracts'],
+): string | undefined {
+  const { debtTokenContracts, collateralTokenContracts, swapPairContracts, ...otherContracts } = contracts;
+
+  const allContracts = [
+    Object.values(debtTokenContracts)[0],
+    Object.values(collateralTokenContracts)[0],
+    Object.values(swapPairContracts)[0],
+    ...Object.values(otherContracts),
+  ];
+
+  // Get the "data" bytes to parse the error message
+  const dataRegex = /data="([^"]*)"/;
+  const match = error.message.match(dataRegex);
+  if (match && match[1]) {
+    // Sometimes rejects because of: RangeError: cannot slice beyond data bounds (buffer=0x, length=0, offset=4, code=BUFFER_OVERRUN, version=6.7.0)
+
+    // Do a conventional loop
+    for (let i = 0; i < allContracts.length; i++) {
+      const contract = allContracts[i];
+      try {
+        // {
+        //   "fragment": {
+        //     "type": "error",
+        //     "inputs": [],
+        //     "name": "MaxFee_out_Range"
+        //   },
+        //   "name": "MaxFee_out_Range",
+        //   "signature": "MaxFee_out_Range()",
+        //   "selector": "0x09c3707b"
+        // }
+        const errorMessage = contract.interface.parseError(match[1]);
+        if (errorMessage?.name) {
+          return errorMessage.name;
+        }
+      } catch (error: any) {
+        console.error(`Cant parse error: ${error}`);
+        return 'The transaction was rejected.';
+      }
+    }
+  } else {
+    return 'The transaction was rejected.';
+  }
 }

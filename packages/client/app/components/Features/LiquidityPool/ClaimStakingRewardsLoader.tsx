@@ -5,7 +5,7 @@ import HeaderCell from '../../Table/HeaderCell';
 
 export default function ClaimStakingRewardsLoader() {
   return (
-    <FeatureBox title="Stability Pool" noPadding border="full" sx={{ position: 'relative', left: '-0.5px' }}>
+    <FeatureBox title="Staking Rewards" noPadding border="full" sx={{ position: 'relative', left: '-0.5px' }}>
       <div style={{ display: 'flex', alignItems: 'center' }}>
         <TableContainer>
           <Table sx={{ borderRight: '1px solid', borderColor: 'background.emphasis' }}>

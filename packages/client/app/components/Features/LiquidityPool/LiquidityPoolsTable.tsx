@@ -3,12 +3,16 @@
 import { useQuery } from '@apollo/client';
 import { debounce, Table, TableBody, TableCell, TableContainer, TableHead, TableRow } from '@mui/material';
 import Typography from '@mui/material/Typography';
+import { useSnackbar } from 'notistack';
 import { useCallback, useEffect, useMemo } from 'react';
 import { isStableCoinAddress } from '../../../../config';
+import { useErrorMonitoring } from '../../../context/ErrorMonitoringContext';
 import { useEthers } from '../../../context/EthersProvider';
+import { useSelectedToken } from '../../../context/SelectedTokenProvider';
 import { GetBorrowerLiquidityPoolsQuery, GetBorrowerLiquidityPoolsQueryVariables } from '../../../generated/gql-types';
 import { GET_BORROWER_LIQUIDITY_POOLS } from '../../../queries';
-import { standardDataPollInterval } from '../../../utils/contants';
+import { standardDataPollInterval } from '../../../utils/constants';
+import { getCheckSum } from '../../../utils/crypto';
 import {
   bigIntStringToFloat,
   dangerouslyConvertBigIntToNumber,
@@ -30,7 +34,11 @@ type Props = {
 };
 
 function LiquidityPoolsTable({ selectedPoolAddress, setSelectedPoolAddress }: Props) {
+  const { enqueueSnackbar } = useSnackbar();
+
+  const { Sentry } = useErrorMonitoring();
   const { address } = useEthers();
+  const { selectedToken } = useSelectedToken();
 
   const {
     data: borrowerPoolsData,
@@ -39,6 +47,10 @@ function LiquidityPoolsTable({ selectedPoolAddress, setSelectedPoolAddress }: Pr
   } = useQuery<GetBorrowerLiquidityPoolsQuery, GetBorrowerLiquidityPoolsQueryVariables>(GET_BORROWER_LIQUIDITY_POOLS, {
     variables: { borrower: address },
     pollInterval: standardDataPollInterval,
+    onError: (error) => {
+      enqueueSnackbar('Error requesting the subgraph. Please reload the page and try again.');
+      Sentry.captureException(error);
+    },
   });
 
   const allPoolsSorted: GetBorrowerLiquidityPoolsQuery['pools'] = useMemo(() => {
@@ -101,12 +113,22 @@ function LiquidityPoolsTable({ selectedPoolAddress, setSelectedPoolAddress }: Pr
   );
 
   useEffect(() => {
-    if (allPoolsSorted.length > 0 && selectedPoolAddress === null) {
+    if (selectedToken && allPoolsSorted.length > 0 && selectedPoolAddress === null) {
+      const poolWithSelectedToken = allPoolsSorted.find(
+        (pool) =>
+          getCheckSum(pool.liquidity[0].token.address) === getCheckSum(selectedToken.address) ||
+          getCheckSum(pool.liquidity[1].token.address) === getCheckSum(selectedToken.address),
+      );
+
+      if (poolWithSelectedToken) {
+        setSelectedPoolAddress(poolWithSelectedToken.address);
+      }
+    } else if (allPoolsSorted.length > 0 && selectedPoolAddress === null) {
       debouncedSetSelectedPoolId(allPoolsSorted[0].address);
     }
     // Cleanup function to cancel the debounced call if the component unmounts
     return () => debouncedSetSelectedPoolId.clear();
-  }, [allPoolsSorted, debouncedSetSelectedPoolId, selectedPoolAddress]);
+  }, [allPoolsSorted, debouncedSetSelectedPoolId, selectedPoolAddress, selectedToken, setSelectedPoolAddress]);
 
   if (!borrowerPoolsData && loading) return <LiquidityPoolsTableLoader />;
 

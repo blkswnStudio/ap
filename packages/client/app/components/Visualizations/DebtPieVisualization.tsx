@@ -7,14 +7,14 @@ import { roundCurrency } from '../../utils/math';
 type Props = {
   borrowerDebtTokens: (GetBorrowerDebtTokensQuery['debtTokenMetas'][number] & {
     chartColor?: string;
-    troveMintedUSD: number;
+    troveDebtUSD: number;
   })[];
 };
 
 // eslint-disable-next-line react/display-name
 const createRenderCustomizedLabel = (isDarkMode: boolean) => (svgPropsAndData: any) => {
   // has all the spread data and some props from the library
-  const { x, y, cx, troveMintedUSD, chartColor, token } = svgPropsAndData;
+  const { x, y, cx, troveDebtUSD, chartColor, token } = svgPropsAndData;
   const isRight = x > cx;
 
   return (
@@ -41,7 +41,7 @@ const createRenderCustomizedLabel = (isDarkMode: boolean) => (svgPropsAndData: a
         textAnchor={x > cx ? 'start' : 'end'}
         dominantBaseline="central"
       >
-        {roundCurrency(troveMintedUSD)}$
+        {roundCurrency(troveDebtUSD)}$
       </text>
     </g>
   );
@@ -72,15 +72,15 @@ function DebtPieVisualization({ borrowerDebtTokens }: Props) {
 
   const renderCustomizedLabel = createRenderCustomizedLabel(isDarkMode);
 
-  const sumTroveMintedUSD = borrowerDebtTokens.reduce((acc, { troveMintedUSD }) => acc + troveMintedUSD, 0);
+  const sumTroveDebtUSD = borrowerDebtTokens.reduce((acc, { troveDebtUSD }) => acc + troveDebtUSD, 0);
   // group everything below 5% into 'Others'
   const visualizationDataGrouped = borrowerDebtTokens
-    .map((token) => ({ ...token, percentage: token.troveMintedUSD / sumTroveMintedUSD }))
+    .map((token) => ({ ...token, percentage: token.troveDebtUSD / sumTroveDebtUSD }))
     .reduce(
       (acc, token) => {
         if (token.percentage < 0.15) {
           acc.others.troveMintedAmount += token.troveMintedAmount;
-          acc.others.troveMintedUSD += token.troveMintedUSD;
+          acc.others.troveDebtUSD += token.troveDebtUSD;
         } else {
           acc.tokens.push(token);
         }
@@ -90,7 +90,7 @@ function DebtPieVisualization({ borrowerDebtTokens }: Props) {
       {
         tokens: [] as typeof borrowerDebtTokens,
         others: {
-          troveMintedUSD: 0,
+          troveDebtUSD: 0,
           troveMintedAmount: 0n,
           chartColor: theme.palette.text.secondary,
           token: { symbol: 'Other' },
@@ -99,7 +99,7 @@ function DebtPieVisualization({ borrowerDebtTokens }: Props) {
     );
 
   const data =
-    visualizationDataGrouped.others.troveMintedUSD > 0
+    visualizationDataGrouped.others.troveDebtUSD > 0
       ? [...visualizationDataGrouped.tokens, visualizationDataGrouped.others]
       : visualizationDataGrouped.tokens;
 
@@ -108,7 +108,7 @@ function DebtPieVisualization({ borrowerDebtTokens }: Props) {
       <Pie
         isAnimationActive={false}
         data={data}
-        dataKey="troveMintedUSD"
+        dataKey="troveDebtUSD"
         nameKey="token.symbol"
         innerRadius={90}
         outerRadius={92}

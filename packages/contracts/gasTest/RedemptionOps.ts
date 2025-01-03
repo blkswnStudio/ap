@@ -55,7 +55,9 @@ describe('RedemptionOperations', () => {
       // get values
       troveInfos.push({
         stableBefore: await troveManager.getTroveRepayableDebt(acc, STABLE, true),
-        btcBefore: await troveManager.getTroveWithdrawableColl(acc, BTC),
+        btcBefore:
+          (await troveManager.getTroveWithdrawableColls(acc)).find(({ tokenAddress }) => tokenAddress === BTC.target)
+            ?.amount ?? 0n,
       });
     }
 
@@ -95,7 +97,9 @@ describe('RedemptionOperations', () => {
       expect(stableDebtAfter).to.be.equal(info.stableBefore - stableDrawn);
 
       // checking btc
-      const btcAfter = await troveManager.getTroveWithdrawableColl(acc, BTC);
+      const btcAfter =
+        (await troveManager.getTroveWithdrawableColls(acc)).find(({ tokenAddress }) => tokenAddress === BTC.target)
+          ?.amount ?? 0n;
       expect(btcAfter).to.be.equal(info.btcBefore - collDrawn.find((f: any) => f[0] === BTC.target)[1]);
     }
   });

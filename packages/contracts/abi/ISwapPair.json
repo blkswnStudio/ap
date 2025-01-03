@@ -70,17 +70,6 @@
         "type": "error"
     },
     {
-        "inputs": [
-            {
-                "internalType": "address",
-                "name": "token",
-                "type": "address"
-            }
-        ],
-        "name": "UntrustedOracle",
-        "type": "error"
-    },
-    {
         "anonymous": false,
         "inputs": [
             {
@@ -390,6 +379,11 @@
                 "internalType": "uint256",
                 "name": "feePercentage",
                 "type": "uint256"
+            },
+            {
+                "internalType": "bool",
+                "name": "isUsablePrice",
+                "type": "bool"
             }
         ],
         "stateMutability": "view",

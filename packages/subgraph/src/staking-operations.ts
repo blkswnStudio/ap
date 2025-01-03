@@ -29,9 +29,8 @@ export function handleAddPool(event: AddPool): void {
 }
 
 export function handleConfigPool(event: ConfigPool): void {
-  handleUpdateStakingPool_allocPoints(event, event.params.pid, event.params.allocPoint);
-
   handleUpdateStaking_totalAllocPoints(event, event.params.totalAllocPoint);
+  handleUpdateStakingPool_allocPoints(event, event.params.pid, event.params.allocPoint);
 }
 
 export function handleRewardsChanged(event: RewardsPerSecondChanged): void {
@@ -39,9 +38,9 @@ export function handleRewardsChanged(event: RewardsPerSecondChanged): void {
 }
 
 export function handleDeposit(event: Deposit): void {
-  handleUpdateStakingPool_totalDeposit(true, event.params.pid, event.params.amount);
+  handleUpdateStakingPool_totalDeposit(true, event.params.pid, event.params.amount, event);
 }
 
 export function handleWithdraw(event: Withdraw): void {
-  handleUpdateStakingPool_totalDeposit(false, event.params.pid, event.params.amount);
+  handleUpdateStakingPool_totalDeposit(false, event.params.pid, event.params.amount, event);
 }

@@ -43,6 +43,11 @@
   },
   {
     "inputs": [],
+    "name": "CantVestAsStillVested",
+    "type": "error"
+  },
+  {
+    "inputs": [],
     "name": "DepositZero",
     "type": "error"
   },
@@ -241,6 +246,19 @@
       {
         "indexed": false,
         "internalType": "address",
+        "name": "target",
+        "type": "address"
+      }
+    ],
+    "name": "SetRedistributeAddress",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": false,
+        "internalType": "address",
         "name": "swapOperations",
         "type": "address"
       },
@@ -248,6 +266,12 @@
         "indexed": false,
         "internalType": "address",
         "name": "tokenManager",
+        "type": "address"
+      },
+      {
+        "indexed": false,
+        "internalType": "address",
+        "name": "vesting",
         "type": "address"
       }
     ],
@@ -281,12 +305,38 @@
   },
   {
     "inputs": [],
+    "name": "BURN_SHARE",
+    "outputs": [
+      {
+        "internalType": "uint256",
+        "name": "",
+        "type": "uint256"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
     "name": "NAME",
     "outputs": [
       {
         "internalType": "string",
         "name": "",
         "type": "string"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "PERCENT",
+    "outputs": [
+      {
+        "internalType": "uint256",
+        "name": "",
+        "type": "uint256"
       }
     ],
     "stateMutability": "view",
@@ -335,6 +385,16 @@
         "internalType": "contract ISwapPair[]",
         "name": "_pids",
         "type": "address[]"
+      },
+      {
+        "internalType": "bool",
+        "name": "_harvestPending",
+        "type": "bool"
+      },
+      {
+        "internalType": "bool",
+        "name": "_instantClaim",
+        "type": "bool"
       }
     ],
     "name": "batchClaim",
@@ -348,6 +408,16 @@
         "internalType": "contract ISwapPair",
         "name": "_pid",
         "type": "address"
+      },
+      {
+        "internalType": "bool",
+        "name": "_harvestPending",
+        "type": "bool"
+      },
+      {
+        "internalType": "bool",
+        "name": "_instantClaim",
+        "type": "bool"
       }
     ],
     "name": "claim",
@@ -379,6 +449,19 @@
     "type": "function"
   },
   {
+    "inputs": [
+      {
+        "internalType": "bool",
+        "name": "_instantClaim",
+        "type": "bool"
+      }
+    ],
+    "name": "harvest",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
     "inputs": [],
     "name": "massUpdatePools",
     "outputs": [],
@@ -393,6 +476,25 @@
         "internalType": "address",
         "name": "",
         "type": "address"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "",
+        "type": "address"
+      }
+    ],
+    "name": "pendingHarvest",
+    "outputs": [
+      {
+        "internalType": "uint256",
+        "name": "",
+        "type": "uint256"
       }
     ],
     "stateMutability": "view",
@@ -485,9 +587,35 @@
   },
   {
     "inputs": [],
+    "name": "redistributeAddress",
+    "outputs": [
+      {
+        "internalType": "address",
+        "name": "",
+        "type": "address"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
     "name": "renounceOwnership",
     "outputs": [],
     "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "rewardToken",
+    "outputs": [
+      {
+        "internalType": "contract IERC20",
+        "name": "",
+        "type": "address"
+      }
+    ],
+    "stateMutability": "view",
     "type": "function"
   },
   {
@@ -514,6 +642,11 @@
         "internalType": "address",
         "name": "_tokenManager",
         "type": "address"
+      },
+      {
+        "internalType": "address",
+        "name": "_vesting",
+        "type": "address"
       }
     ],
     "name": "setAddresses",
@@ -535,6 +668,19 @@
       }
     ],
     "name": "setPool",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "_target",
+        "type": "address"
+      }
+    ],
+    "name": "setRedistributeAddress",
     "outputs": [],
     "stateMutability": "nonpayable",
     "type": "function"
@@ -672,6 +818,32 @@
       {
         "internalType": "uint256",
         "name": "rewardDebt",
+        "type": "uint256"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "vesting",
+    "outputs": [
+      {
+        "internalType": "contract StakingVestingOperations",
+        "name": "",
+        "type": "address"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "vestingTime",
+    "outputs": [
+      {
+        "internalType": "uint256",
+        "name": "",
         "type": "uint256"
       }
     ],

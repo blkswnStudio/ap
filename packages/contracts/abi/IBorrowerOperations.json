@@ -315,34 +315,6 @@
     {
         "inputs": [
             {
-                "internalType": "uint256",
-                "name": "_percentage",
-                "type": "uint256"
-            },
-            {
-                "internalType": "address",
-                "name": "_upperHint",
-                "type": "address"
-            },
-            {
-                "internalType": "address",
-                "name": "_lowerHint",
-                "type": "address"
-            },
-            {
-                "internalType": "bytes[]",
-                "name": "_priceUpdateData",
-                "type": "bytes[]"
-            }
-        ],
-        "name": "claimUnassignedAssets",
-        "outputs": [],
-        "stateMutability": "payable",
-        "type": "function"
-    },
-    {
-        "inputs": [
-            {
                 "internalType": "bytes[]",
                 "name": "_priceUpdateData",
                 "type": "bytes[]"

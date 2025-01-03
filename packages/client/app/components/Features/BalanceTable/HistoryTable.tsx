@@ -7,7 +7,9 @@ import TableHead from '@mui/material/TableHead';
 import TableRow from '@mui/material/TableRow';
 import Typography from '@mui/material/Typography';
 import { ethers } from 'ethers';
+import { useSnackbar } from 'notistack';
 import { useEffect } from 'react';
+import { useErrorMonitoring } from '../../../context/ErrorMonitoringContext';
 import { useEthers } from '../../../context/EthersProvider';
 import { useSelectedToken } from '../../../context/SelectedTokenProvider';
 import {
@@ -28,6 +30,9 @@ import HeaderCell from '../../Table/HeaderCell';
 import HistoryTableLoader from './HistoryTableLoader';
 
 function HistoryTable() {
+  const { enqueueSnackbar } = useSnackbar();
+
+  const { Sentry } = useErrorMonitoring();
   const { address } = useEthers();
   const { JUSDToken } = useSelectedToken();
 
@@ -40,6 +45,10 @@ function HistoryTable() {
         },
         skip: 0,
         first: 30,
+      },
+      onError: (error) => {
+        enqueueSnackbar('Error requesting the subgraph. Please reload the page and try again.');
+        Sentry.captureException(error);
       },
     },
   );

@@ -16,14 +16,6 @@ contract MockTroveManager is TroveManager {
     return _getCollGasCompensation(_coll);
   }
 
-  function getLiquidatedCollTokens(address tokenAddress) external view returns (uint) {
-    return liquidatedCollTokensPerStake[tokenAddress];
-  }
-
-  function getLiquidatedDebtTokens(address collToken, address tokenAddress) external view returns (uint) {
-    return liquidatedDebtTokensPerStake[collToken][tokenAddress];
-  }
-
   function setLastFeeOpTimeToNow() external {
     lastFeeOperationTime = block.timestamp;
   }

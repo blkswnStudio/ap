@@ -19,6 +19,7 @@ import {
 import {
   LiquidityFragmentFragment,
   RedemptionOperations,
+  StakingVestingOperations,
   SystemInfo,
   TokenFragmentFragment,
 } from '../generated/gql-types';
@@ -28,7 +29,7 @@ import { useErrorMonitoring } from './ErrorMonitoringContext';
 import { useEthers } from './EthersProvider';
 import PriceFeedDataProvider from './PriceFeedDataProvider';
 import PriceFeedDataProvider_DevMode from './PriceFeedDataProvider_dev';
-import { getActiveDataManger } from './utils';
+import { evictCacheTimeoutForObject, getActiveDataManger } from './utils';
 
 export function CustomApolloProvider({ children }: PropsWithChildren<{}>) {
   const { Sentry } = useErrorMonitoring();
@@ -44,8 +45,101 @@ export function CustomApolloProvider({ children }: PropsWithChildren<{}>) {
     collSurplusContract,
     redemptionOperationsContract,
     stakingOperationsContract,
+    stakingVestingOperationsContract,
     hintHelpersContract,
   } = contracts;
+
+  const activeDataManager = useMemo(() => getActiveDataManger(currentNetwork!), [currentNetwork]);
+
+  const cacheConfig = useMemo(
+    () =>
+      getProductionCacheConfig({
+        provider,
+        borrower,
+        debtTokenContracts,
+        collateralTokenContracts,
+        troveManagerContract,
+        stabilityPoolManagerContract,
+        swapPairContracts,
+        storagePoolContract,
+        collSurplusContract,
+        redemptionOperationsContract,
+        priceFeedContract,
+        stakingOperationsContract,
+        stakingVestingOperationsContract,
+        hintHelpersContract,
+        SchemaDataFreshnessManager: activeDataManager as any,
+      }),
+    [
+      provider,
+      borrower,
+      debtTokenContracts,
+      collateralTokenContracts,
+      troveManagerContract,
+      stabilityPoolManagerContract,
+      swapPairContracts,
+      storagePoolContract,
+      collSurplusContract,
+      redemptionOperationsContract,
+      priceFeedContract,
+      stakingOperationsContract,
+      activeDataManager,
+      hintHelpersContract,
+      stakingVestingOperationsContract,
+    ],
+  );
+
+  const client = useMemo(
+    () =>
+      new ApolloClient({
+        uri: currentNetwork!.graphEndpoint,
+        //@ts-ignore
+        headers: {
+          ...(currentNetwork!.authorizationHeader !== '' ? { authorization: currentNetwork!.authorizationHeader } : {}),
+        },
+        connectToDevTools: process.env.NEXT_PUBLIC_ENVIRONMENT === 'development',
+        cache: new InMemoryCache({
+          typePolicies: {
+            ...cacheConfig.fields,
+
+            Query: {
+              fields: {
+                ...cacheConfig.Query.fields,
+
+                swapEvents: {
+                  // Don't cache separate results based on
+                  // any of this field's arguments.
+                  keyArgs: [],
+                  // Concatenate the incoming list items with
+                  // the existing list items.
+                  merge(existing = [], incoming) {
+                    return [...existing, ...incoming];
+                  },
+                  read: (existing) => {
+                    return existing;
+                  },
+                },
+
+                borrowerHistories: {
+                  // Don't cache separate results based on
+                  // any of this field's arguments.
+                  keyArgs: [],
+                  // Concatenate the incoming list items with
+                  // the existing list items.
+                  merge(existing = [], incoming) {
+                    return [...existing, ...incoming];
+                  },
+                  read: (existing) => {
+                    return existing;
+                  },
+                },
+              },
+            },
+          },
+        }),
+      }),
+    [currentNetwork, cacheConfig],
+  );
 
   useEffect(() => {
     const timers = new Set<NodeJS.Timer>();
@@ -99,6 +193,49 @@ export function CustomApolloProvider({ children }: PropsWithChildren<{}>) {
             timers.add(interval);
           } else {
             Object.entries(contract as any).forEach(([field, data]) => {
+              if ((data as any).hasOwnProperty('initDelayed')) {
+                setTimeout(
+                  () => {
+                    const type = contractType;
+                    const contract = fieldOrAddress;
+                    const policy = field;
+
+                    switch (type) {
+                      case 'DebtToken':
+                        switch (policy) {
+                          case 'borrowingRate':
+                            if (client.cache) {
+                              evictCacheTimeoutForObject(currentNetwork, ['DebtToken', contract], ['borrowingRate']);
+                              // @ts-ignore
+                              activeDataManager[type][contract][policy].fetch(
+                                troveManagerContract,
+                                client.cache,
+                                borrower,
+                              );
+                            }
+                            break;
+                        }
+                        break;
+                      case 'ERC20':
+                        switch (policy) {
+                          case 'borrowingRate':
+                            if (client.cache) {
+                              evictCacheTimeoutForObject(currentNetwork, ['ERC20', contract], ['borrowingRate']);
+                              // @ts-ignore
+                              activeDataManager[type][contract][policy].fetch(
+                                troveManagerContract,
+                                client.cache,
+                                borrower,
+                              );
+                            }
+                            break;
+                        }
+                    }
+                  },
+                  (data as any).initDelayed,
+                );
+              }
+
               if ((data as any).hasOwnProperty('periodic')) {
                 const interval = setInterval(
                   () => {
@@ -113,13 +250,19 @@ export function CustomApolloProvider({ children }: PropsWithChildren<{}>) {
                       switch (type) {
                         case 'DebtToken':
                           switch (policy) {
-                            case 'priceUSDOracle':
-                              // @ts-ignore
-                              activeDataManager[type][contract][policy].fetch(undefined, priceFeedContract);
-                              break;
+                            // case 'priceUSDOracle':
+                            //   // @ts-ignore
+                            //   activeDataManager[type][contract][policy].fetch(undefined, priceFeedContract);
+                            //   break;
                             case 'borrowingRate':
-                              // @ts-ignore
-                              activeDataManager[type][contract][policy].fetch(troveManagerContract);
+                              if (client.cache) {
+                                // @ts-ignore
+                                activeDataManager[type][contract][policy].fetch(
+                                  troveManagerContract,
+                                  client.cache,
+                                  borrower,
+                                );
+                              }
                               break;
                             case 'walletAmount':
                               // @ts-ignore
@@ -176,13 +319,19 @@ export function CustomApolloProvider({ children }: PropsWithChildren<{}>) {
 
                         case 'ERC20':
                           switch (policy) {
-                            case 'priceUSDOracle':
-                              // @ts-ignore
-                              activeDataManager[type][contract][policy].fetch(undefined, priceFeedContract);
-                              break;
+                            // case 'priceUSDOracle':
+                            //   // @ts-ignore
+                            //   activeDataManager[type][contract][policy].fetch(undefined, priceFeedContract);
+                            //   break;
                             case 'borrowingRate':
-                              // @ts-ignore
-                              activeDataManager[type][contract][policy].fetch(troveManagerContract);
+                              if (client.cache) {
+                                // @ts-ignore
+                                activeDataManager[type][contract][policy].fetch(
+                                  troveManagerContract,
+                                  client.cache,
+                                  borrower,
+                                );
+                              }
                               break;
                             case 'walletAmount':
                               // @ts-ignore
@@ -262,96 +411,6 @@ export function CustomApolloProvider({ children }: PropsWithChildren<{}>) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [borrower]);
 
-  const activeDataManager = useMemo(() => getActiveDataManger(currentNetwork!), [currentNetwork]);
-
-  const cacheConfig = useMemo(
-    () =>
-      getProductionCacheConfig({
-        provider,
-        borrower,
-        debtTokenContracts,
-        collateralTokenContracts,
-        troveManagerContract,
-        stabilityPoolManagerContract,
-        swapPairContracts,
-        storagePoolContract,
-        collSurplusContract,
-        redemptionOperationsContract,
-        priceFeedContract,
-        stakingOperationsContract,
-        hintHelpersContract,
-        SchemaDataFreshnessManager: activeDataManager as any,
-      }),
-    [
-      provider,
-      borrower,
-      debtTokenContracts,
-      collateralTokenContracts,
-      troveManagerContract,
-      stabilityPoolManagerContract,
-      swapPairContracts,
-      storagePoolContract,
-      collSurplusContract,
-      redemptionOperationsContract,
-      priceFeedContract,
-      stakingOperationsContract,
-      activeDataManager,
-      hintHelpersContract,
-    ],
-  );
-
-  const client = useMemo(
-    () =>
-      new ApolloClient({
-        uri: currentNetwork!.graphEndpoint,
-        //@ts-ignore
-        headers: {
-          ...(currentNetwork!.authorizationHeader !== '' ? { authorization: currentNetwork!.authorizationHeader } : {}),
-        },
-        connectToDevTools: process.env.NEXT_PUBLIC_ENVIRONMENT === 'development',
-        cache: new InMemoryCache({
-          typePolicies: {
-            ...cacheConfig.fields,
-
-            Query: {
-              fields: {
-                ...cacheConfig.Query.fields,
-
-                swapEvents: {
-                  // Don't cache separate results based on
-                  // any of this field's arguments.
-                  keyArgs: [],
-                  // Concatenate the incoming list items with
-                  // the existing list items.
-                  merge(existing = [], incoming) {
-                    return [...existing, ...incoming];
-                  },
-                  read: (existing) => {
-                    return existing;
-                  },
-                },
-
-                borrowerHistories: {
-                  // Don't cache separate results based on
-                  // any of this field's arguments.
-                  keyArgs: [],
-                  // Concatenate the incoming list items with
-                  // the existing list items.
-                  merge(existing = [], incoming) {
-                    return [...existing, ...incoming];
-                  },
-                  read: (existing) => {
-                    return existing;
-                  },
-                },
-              },
-            },
-          },
-        }),
-      }),
-    [currentNetwork, cacheConfig],
-  );
-
   if (process.env.NEXT_PUBLIC_CONTRACT_MOCKING === 'enabled') {
     return <CustomApolloProvider_DevMode>{children}</CustomApolloProvider_DevMode>;
   }
@@ -381,6 +440,7 @@ const getProductionCacheConfig = ({
   redemptionOperationsContract,
   priceFeedContract,
   stakingOperationsContract,
+  stakingVestingOperationsContract,
   hintHelpersContract,
   SchemaDataFreshnessManager,
 }: {
@@ -396,6 +456,7 @@ const getProductionCacheConfig = ({
   redemptionOperationsContract: ReturnType<typeof useEthers>['contracts']['redemptionOperationsContract'];
   priceFeedContract: ReturnType<typeof useEthers>['contracts']['priceFeedContract'];
   stakingOperationsContract: ReturnType<typeof useEthers>['contracts']['stakingOperationsContract'];
+  stakingVestingOperationsContract: ReturnType<typeof useEthers>['contracts']['stakingVestingOperationsContract'];
   hintHelpersContract: ReturnType<typeof useEthers>['contracts']['hintHelpersContract'];
   SchemaDataFreshnessManager: ContractDataFreshnessManagerType<typeof Contracts_Localhost> &
     ContractDataFreshnessManagerType<typeof Contracts_ATC>;
@@ -409,13 +470,15 @@ const getProductionCacheConfig = ({
 
             if (address) {
               if (isDebtTokenAddress(address)) {
-                if (isFieldOutdated(SchemaDataFreshnessManager.DebtToken[address], 'priceUSDOracle')) {
+                // Only update from chain if price is older than 1min (e.g. websocket failed) and try to initialize with websocket data
+                if (isFieldOutdated(SchemaDataFreshnessManager.DebtToken[address], 'priceUSDOracle', 30000, true)) {
                   SchemaDataFreshnessManager.DebtToken[address].priceUSDOracle.fetch(undefined, priceFeedContract);
                 }
 
                 return SchemaDataFreshnessManager.DebtToken[address].priceUSDOracle.value();
               } else if (isCollateralTokenAddress(address)) {
-                if (isFieldOutdated(SchemaDataFreshnessManager.ERC20[address], 'priceUSDOracle')) {
+                // Only update from chain if price is older than 1min (e.g. websocket failed) and try to initialize with websocket data
+                if (isFieldOutdated(SchemaDataFreshnessManager.ERC20[address], 'priceUSDOracle', 30000, true)) {
                   SchemaDataFreshnessManager.ERC20[address].priceUSDOracle.fetch(undefined, priceFeedContract);
                 }
                 return SchemaDataFreshnessManager.ERC20[address].priceUSDOracle.value();
@@ -425,17 +488,21 @@ const getProductionCacheConfig = ({
         },
 
         borrowingRate: {
-          read(_, { readField }) {
+          read(_, { readField, cache }) {
             const address = readField('address') as Readonly<string>;
             if (address) {
               if (isDebtTokenAddress(address)) {
                 if (isFieldOutdated(SchemaDataFreshnessManager.DebtToken[address], 'borrowingRate')) {
-                  SchemaDataFreshnessManager.DebtToken[address].borrowingRate.fetch(troveManagerContract);
+                  SchemaDataFreshnessManager.DebtToken[address].borrowingRate.fetch(
+                    troveManagerContract,
+                    cache,
+                    address,
+                  );
                 }
                 return SchemaDataFreshnessManager.DebtToken[address].borrowingRate.value();
               } else if (isCollateralTokenAddress(address)) {
                 if (isFieldOutdated(SchemaDataFreshnessManager.ERC20[address], 'borrowingRate')) {
-                  SchemaDataFreshnessManager.ERC20[address].borrowingRate.fetch(troveManagerContract);
+                  SchemaDataFreshnessManager.ERC20[address].borrowingRate.fetch(troveManagerContract, cache, address);
                 }
                 return SchemaDataFreshnessManager.ERC20[address].borrowingRate.value();
               }
@@ -775,14 +842,12 @@ const getProductionCacheConfig = ({
         read: () => {
           if (isFieldOutdated(SchemaDataFreshnessManager.StoragePool as any, 'totalCollateralRatio')) {
             SchemaDataFreshnessManager.StoragePool.totalCollateralRatio.fetch({ storagePoolContract });
-          }
-          if (isFieldOutdated(SchemaDataFreshnessManager.StoragePool as any, 'recoveryModeActive')) {
+          } else if (isFieldOutdated(SchemaDataFreshnessManager.StoragePool as any, 'recoveryModeActive')) {
             SchemaDataFreshnessManager.StoragePool.recoveryModeActive.fetch({ storagePoolContract });
           }
           if (borrower && isFieldOutdated(SchemaDataFreshnessManager.TroveManager as any, 'borrowerIMCR')) {
             SchemaDataFreshnessManager.TroveManager.borrowerIMCR.fetch({ borrower, hintHelpersContract });
-          }
-          if (borrower && isFieldOutdated(SchemaDataFreshnessManager.TroveManager as any, 'borrowerICR')) {
+          } else if (borrower && isFieldOutdated(SchemaDataFreshnessManager.TroveManager as any, 'borrowerICR')) {
             SchemaDataFreshnessManager.TroveManager.borrowerICR.fetch({ borrower, hintHelpersContract });
           }
           if (borrower && isFieldOutdated(SchemaDataFreshnessManager.TroveManager as any, 'borrowingInterestRate')) {
@@ -812,6 +877,50 @@ const getProductionCacheConfig = ({
             id: 'RedemptionOperations',
             redemptionRateWithDecay: SchemaDataFreshnessManager.RedemptionOperations.redemptionRateWithDecay.value(),
           } as RedemptionOperations;
+        },
+      },
+
+      getStakingVestingOperations: {
+        read: (_, { args }) => {
+          const { token } = args as any;
+
+          if (borrower && isFieldOutdated(SchemaDataFreshnessManager.StakingVestingOperations, 'remainingTime')) {
+            SchemaDataFreshnessManager.StakingVestingOperations.remainingTime.fetch({
+              token,
+              depositor: borrower,
+              stakingVestingOperationsContract,
+            });
+          } else if (borrower && isFieldOutdated(SchemaDataFreshnessManager.StakingVestingOperations, 'totalAmount')) {
+            SchemaDataFreshnessManager.StakingVestingOperations.totalAmount.fetch({
+              token,
+              depositor: borrower,
+              stakingVestingOperationsContract,
+            });
+          } else if (
+            borrower &&
+            isFieldOutdated(SchemaDataFreshnessManager.StakingVestingOperations, 'claimableAmount')
+          ) {
+            SchemaDataFreshnessManager.StakingVestingOperations.claimableAmount.fetch({
+              token,
+              depositor: borrower,
+              stakingVestingOperationsContract,
+            });
+          } else if (borrower && isFieldOutdated(SchemaDataFreshnessManager.StakingVestingOperations, 'burnedAmount')) {
+            SchemaDataFreshnessManager.StakingVestingOperations.burnedAmount.fetch({
+              token,
+              depositor: borrower,
+              stakingVestingOperationsContract,
+            });
+          }
+
+          return {
+            __typename: 'StakingVestingOperations',
+            id: 'StakingVestingOperations',
+            remainingTime: SchemaDataFreshnessManager.StakingVestingOperations.remainingTime.value(),
+            totalAmount: SchemaDataFreshnessManager.StakingVestingOperations.totalAmount.value(),
+            claimableAmount: SchemaDataFreshnessManager.StakingVestingOperations.claimableAmount.value(),
+            burnedAmount: SchemaDataFreshnessManager.StakingVestingOperations.burnedAmount.value(),
+          } as StakingVestingOperations;
         },
       },
     },
@@ -852,6 +961,19 @@ export type TokenAmount = {
 };
 
 // FIXME: I am too stupid to make this typesafe for now. I must pass the exact Contract Data literally.
-export function isFieldOutdated(contract: ContractData<any>, field: string) {
-  return contract[field].lastFetched < Date.now() - contract[field].timeout;
+export function isFieldOutdated(
+  contract: ContractData<any>,
+  field: string,
+  customTimeout?: number,
+  onlyWhenInitialized = false,
+) {
+  const lastFetched = contract[field].lastFetched;
+  const timeout = customTimeout ? customTimeout : contract[field].timeout;
+  const currentTime = Date.now();
+
+  if (onlyWhenInitialized) {
+    return lastFetched > 0 && lastFetched < currentTime - timeout;
+  } else {
+    return lastFetched < currentTime - timeout;
+  }
 }

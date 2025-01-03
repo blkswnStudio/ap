@@ -118,10 +118,8 @@ const generateDebtTokenTemplate = (tokenName, tokenAddress) => {
 
           const tokenAmount = ContractDataFreshnessManager.TroveManager.getTroveDebt.value.find(
             ({ tokenAddress }) => getCheckSum(tokenAddress) === getCheckSum(Contracts.DebtToken.${tokenName}),
-          )?.amount;
-          if (tokenAmount) {
-            SchemaDataFreshnessManager.DebtToken[Contracts.DebtToken.${tokenName}].troveMintedAmount.value(tokenAmount);
-          }
+          )?.amount ?? defaultFieldValue;
+          SchemaDataFreshnessManager.DebtToken[Contracts.DebtToken.${tokenName}].troveMintedAmount.value(tokenAmount);
         },
         value: makeVar(defaultFieldValue),
         lastFetched: 0,
@@ -193,10 +191,8 @@ const generateDebtTokenTemplate = (tokenName, tokenAddress) => {
 
           const tokenAmount = ContractDataFreshnessManager.StabilityPoolManager.getDepositorDeposits.value.find(
             ({ tokenAddress }) => getCheckSum(tokenAddress) === getCheckSum(Contracts.DebtToken.${tokenName}),
-          )?.amount;
-          if (tokenAmount) {
-            SchemaDataFreshnessManager.DebtToken[Contracts.DebtToken.${tokenName}].providedStability.value(tokenAmount);
-          }
+          )?.amount ?? defaultFieldValue;
+          SchemaDataFreshnessManager.DebtToken[Contracts.DebtToken.${tokenName}].providedStability.value(tokenAmount);
         },
         value: makeVar(defaultFieldValue),
         lastFetched: 0,
@@ -319,10 +315,8 @@ const generateCollTokenTemplate = (tokenName, tokenAddress) => {
   
             const tokenAmount = ContractDataFreshnessManager.TroveManager.getTroveWithdrawableColls.value.find(
               ({ tokenAddress }) => getCheckSum(tokenAddress) === getCheckSum(Contracts.ERC20.${tokenName}),
-            )?.amount;
-            if (tokenAmount) {
-              SchemaDataFreshnessManager.ERC20[Contracts.ERC20.${tokenName}].troveLockedAmount.value(tokenAmount);
-            }
+            )?.amount ?? defaultFieldValue;
+            SchemaDataFreshnessManager.ERC20[Contracts.ERC20.${tokenName}].troveLockedAmount.value(tokenAmount);
           },
           value: makeVar(defaultFieldValue),
           lastFetched: 0,
@@ -343,10 +337,8 @@ const generateCollTokenTemplate = (tokenName, tokenAddress) => {
   
             const tokenAmount = ContractDataFreshnessManager.StabilityPoolManager.getDepositorCollGains.value.find(
               ({ tokenAddress }) => getCheckSum(tokenAddress) === getCheckSum(Contracts.ERC20.${tokenName}),
-            )?.amount;
-            if (tokenAmount) {
-              SchemaDataFreshnessManager.ERC20[Contracts.ERC20.${tokenName}].stabilityGainedAmount.value(tokenAmount);
-            }
+            )?.amount ?? defaultFieldValue;
+            SchemaDataFreshnessManager.ERC20[Contracts.ERC20.${tokenName}].stabilityGainedAmount.value(tokenAmount);
           },
           value: makeVar(defaultFieldValue),
           lastFetched: 0,
@@ -367,10 +359,8 @@ const generateCollTokenTemplate = (tokenName, tokenAddress) => {
   
             const tokenAmount = ContractDataFreshnessManager.CollSurplusPool.getCollateral.value.find(
               ({ tokenAddress }) => getCheckSum(tokenAddress) === getCheckSum(Contracts.ERC20.${tokenName}),
-            )?.amount;
-            if (tokenAmount) {
-              SchemaDataFreshnessManager.ERC20[Contracts.ERC20.${tokenName}].collSurplusAmount.value(tokenAmount);
-            }
+            )?.amount ?? defaultFieldValue;
+            SchemaDataFreshnessManager.ERC20[Contracts.ERC20.${tokenName}].collSurplusAmount.value(tokenAmount);
           },
           value: makeVar(defaultFieldValue),
           lastFetched: 0,
@@ -413,7 +403,7 @@ const generateSwapPairTemplate = (pairName, tokenAddress) => {
           fetch: async (swapPairContract: SwapPair, reserve0: bigint, reserve1: bigint) => {
             SchemaDataFreshnessManager.SwapPairs[Contracts.SwapPairs.${pairName}].swapFee.lastFetched = Date.now();
   
-            const swapFee = await swapPairContract.getSwapFee(reserve0, reserve1);
+            const [swapFee] = await swapPairContract.getSwapFee(reserve0, reserve1);
   
             SchemaDataFreshnessManager.SwapPairs[Contracts.SwapPairs.${pairName}].swapFee.value(swapFee);
           },

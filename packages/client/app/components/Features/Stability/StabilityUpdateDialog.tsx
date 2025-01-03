@@ -6,6 +6,8 @@ import Button from '@mui/material/Button';
 import Tab from '@mui/material/Tab';
 import Tabs from '@mui/material/Tabs';
 import Typography from '@mui/material/Typography';
+import { parseEther } from 'ethers';
+import { useSnackbar } from 'notistack';
 import { SyntheticEvent, useEffect, useState } from 'react';
 import { FormProvider, useForm } from 'react-hook-form';
 import { isDebtTokenAddress } from '../../../../config';
@@ -15,7 +17,8 @@ import { useTransactionDialog } from '../../../context/TransactionDialogProvider
 import { useUtilities } from '../../../context/UtilityProvider';
 import { GetBorrowerDebtTokensQuery, GetBorrowerDebtTokensQueryVariables } from '../../../generated/gql-types';
 import { GET_BORROWER_DEBT_TOKENS, GET_BORROWER_STABILITY_HISTORY } from '../../../queries';
-import { dangerouslyConvertBigIntToNumber, floatToBigInt, roundCurrency } from '../../../utils/math';
+import { getCheckSum } from '../../../utils/crypto';
+import { dangerouslyConvertBigIntToNumber, roundCurrency } from '../../../utils/math';
 import NumberInput from '../../FormControls/NumberInput';
 import CrossIcon from '../../Icons/CrossIcon';
 import DiamondIcon from '../../Icons/DiamondIcon';
@@ -24,6 +27,8 @@ import Label from '../../Label/Label';
 type FieldValues = Record<string, string>;
 
 const StabilityUpdateDialog = () => {
+  const { enqueueSnackbar } = useSnackbar();
+
   const { Sentry } = useErrorMonitoring();
   const { setSteps } = useTransactionDialog();
   const { getAllowance } = useUtilities();
@@ -44,6 +49,10 @@ const StabilityUpdateDialog = () => {
         borrower: address,
       },
       skip: !address,
+      onError: (error) => {
+        enqueueSnackbar('Error requesting the subgraph. Please reload the page and try again.');
+        Sentry.captureException(error);
+      },
     },
   );
 
@@ -104,10 +113,18 @@ const StabilityUpdateDialog = () => {
 
     const tokenAmounts = Object.entries(data)
       .filter(([_, amount]) => amount !== '' && parseFloat(amount) > 0)
-      .map<{ tokenAddress: string; amount: bigint }>(([address, amount]) => ({
-        tokenAddress: address,
-        amount: floatToBigInt(parseFloat(amount)),
-      }));
+      .map<{ tokenAddress: string; amount: bigint }>(([address, amount]) => {
+        // If the input is very close to the max amount we use the max to not leave rest.
+        const tokenMaxAmount =
+          tabValue === 'DEPOSIT'
+            ? borrowerDebtData!.debtTokenMetas.find(({ token }) => token.address === address)!.walletAmount
+            : borrowerDebtData!.debtTokenMetas.find(({ token }) => token.address === address)!.providedStability;
+
+        return {
+          tokenAddress: address,
+          amount: tokenMaxAmount - parseEther(amount) < parseEther('0.000001') ? tokenMaxAmount : parseEther(amount),
+        };
+      });
 
     if (tokenAmounts.length === 0) {
       return;
@@ -133,7 +150,9 @@ const StabilityUpdateDialog = () => {
       setSteps([
         ...needsAllowance.map(({ tokenAddress, amount }) => ({
           title: `Approve ${
-            Object.entries(currentNetwork!.contracts.DebtToken).find(([_, value]) => value === tokenAddress)![0]
+            borrowerDebtData!.debtTokenMetas.find(
+              ({ token }) => getCheckSum(token.address) === getCheckSum(tokenAddress),
+            )!.token.symbol
           } spending.`,
           transaction: {
             methodCall: async () => {
@@ -181,6 +200,7 @@ const StabilityUpdateDialog = () => {
     }
 
     setTimeout(() => {
+      setTabValue('DEPOSIT');
       reset();
     }, 100);
     setIsOpen(false);

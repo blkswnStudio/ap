@@ -46,7 +46,6 @@ describe('StakingOperationsInitialized()', () => {
 
     const entityId = `Staking`;
     assert.entityCount('Staking', 1);
-    assert.fieldEquals('Staking', entityId, 'rewardToken', MockCollToken_GOV_Address.toHexString());
     assert.fieldEquals('Staking', entityId, 'rewardsPerSecond', '0');
     assert.fieldEquals('Staking', entityId, 'rewardsPerYearUSD', '0');
     assert.fieldEquals('Staking', entityId, 'totalAllocPoints', '0');

@@ -4,6 +4,7 @@ import { BytesLike, parseUnits } from 'ethers';
 import { MockPyth } from '../typechain';
 import { getLatestBlockTimestamp } from './testHelper';
 import { Contracts } from './deployTestBase';
+import { EvmPriceServiceConnection } from '@pythnetwork/pyth-evm-js';
 
 export interface PythPriceData {
   token: string;
@@ -65,6 +66,26 @@ export const generatePriceUpdateDataWithFee = async (
   const fee = await contracts.priceFeed.getPythUpdateFee(ret);
   return {
     data: ret,
+    fee: fee,
+    payableData: { value: fee, gasLimit: 15000000n },
+  };
+};
+
+export const generatePriceUpdateDataWithFeeViaHermes = async (
+  contracts: Contracts
+): Promise<OracleUpdateDataAndFee> => {
+  const oracleIds = priceData
+    .map(p => p.id)
+    .filter(
+      id => id !== undefined && id !== '0x0000000000000000000000000000000000000000000000000000000000000000'
+    ) as string[];
+
+  const connection = new EvmPriceServiceConnection('https://hermes.pyth.network');
+  const priceUpdateData = await connection.getPriceFeedsUpdateData(oracleIds);
+
+  const fee = await contracts.priceFeed.getPythUpdateFee(priceUpdateData);
+  return {
+    data: priceUpdateData,
     fee: fee,
     payableData: { value: fee, gasLimit: 15000000n },
   };

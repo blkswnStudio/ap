@@ -2,6 +2,8 @@
 
 import { useApolloClient, useQuery } from '@apollo/client';
 import { useTheme } from '@mui/material';
+import { formatEther } from 'ethers';
+import { useSnackbar } from 'notistack';
 import { useEffect, useRef } from 'react';
 import { useErrorMonitoring } from '../../context/ErrorMonitoringContext';
 import { useSelectedToken } from '../../context/SelectedTokenProvider';
@@ -18,12 +20,19 @@ import { UDFCompatibleDatafeed } from '../../external/datafeeds/udf/src/udf-comp
 import {
   GetAllPoolsQuery,
   GetAllPoolsQueryVariables,
+  GetSelectedTokenQuery,
+  GetSelectedTokenQueryVariables,
   GetTradingViewCandlesQuery,
   GetTradingViewCandlesQueryVariables,
   GetTradingViewLatestCandleQuery,
   GetTradingViewLatestCandleQueryVariables,
 } from '../../generated/gql-types';
-import { GET_ALL_POOLS, GET_TRADING_VIEW_CANDLES, GET_TRADING_VIEW_LATEST_CANDLE } from '../../queries';
+import {
+  GET_ALL_POOLS,
+  GET_SELECTED_TOKEN,
+  GET_TRADING_VIEW_CANDLES,
+  GET_TRADING_VIEW_LATEST_CANDLE,
+} from '../../queries';
 import { bigIntStringToFloat } from '../../utils/math';
 import TradingViewHeader from './TradingViewHeader';
 
@@ -45,17 +54,23 @@ let latestListenerGuids: string[] = [];
 let tradingViewOracleStudies: EntityId[] = [];
 
 function TradingViewComponent() {
-  const { Sentry } = useErrorMonitoring();
   const theme = useTheme();
-  const isDarkMode = theme.palette.mode === 'dark';
-  const client = useApolloClient();
+  const { enqueueSnackbar } = useSnackbar();
   const apolloClient = useApolloClient();
+
+  const { Sentry } = useErrorMonitoring();
+  const { selectedToken } = useSelectedToken();
 
   const currentChart = useRef<IChartingLibraryWidget>();
 
-  const { selectedToken } = useSelectedToken();
+  const isDarkMode = theme.palette.mode === 'dark';
 
-  const { data: pools } = useQuery<GetAllPoolsQuery, GetAllPoolsQueryVariables>(GET_ALL_POOLS);
+  const { data: pools } = useQuery<GetAllPoolsQuery, GetAllPoolsQueryVariables>(GET_ALL_POOLS, {
+    onError: (error) => {
+      enqueueSnackbar('Error requesting the subgraph. Please reload the page and try again.');
+      Sentry.captureException(error);
+    },
+  });
 
   const getSelectedTokenFromQueryData = (symbol: string) => {
     // Remove prefix "Oracle " if it exists
@@ -92,12 +107,12 @@ function TradingViewComponent() {
         // Remove previous oracles
         tradingViewOracleStudies.forEach((study) => {
           currentChart.current!.activeChart().removeEntity(study, { disableUndo: true });
-          tradingViewOracleStudies.splice(tradingViewOracleStudies.indexOf(study), 1);
         });
+        tradingViewOracleStudies = [];
         // Add oracle programmatically
         currentChart
           .current!.activeChart()
-          .createStudy('Compare', false, false, { source: 'open', symbol: `Oracle ${selectedToken.symbol}` })
+          .createStudy('Compare', false, true, { source: 'close', symbol: `Oracle ${selectedToken.symbol}` })
           .then((study) => {
             tradingViewOracleStudies.push(study!);
 
@@ -124,7 +139,8 @@ function TradingViewComponent() {
         currentChart.current!.onChartReady(castTimeout);
       }
     }
-  }, [selectedToken]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedToken?.id]);
 
   useEffect(() => {
     if (window.TradingView && selectedToken && !currentChart.current && pools) {
@@ -179,23 +195,39 @@ function TradingViewComponent() {
                             openOracle,
                           },
                         } = data;
-                        symbolInfo.name.startsWith('Oracle')
-                          ? onTick({
-                              time: Number(timestamp) * 1000,
-                              open: bigIntStringToFloat(openOracle),
-                              high: bigIntStringToFloat(highOracle),
-                              low: bigIntStringToFloat(lowOracle),
-                              close: bigIntStringToFloat(closeOracle),
-                              volume: bigIntStringToFloat(volume),
+
+                        if (symbolInfo.name.startsWith('Oracle')) {
+                          apolloClient
+                            .query<GetSelectedTokenQuery, GetSelectedTokenQueryVariables>({
+                              query: GET_SELECTED_TOKEN,
+                              variables: {
+                                address: token.address,
+                              },
+                              fetchPolicy: 'cache-only',
                             })
-                          : onTick({
-                              time: Number(timestamp) * 1000,
-                              open: bigIntStringToFloat(open),
-                              high: bigIntStringToFloat(high),
-                              low: bigIntStringToFloat(low),
-                              close: bigIntStringToFloat(close),
-                              volume: bigIntStringToFloat(volume),
+                            .then(({ data }) => {
+                              onTick({
+                                time: Number(timestamp) * 1000,
+                                open: bigIntStringToFloat(openOracle),
+                                high: bigIntStringToFloat(highOracle),
+                                low: bigIntStringToFloat(lowOracle),
+                                close:
+                                  data.token.priceUSDOracle > 0
+                                    ? parseFloat(formatEther(data.token.priceUSDOracle))
+                                    : bigIntStringToFloat(closeOracle),
+                                volume: 0,
+                              });
                             });
+                        } else {
+                          onTick({
+                            time: Number(timestamp) * 1000,
+                            open: bigIntStringToFloat(open),
+                            high: bigIntStringToFloat(high),
+                            low: bigIntStringToFloat(low),
+                            close: bigIntStringToFloat(close),
+                            volume: bigIntStringToFloat(volume),
+                          });
+                        }
                       }
                     });
 
@@ -225,26 +257,42 @@ function TradingViewComponent() {
                               openOracle,
                             },
                           } = data;
-                          symbolInfo.name.startsWith('Oracle')
-                            ? onTick({
-                                time: Number(timestamp) * 1000,
-                                open: bigIntStringToFloat(openOracle),
-                                high: bigIntStringToFloat(highOracle),
-                                low: bigIntStringToFloat(lowOracle),
-                                close: bigIntStringToFloat(closeOracle),
-                                volume: bigIntStringToFloat(volume),
+
+                          if (symbolInfo.name.startsWith('Oracle')) {
+                            apolloClient
+                              .query<GetSelectedTokenQuery, GetSelectedTokenQueryVariables>({
+                                query: GET_SELECTED_TOKEN,
+                                variables: {
+                                  address: token.address,
+                                },
+                                fetchPolicy: 'cache-only',
                               })
-                            : onTick({
-                                time: Number(timestamp) * 1000,
-                                open: bigIntStringToFloat(open),
-                                high: bigIntStringToFloat(high),
-                                low: bigIntStringToFloat(low),
-                                close: bigIntStringToFloat(close),
-                                volume: bigIntStringToFloat(volume),
+                              .then(({ data }) => {
+                                onTick({
+                                  time: Number(timestamp) * 1000,
+                                  open: bigIntStringToFloat(openOracle),
+                                  high: bigIntStringToFloat(highOracle),
+                                  low: bigIntStringToFloat(lowOracle),
+                                  close:
+                                    data.token.priceUSDOracle > 0
+                                      ? parseFloat(formatEther(data.token.priceUSDOracle))
+                                      : bigIntStringToFloat(closeOracle),
+                                  volume: 0,
+                                });
                               });
+                          } else {
+                            onTick({
+                              time: Number(timestamp) * 1000,
+                              open: bigIntStringToFloat(open),
+                              high: bigIntStringToFloat(high),
+                              low: bigIntStringToFloat(low),
+                              close: bigIntStringToFloat(close),
+                              volume: bigIntStringToFloat(volume),
+                            });
+                          }
                         }
                       });
-                  }, 5000);
+                  }, 10000);
                 },
                 unsubscribeBars(listenerGuid) {
                   latestListenerGuids.splice(latestListenerGuids.indexOf(listenerGuid), 1);
@@ -302,7 +350,7 @@ function TradingViewComponent() {
 
                 getBars(symbolInfo, resolution, periodParams, onHistoryCallback, onErrorCallback) {
                   const token = getSelectedTokenFromQueryData(symbolInfo.name)!;
-                  client
+                  apolloClient
                     .query<GetTradingViewCandlesQuery, GetTradingViewCandlesQueryVariables>({
                       query: GET_TRADING_VIEW_CANDLES,
                       variables: {
@@ -311,6 +359,7 @@ function TradingViewComponent() {
                           // @ts-ignore
                           candleSize: resolutionMapper[resolution],
                           timestamp_lte: periodParams.to,
+                          timestamp_gte: periodParams.from,
                           token_: {
                             id: token.id,
                           },
@@ -326,7 +375,7 @@ function TradingViewComponent() {
                               low: bigIntStringToFloat(lowOracle),
                               open: bigIntStringToFloat(openOracle),
                               time: Number(timestamp) * 1000,
-                              volume: bigIntStringToFloat(volume),
+                              volume: 0,
                             }),
                           )
                         : res.data.tokenCandles.map(({ timestamp, close, high, low, open, volume }) => ({
@@ -392,7 +441,7 @@ function TradingViewComponent() {
           // Add oracle programmatically
           currentChart
             .current!.activeChart()
-            .createStudy('Compare', false, false, { source: 'open', symbol: `Oracle ${selectedToken.symbol}` })
+            .createStudy('Compare', false, true, { source: 'close', symbol: `Oracle ${selectedToken.symbol}` })
             .then((study) => {
               tradingViewOracleStudies.push(study!);
               // show a absolute scala
@@ -404,7 +453,7 @@ function TradingViewComponent() {
     }
 
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [client, selectedToken, pools]);
+  }, [apolloClient, selectedToken, pools]);
 
   useEffect(() => {
     if (currentChart.current) {

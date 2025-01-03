@@ -29,6 +29,7 @@ interface IStabilityPool is IBase {
   error NotFromStabilityPoolManager();
   error ZeroAmount();
   error NotOneTrove();
+  error UnknownCollateral();
 
   // --- Functions ---
 
@@ -53,4 +54,6 @@ interface IStabilityPool is IBase {
   function withdrawGains(address user) external;
 
   function offset(uint _debtToOffset, TokenAmount[] memory _collToAdd) external;
+
+  function provideIncentives(TokenAmount[] memory _collToAdd) external;
 }

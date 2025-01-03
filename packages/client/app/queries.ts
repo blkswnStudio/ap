@@ -339,3 +339,15 @@ export const GET_REDEMPTIONS_OPERATIONS = gql`
     }
   }
 `;
+
+export const GET_STAKING_VESTING_OPERATIONS = gql`
+  query GetStakingVestingOperations($token: String!) {
+    getStakingVestingOperations(token: $token) @client {
+      id
+      remainingTime
+      totalAmount
+      claimableAmount
+      burnedAmount
+    }
+  }
+`;

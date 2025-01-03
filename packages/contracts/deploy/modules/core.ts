@@ -1,6 +1,6 @@
 import { ethers } from 'hardhat';
-import { DeployHelper } from '../../utils/deployHelpers';
-import { AddressLike, parseUnits } from 'ethers';
+import { DeployHelper } from '@moonlabs/solidity-scripts/deployHelpers';
+import { AddressLike, MaxUint256, parseUnits, ZeroAddress } from 'ethers';
 import {
   TokenManager,
   SwapOperations,
@@ -27,8 +27,18 @@ import {
   MockTroveManager,
   MockStabilityPoolManager,
   AlternativePriceFeed,
+  MockStakingOperations,
+  DynamicFee,
+  StakingVestingOperations,
 } from '../../typechain';
-import { getPriceId, initOracle, initPrice } from '../../utils/pythHelper';
+import {
+  generatePriceUpdateDataWithFee,
+  generatePriceUpdateDataWithFeeViaHermes,
+  getPriceId,
+  initOracle,
+  initPrice,
+} from '../../utils/pythHelper';
+import { Contracts } from '../../utils/deployTestBase';
 
 export interface ContractsCore {
   borrowerOperations: BorrowerOperations | MockBorrowerOperations;
@@ -45,7 +55,9 @@ export interface ContractsCore {
   priceFeed: PriceFeed;
   alternativePriceFeed: AlternativePriceFeed;
   swapOperations: SwapOperations;
-  stakingOperations: StakingOperations;
+  dynamicFee: DynamicFee;
+  stakingOperations: StakingOperations | MockStakingOperations;
+  stakingVestingOperations: StakingVestingOperations;
   STABLE: DebtToken;
 
   // optional
@@ -66,12 +78,16 @@ export interface ContractsCore {
 export const deployCore = async (
   deploy: DeployHelper,
   test: boolean,
+  deployMockAssets: boolean,
+  deploySwapPools: boolean,
   pythAddress: AddressLike | undefined,
   govTokenAddress: AddressLike | undefined,
   ownerAddress: AddressLike | undefined
 ): Promise<ContractsCore> => {
   const govPayoutAddress = ownerAddress ?? (await ethers.getSigners())[0];
+  if (test) deployMockAssets = true;
   const contracts: ContractsCore = {} as any;
+  const isMockPyth = pythAddress == null;
 
   deploy.openCategory('Deploy');
   {
@@ -94,7 +110,9 @@ export const deployCore = async (
         ['priceFeed', 'PriceFeed'],
         ['alternativePriceFeed', 'AlternativePriceFeed'],
         ['swapOperations', 'SwapOperations'],
-        ['stakingOperations', 'StakingOperations'],
+        ['dynamicFee', 'DynamicFee'],
+        ['stakingOperations', `${mock}StakingOperations`],
+        ['stakingVestingOperations', `StakingVestingOperations`],
       ]) {
         (contracts as any)[key] = await deploy.deploy(
           `deploy_${key}`,
@@ -104,7 +122,7 @@ export const deployCore = async (
       }
 
       // deploy PYTH
-      if (pythAddress !== undefined) contracts.pyth = IPyth__factory.connect(pythAddress.toString());
+      if (!isMockPyth) contracts.pyth = IPyth__factory.connect(pythAddress.toString());
       else {
         contracts.pyth = await deploy.deploy(
           'deploy_pyth',
@@ -129,7 +147,7 @@ export const deployCore = async (
       for (const [key, contractName, ...args] of [
         [
           'STABLE',
-          test ? 'MockDebtToken' : 'DebtToken',
+          deployMockAssets ? 'MockDebtToken' : 'DebtToken',
           contracts.troveManager,
           contracts.redemptionOperations,
           contracts.borrowerOperations,
@@ -137,13 +155,13 @@ export const deployCore = async (
           contracts.tokenManager,
           contracts.swapOperations,
           contracts.priceFeed,
-          test ? 'STABLE' : 'JUSD',
-          test ? 'STABLE' : 'JUSD',
+          'jUSD',
+          'jUSD',
           '1',
           true,
         ],
         ...(govTokenAddress !== undefined ? [] : [['GOV', 'MockERC20', 'Governance', 'GOV', 18]]),
-        ...(!test
+        ...(!deployMockAssets
           ? []
           : [
               ['BTC', 'MockERC20', 'Bitcoin', 'BTC', 8],
@@ -158,8 +176,8 @@ export const deployCore = async (
                 contracts.tokenManager,
                 contracts.swapOperations,
                 contracts.priceFeed,
-                'STOCK',
-                'STOCK',
+                'jAAPL',
+                'jAAPL',
                 '1',
                 false,
               ],
@@ -173,19 +191,19 @@ export const deployCore = async (
                 contracts.tokenManager,
                 contracts.swapOperations,
                 contracts.priceFeed,
-                'STOCK_2',
-                'STOCK_2',
+                'jTSLA',
+                'jTSLA',
                 '1',
                 false,
               ],
             ]),
-      ]) {
+      ])
         (contracts as any)[key as string] = await deploy.deploy(
           `deployToken_${key}`,
-          `${key} @ ${contractName}`,
-          async () => await (await ethers.getContractFactory(contractName as string)).deploy(...args)
+          contractName as string,
+          async () => await (await ethers.getContractFactory(contractName as string)).deploy(...args),
+          `${key} @ ${contractName}`
         );
-      }
       deploy.closeCategory();
     }
   }
@@ -309,9 +327,14 @@ export const deployCore = async (
           contracts.priceFeed.target,
           contracts.tokenManager.target,
           contracts.stakingOperations.target,
+          contracts.dynamicFee.target,
         ],
       ],
-      ['stakingOperations', [contracts.swapOperations.target, contracts.tokenManager.target]],
+      [
+        'stakingOperations',
+        [contracts.swapOperations.target, contracts.tokenManager.target, contracts.stakingVestingOperations.target],
+      ],
+      ['stakingVestingOperations', [contracts.stakingOperations.target]],
     ]) {
       const c = (contracts as any)[key as string];
       await deploy.send(`link_${key}`, `link (${key})`, async () => await c.setAddresses(...args));
@@ -330,7 +353,7 @@ export const deployCore = async (
       5, // todo currently for local and staging a (wrong) pyth ticker is used, will be replaced with the alterantive balancer price feed on prod
       govTokenAddress ? noOracleID : '0x2b89b9dc8fdf9f34709a5b106b472f0f39bb6ca9ce04b0fd7f2e971688e2e53b'
     ); // Pyth: USDT/USD
-    if (!pythAddress) await initOracle(contracts as any);
+    if (isMockPyth) await initOracle(contracts as any);
 
     // add tokens to token manager
     deploy.openCategory('Add Tokens');
@@ -352,9 +375,12 @@ export const deployCore = async (
       // coll tokens
       deploy.openCategory('Coll');
       for (const [key, ratio] of [
-        ['BTC', parseUnits('1.1')],
+        ['BTC', parseUnits(test ? '1.1' : '1.5')],
         ['USDT', parseUnits('1.1')],
-        ['GOV', parseUnits('1.1')],
+        ['GOV', parseUnits(test ? '1.1' : '2')],
+        ['STABLE', parseUnits(test ? '1.5' : '1.1')],
+        ['STOCK', parseUnits(test ? '1.6' : '1.1')],
+        ['STOCK_2', parseUnits(test ? '1.6' : '1.1')],
       ]) {
         const c = (contracts as any)[key as string];
         if (c === undefined) continue;
@@ -381,7 +407,48 @@ export const deployCore = async (
       `setAlternativePriceFeed`,
       async () => await contracts.priceFeed.setAlternativePriceFeed(contracts.alternativePriceFeed)
     );
+    for (const asset of ['STOCK', 'STOCK_2'])
+      await deploy.send(
+        `setFallbackTrustedTimespan_${asset}`,
+        `setFallbackTrustedTimespan (${asset})`,
+        async () => await contracts.alternativePriceFeed.setFallbackTrustedTimespan(contracts[asset].target, 180)
+      );
     deploy.closeCategory();
+
+    // swap pool setup
+    if (deploySwapPools) {
+      deploy.openCategory('Swap Pools');
+
+      await openTrove({
+        isMockPyth,
+        deploy,
+        contracts: contracts as any,
+        colls: [
+          { tokenAddress: contracts.BTC, amount: parseUnits('10', 8) },
+          { tokenAddress: contracts.USDT, amount: parseUnits('500000') },
+          { tokenAddress: contracts.GOV, amount: parseUnits('500000') },
+        ],
+      });
+
+      for (const pool of [
+        [contracts.BTC, 'BTC', parseUnits('0.2', 8), parseUnits('10000')],
+        [contracts.USDT, 'USDT', parseUnits('10000'), parseUnits('10000')],
+        [contracts.GOV, 'GOV', parseUnits('4000'), parseUnits('10000')],
+        [contracts.STOCK, 'STOCK', parseUnits('65'), parseUnits('10000')],
+        [contracts.STOCK_2, 'STOCK_2', parseUnits('12'), parseUnits('10000')],
+      ])
+        await deploySwapPool(contracts, deploy, isMockPyth, pool);
+
+      // init staking rewards
+      await deploy.send(`mint_staking_rewards`, `mint staking rewards`, async () =>
+        contracts.GOV.unprotectedMint(contracts.stakingOperations.target, parseUnits('1000000'))
+      );
+      await deploy.send(`setStakingRewardsPerSecond`, `setStakingRewardsPerSecond`, async () =>
+        contracts.tokenManager.setStakingRewardsPerSecond(parseUnits('0.001'))
+      );
+
+      deploy.closeCategory();
+    }
 
     // handover
     if (ownerAddress !== undefined) {
@@ -402,3 +469,105 @@ export const deployCore = async (
 
   return contracts;
 };
+
+async function openTrove({
+  deploy,
+  contracts,
+  colls,
+  isMockPyth,
+}: {
+  deploy: any;
+  contracts: Contracts;
+  colls: any[];
+  isMockPyth?: boolean;
+}) {
+  const from = (await ethers.getSigners())[0];
+  deploy.openCategory('open trove');
+
+  for (const { tokenAddress, amount } of colls) {
+    await deploy.send(
+      `mint_${tokenAddress.target}`,
+      `Mint (${tokenAddress.target})`,
+      async () => await tokenAddress.unprotectedMint(from, amount)
+    );
+    await deploy.send(
+      `approve_${tokenAddress.target}`,
+      `Approve (${tokenAddress.target})`,
+      async () => await tokenAddress.connect(from).approve(contracts.borrowerOperations, amount)
+    );
+  }
+
+  const od = isMockPyth
+    ? await generatePriceUpdateDataWithFee(contracts)
+    : await generatePriceUpdateDataWithFeeViaHermes(contracts);
+  await deploy.send(
+    `openTrove`,
+    `Open Trove`,
+    async () => await contracts.borrowerOperations.connect(from).openTrove(colls, od.data, { value: od.fee })
+  );
+
+  deploy.closeCategory();
+}
+
+async function deploySwapPool(contracts, deploy, isMockPyth, [token, symbol, tokenAmount, stableAmount]) {
+  const from = (await ethers.getSigners())[0];
+  deploy.openCategory(`Pool ${token.target} = ${symbol}`);
+
+  // minting
+  await deploy.send(
+    `mint_pool_a_${token.target}`,
+    `Mint (${token.target})`,
+    async () => await token.unprotectedMint(from, tokenAmount)
+  );
+  await deploy.send(
+    `mint_pool_b_${token.target}`,
+    `Mint (Stable)`,
+    async () => await contracts.STABLE.unprotectedMint(from, stableAmount)
+  );
+
+  // approve
+  await deploy.send(`approve_pool_a_${token.target}`, `Approve (${token.target})`, async () =>
+    token.approve(contracts.swapOperations.target, MaxUint256)
+  );
+  await deploy.send(`approve_pool_b_${token.target}`, `Approve (Stable)`, async () =>
+    contracts.STABLE.approve(contracts.swapOperations.target, MaxUint256)
+  );
+
+  // deploy pair
+  const pair = await deploy.deploy(
+    `deploy_pool_${token.target}`,
+    'SwapPair',
+    async () => await (await ethers.getContractFactory('SwapPair')).deploy(contracts.swapOperations.target),
+    `Deploy swap pair`
+  );
+  await deploy.send(`init_pool_${token.target}`, `Init pool`, async () =>
+    contracts.swapOperations.createPair(pair.target, token, contracts.STABLE)
+  );
+  await deploy.send(`staking_pool_${token.target}`, `set staking alloc`, async () =>
+    contracts.tokenManager.setStakingAllocPoint(pair.target, 1)
+  );
+
+  // deploy initial liquidity
+  const blockTimestamp = (await ethers.provider.getBlock('latest'))?.timestamp ?? 0;
+  const od = isMockPyth
+    ? await generatePriceUpdateDataWithFee(contracts)
+    : await generatePriceUpdateDataWithFeeViaHermes(contracts);
+  await deploy.send(`pool_liquidity_${token.target}`, `mint initial liquidity`, async () =>
+    contracts.swapOperations.addLiquidity(
+      token,
+      contracts.STABLE,
+      tokenAmount,
+      stableAmount,
+      0,
+      0,
+      {
+        meta: { upperHint: ZeroAddress, lowerHint: ZeroAddress, maxFeePercentage: 0 },
+        priceUpdateData: od.data,
+      },
+      blockTimestamp + 60 * 5,
+      { value: od.fee }
+    )
+  );
+
+  deploy.closeCategory();
+}

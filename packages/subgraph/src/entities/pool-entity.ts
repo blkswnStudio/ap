@@ -3,6 +3,7 @@ import { PriceFeed } from '../../generated/PriceFeed/PriceFeed';
 import { Pool, PoolLiquidity, PoolVolume30d, PoolVolumeChunk, SystemInfo } from '../../generated/schema';
 import { SwapPair } from '../../generated/templates/SwapPairTemplate/SwapPair';
 import { oneEther } from './token-candle-entity';
+import { handleUpdatePoolDailyStats } from './pool-daily-stats-entity';
 
 // 1h
 const chunkSize = 60 * 60;
@@ -188,6 +189,8 @@ export function handleUpdatePool_liquidityDepositAPY(
   poolEntity.totalValueUSD = totalValueUSD;
   poolEntity.liquidityDepositAPY = apy;
   poolEntity.save();
+  
+  handleUpdatePoolDailyStats(nonStableCoin, event);
 }
 
 export function handleUpdatePool_totalSupply(event: ethereum.Event, stableCoin: Address, nonStableCoin: Address): void {
@@ -198,6 +201,8 @@ export function handleUpdatePool_totalSupply(event: ethereum.Event, stableCoin: 
   poolEntity.totalSupply = totalSupply;
 
   poolEntity.save();
+
+  handleUpdatePoolDailyStats(nonStableCoin, event);
 }
 
 export function handleUpdateLiquidity_totalAmount(
@@ -214,4 +219,5 @@ export function handleUpdateLiquidity_totalAmount(
   const liquidity1 = PoolLiquidity.load(nonStableCoin.concat(stableCoin))!;
   liquidity1.totalAmount = reserveNonStable;
   liquidity1.save();
+  handleUpdatePoolDailyStats(nonStableCoin, event);
 }

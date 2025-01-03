@@ -1,19 +1,26 @@
 'use client';
 
 import { useQuery } from '@apollo/client';
-import { Box, Skeleton } from '@mui/material';
+import { Alert, Box, InputAdornment, Skeleton } from '@mui/material';
 import Button from '@mui/material/Button';
 import Tab from '@mui/material/Tab';
 import Tabs from '@mui/material/Tabs';
 import Typography from '@mui/material/Typography';
-import { parseUnits } from 'ethers';
+import { parseEther, parseUnits } from 'ethers';
+import { useSnackbar } from 'notistack';
 import { SyntheticEvent, useCallback, useEffect, useRef, useState } from 'react';
 import { FormProvider, useForm } from 'react-hook-form';
-import { isCollateralTokenAddress, isDebtTokenAddress, isStableCoinAddress } from '../../../../config';
+import {
+  isCollateralTokenAddress,
+  isDebtTokenAddress,
+  isGOVTokenAddress,
+  isStableCoinAddress,
+} from '../../../../config';
 import { IBase } from '../../../../generated/types/TroveManager';
 import { useErrorMonitoring } from '../../../context/ErrorMonitoringContext';
 import { useEthers } from '../../../context/EthersProvider';
 import { usePriceFeedData } from '../../../context/PriceFeedDataProvider';
+import { useSelectedToken } from '../../../context/SelectedTokenProvider';
 import { useTransactionDialog } from '../../../context/TransactionDialogProvider';
 import { useUtilities } from '../../../context/UtilityProvider';
 import { evictCacheTimeoutForObject } from '../../../context/utils';
@@ -32,7 +39,7 @@ import {
   GET_BORROWER_LIQUIDITY_POOLS,
   GET_SYSTEMINFO,
 } from '../../../queries';
-import { standardDataPollInterval } from '../../../utils/contants';
+import { standardDataPollInterval } from '../../../utils/constants';
 import { getHints } from '../../../utils/crypto';
 import {
   bigIntStringToFloat,
@@ -58,9 +65,12 @@ type Props = {
 type FieldValues = {
   tokenAAmount: string;
   tokenBAmount: string;
+  borrowingRate: string;
 };
 
 function LiquidityDepositWithdraw({ selectedPoolAddress }: Props) {
+  const { enqueueSnackbar } = useSnackbar();
+
   const {
     address,
     contracts: {
@@ -76,14 +86,14 @@ function LiquidityDepositWithdraw({ selectedPoolAddress }: Props) {
   const { Sentry } = useErrorMonitoring();
   const { setSteps } = useTransactionDialog();
   const { getAllowance } = useUtilities();
+  const { JUSDToken } = useSelectedToken();
 
   const [tabValue, setTabValue] = useState<'DEPOSIT' | 'WITHDRAW'>('DEPOSIT');
 
   const [oldRatio, setOldRatio] = useState<number | null>(null);
   const [newRatio, setNewRatio] = useState<number | null>(null);
-  const [currentDebtValueUSD, setCurrentDebtValueUSD] = useState<number | null>(null);
-  const [currentCollateralValueUSD, setCurrentCollateralValueUSD] = useState<number | null>(null);
   const [oldCriticalRatio, setOldCriticalRatio] = useState<number | null>(null);
+  const [showMaxMintFee, setShowMaxMintFee] = useState(false);
 
   const latestUserInput = useRef<null | { address: string; amount: string }>(null);
 
@@ -92,6 +102,10 @@ function LiquidityDepositWithdraw({ selectedPoolAddress }: Props) {
     {
       variables: { borrower: address },
       skip: !address,
+      onError: (error) => {
+        enqueueSnackbar('Error requesting the subgraph. Please reload the page and try again.');
+        Sentry.captureException(error);
+      },
     },
   );
   const { data: collTokenData } = useQuery<GetBorrowerCollateralTokensQuery, GetBorrowerCollateralTokensQueryVariables>(
@@ -100,13 +114,23 @@ function LiquidityDepositWithdraw({ selectedPoolAddress }: Props) {
       variables: { borrower: address },
       skip: !address,
       pollInterval: standardDataPollInterval,
+      onError: (error) => {
+        enqueueSnackbar('Error requesting the subgraph. Please reload the page and try again.');
+        Sentry.captureException(error);
+      },
     },
   );
 
   // For Update after TX
   const { data: borrowerPoolsData } = useQuery<GetBorrowerLiquidityPoolsQuery, GetBorrowerLiquidityPoolsQueryVariables>(
     GET_BORROWER_LIQUIDITY_POOLS,
-    { variables: { borrower: address } },
+    {
+      variables: { borrower: address },
+      onError: (error) => {
+        enqueueSnackbar('Error requesting the subgraph. Please reload the page and try again.');
+        Sentry.captureException(error);
+      },
+    },
   );
   const selectedPool = borrowerPoolsData?.pools.find(({ address }) => address === selectedPoolAddress);
 
@@ -114,6 +138,7 @@ function LiquidityDepositWithdraw({ selectedPoolAddress }: Props) {
     defaultValues: {
       tokenAAmount: '',
       tokenBAmount: '',
+      borrowingRate: '0',
     },
     reValidateMode: 'onChange',
     shouldUnregister: true,
@@ -121,17 +146,9 @@ function LiquidityDepositWithdraw({ selectedPoolAddress }: Props) {
   const { handleSubmit, setValue, reset, watch } = methods;
 
   const ratioChangeCallback = useCallback(
-    (
-      newRatio: number,
-      oldRatio: number,
-      currentDebtValueUSD: number,
-      currentCollateralValueUSD: number,
-      oldCriticalRatio: number,
-    ) => {
+    (newRatio: number, oldRatio: number, _: number, __: number, oldCriticalRatio: number) => {
       setNewRatio(newRatio);
       setOldRatio(oldRatio);
-      setCurrentDebtValueUSD(currentDebtValueUSD);
-      setCurrentCollateralValueUSD(currentCollateralValueUSD);
       setOldCriticalRatio(oldCriticalRatio);
     },
     [setNewRatio, setOldRatio],
@@ -143,8 +160,18 @@ function LiquidityDepositWithdraw({ selectedPoolAddress }: Props) {
     }
 
     reset();
+    if (JUSDToken?.borrowingRate) {
+      setValue('borrowingRate', (2 + dangerouslyConvertBigIntToNumber(JUSDToken.borrowingRate, 12, 6 - 2)).toString());
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedPool?.id]);
+
+  useEffect(() => {
+    if (JUSDToken?.borrowingRate) {
+      setValue('borrowingRate', (2 + dangerouslyConvertBigIntToNumber(JUSDToken.borrowingRate, 12, 6 - 2)).toString());
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [JUSDToken?.borrowingRate]);
 
   // Wait until pool has been selected
   if (!selectedPool) return null;
@@ -182,6 +209,10 @@ function LiquidityDepositWithdraw({ selectedPoolAddress }: Props) {
   const handleChange = (_: SyntheticEvent, newValue: 'DEPOSIT' | 'WITHDRAW') => {
     setTabValue(newValue);
     reset();
+    if (JUSDToken?.borrowingRate) {
+      setValue('borrowingRate', (2 + dangerouslyConvertBigIntToNumber(JUSDToken.borrowingRate, 12, 6 - 2)).toString());
+    }
+    setShowMaxMintFee(false);
   };
 
   const onSubmit = async (data: FieldValues) => {
@@ -207,7 +238,7 @@ function LiquidityDepositWithdraw({ selectedPoolAddress }: Props) {
       return;
     }
 
-    const tokenAAmount =
+    let tokenAAmount =
       latestUserInput.current?.address === tokenA.token.address
         ? parseUnits(latestUserInput.current.amount, tokenA.token.decimals)
         : (parseUnits(latestUserInput.current.amount, tokenB.token.decimals) * BigInt(tokenA.totalAmount)) /
@@ -218,7 +249,6 @@ function LiquidityDepositWithdraw({ selectedPoolAddress }: Props) {
         : (parseUnits(latestUserInput.current.amount, tokenA.token.decimals) * BigInt(tokenB.totalAmount)) /
           BigInt(tokenA.totalAmount);
     const deadline = new Date().getTime() + 1000 * 60 * 2; // 2 minutes
-    const _maxMintFeePercentage = floatToBigInt(SLIPPAGE);
 
     if (tabValue === 'DEPOSIT') {
       const currentAllowanceTokenA = isDebtTokenAddress(tokenA.token.address)
@@ -249,6 +279,11 @@ function LiquidityDepositWithdraw({ selectedPoolAddress }: Props) {
           : 0n;
 
       const tokenBApprovalNecessary = amountBToApprove > currentAllowanceTokenB;
+
+      // convert to 18 decimals again for percentage
+      const maxMintFeePercentage = data.borrowingRate
+        ? parseUnits(data.borrowingRate, 18 - 2)
+        : parseEther('0.02') + JUSDToken!.borrowingRate;
 
       setSteps([
         ...(tokenAApprovalNecessary
@@ -331,20 +366,32 @@ function LiquidityDepositWithdraw({ selectedPoolAddress }: Props) {
                   tokenB.token.address,
                   tokenAAmount,
                   tokenBAmount,
-                  (tokenAAmount * floatToBigInt(1 - SLIPPAGE)) / floatToBigInt(1),
-                  (tokenBAmount * floatToBigInt(1 - SLIPPAGE)) / floatToBigInt(1),
+                  (tokenAAmount * (floatToBigInt(1) - maxMintFeePercentage)) / floatToBigInt(1),
+                  (tokenBAmount * (floatToBigInt(1) - maxMintFeePercentage)) / floatToBigInt(1),
                   {
                     priceUpdateData: updateDataInBytes,
                     meta: {
                       lowerHint,
                       upperHint,
-                      maxFeePercentage: _maxMintFeePercentage,
+                      maxFeePercentage: maxMintFeePercentage,
                     },
                   },
                   deadline,
                   { value: priceUpdateFee },
                 )
                 .catch((err) => {
+                  Sentry.captureException(`Error adding liquidity: ${JSON.stringify(debtAmounts.map(({ amount, tokenAddress }) => ({ tokenAddress, amount: amount.toString() })))}, ${tokenA.token.address},
+                  ${tokenB.token.address},
+                  ${tokenAAmount},
+                  ${tokenBAmount},
+                  ${(tokenAAmount * (floatToBigInt(1) - maxMintFeePercentage)) / floatToBigInt(1)},
+                  ${(tokenBAmount * (floatToBigInt(1) - maxMintFeePercentage)) / floatToBigInt(1)},
+                  ${selectedPool.totalSupply},
+                  ${selectedPool.liquidity[0].totalAmount},
+                  ${selectedPool.liquidity[1].totalAmount},
+                  ${selectedPool.borrowerAmount}
+                  `);
+
                   throw new Error(err, { cause: swapOperationsContract });
                 });
             },
@@ -379,6 +426,15 @@ function LiquidityDepositWithdraw({ selectedPoolAddress }: Props) {
         },
       ]);
     } else {
+      // If the input is very close to the max amount we use the max to not leave rest.
+      const tokenMaxAmount = borrowerAmount;
+
+      tokenAAmount =
+        tokenMaxAmount - parseEther(latestUserInput.current.amount) < parseEther('0.000001')
+          ? tokenMaxAmount
+          : tokenAAmount;
+      const isMaxWithdrawn = tokenAAmount === tokenMaxAmount;
+
       const percentageFromPool = (tokenAAmount * floatToBigInt(1, tokenA.token.decimals)) / BigInt(totalSupply);
       const tokenAAmountForWithdraw = (percentageFromPool * BigInt(tokenA.totalAmount)) / floatToBigInt(1);
       const tokenBAmountForWithdraw = (percentageFromPool * BigInt(tokenB.totalAmount)) / floatToBigInt(1);
@@ -449,6 +505,10 @@ function LiquidityDepositWithdraw({ selectedPoolAddress }: Props) {
               GET_SYSTEMINFO,
             ],
             actionAfterMined: (client) => {
+              if (isMaxWithdrawn) {
+                setTabValue('DEPOSIT');
+              }
+
               debtAmounts.forEach(({ tokenAddress }) => {
                 evictCacheTimeoutForObject(
                   currentNetwork!,
@@ -478,6 +538,15 @@ function LiquidityDepositWithdraw({ selectedPoolAddress }: Props) {
 
     setTimeout(() => {
       reset();
+      if (JUSDToken?.borrowingRate) {
+        setValue(
+          'borrowingRate',
+          (2 + dangerouslyConvertBigIntToNumber(JUSDToken.borrowingRate, 12, 6 - 2)).toString(),
+        );
+      }
+      setTimeout(() => {
+        setShowMaxMintFee(false);
+      }, 100);
     }, 100);
   };
 
@@ -755,8 +824,8 @@ function LiquidityDepositWithdraw({ selectedPoolAddress }: Props) {
                         ? {
                             value: dangerouslyConvertBigIntToNumber(
                               foundTokenA.walletAmount,
-                              tokenA.token.decimals - 9,
-                              9,
+                              tokenA.token.decimals - 6,
+                              6,
                             ),
                             message: 'You wallet does not contain the specified amount.',
                           }
@@ -906,8 +975,8 @@ function LiquidityDepositWithdraw({ selectedPoolAddress }: Props) {
                         ? {
                             value: dangerouslyConvertBigIntToNumber(
                               foundTokenB.walletAmount,
-                              tokenB.token.decimals - 9,
-                              9,
+                              tokenB.token.decimals - 6,
+                              6,
                             ),
                             message: 'You wallet does not contain the specified amount.',
                           }
@@ -1010,6 +1079,49 @@ function LiquidityDepositWithdraw({ selectedPoolAddress }: Props) {
                   )}
                 </div>
               </Box>
+
+              <div style={{ width: '100%', padding: '20px 20px 0 20px' }}>
+                {showMaxMintFee && (
+                  <div>
+                    <NumberInput
+                      name="borrowingRate"
+                      data-testid="apollon-LM-borrowingRate"
+                      rules={{
+                        min: { value: 0, message: 'You can not specify a smaller amount.' },
+                        max: { value: 6, message: 'Amount can not be greater.' },
+                      }}
+                      label="Max. Mint Fee"
+                      fullWidth
+                      InputProps={{
+                        endAdornment: <InputAdornment position="end">%</InputAdornment>,
+                      }}
+                    />
+
+                    <div
+                      style={{
+                        display: 'flex',
+                        justifyContent: 'space-between',
+                        marginTop: 6,
+                      }}
+                    >
+                      <Typography variant="label" paragraph>
+                        probable min. Mint Fee
+                      </Typography>
+                      <Typography variant="caption" color="info.main">
+                        {displayPercentage(
+                          dangerouslyConvertBigIntToNumber(JUSDToken!.borrowingRate, 12, 6),
+                          'default',
+                          5,
+                        )}
+                      </Typography>
+                    </div>
+                  </div>
+                )}
+
+                <Button variant="contained" onClick={() => setShowMaxMintFee(!showMaxMintFee)}>
+                  {showMaxMintFee ? 'Less' : 'More'}
+                </Button>
+              </div>
             </>
           )}
 
@@ -1019,65 +1131,84 @@ function LiquidityDepositWithdraw({ selectedPoolAddress }: Props) {
             <Box style={{ display: 'flex', flexDirection: 'column' }}>
               <Box
                 sx={{
-                  height: '125px',
-                  display: 'flex',
-                  justifyContent: 'space-between',
                   padding: '20px',
                   borderBottom: '1px solid',
                   borderColor: 'background.paper',
                 }}
               >
-                <div style={{ marginTop: 6 }}>
-                  <Label variant="success">
-                    {tokenA.token.symbol}-{tokenB.token.symbol}
-                  </Label>
-                </div>
-
-                <div>
-                  <NumberInput
-                    name="tokenAAmount"
-                    data-testid="apollon-liquidity-pool-withdraw-token-a-amount"
-                    placeholder="Value"
-                    fullWidth
-                    rules={{
-                      min: { value: 0, message: 'You can only withdraw positive amounts.' },
-                      max: {
-                        value: dangerouslyConvertBigIntToNumber(borrowerAmount, 9, 9),
-                        message: 'This amount is greater than your deposited amount.',
-                      },
-                      required: 'This field is required.',
-                    }}
-                    onChange={(event) => {
-                      const value = event.target.value;
-                      setValue('tokenAAmount', value);
-                      latestUserInput.current = {
-                        // address just a placeholder to share code
-                        address: tokenA.token.address,
-                        amount: value,
-                      };
-                    }}
-                  />
-                  <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                    <div>
-                      <Typography
-                        variant="caption"
-                        data-testid="apollon-liquidity-pool-withdraw-token-a-funds-label"
-                        color="info.main"
-                      >
-                        {roundCurrency(dangerouslyConvertBigIntToNumber(borrowerAmount, 12, 6), 5, 5)}
-                      </Typography>
-                      <br />
-                      <Typography variant="label">Deposited</Typography>
-                    </div>
-                    <Button
-                      variant="undercover"
-                      sx={{ textDecoration: 'underline', p: 0, mt: 0.25, height: 25 }}
-                      onClick={() => fillMaxInputValue('tokenAAmount')}
-                    >
-                      max
-                    </Button>
+                <Box
+                  sx={{
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                  }}
+                >
+                  <div style={{ marginTop: 6 }}>
+                    <Label variant="success">
+                      {tokenA.token.symbol}-{tokenB.token.symbol}
+                    </Label>
                   </div>
-                </div>
+
+                  <div>
+                    <NumberInput
+                      name="tokenAAmount"
+                      data-testid="apollon-liquidity-pool-withdraw-token-a-amount"
+                      placeholder="Value"
+                      fullWidth
+                      rules={{
+                        min: { value: 0, message: 'You can only withdraw positive amounts.' },
+                        max: {
+                          value: dangerouslyConvertBigIntToNumber(borrowerAmount, 9, 9),
+                          message: 'This amount is greater than your deposited amount.',
+                        },
+                        required: 'This field is required.',
+                      }}
+                      onChange={(event) => {
+                        const value = event.target.value;
+                        setValue('tokenAAmount', value);
+                        latestUserInput.current = {
+                          // address just a placeholder to share code
+                          address: tokenA.token.address,
+                          amount: value,
+                        };
+                      }}
+                    />
+
+                    <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                      <div>
+                        <Typography
+                          variant="caption"
+                          data-testid="apollon-liquidity-pool-withdraw-token-a-funds-label"
+                          color="info.main"
+                        >
+                          {roundCurrency(dangerouslyConvertBigIntToNumber(borrowerAmount, 12, 6), 5, 5)}
+                        </Typography>
+                        <br />
+                        <Typography variant="label">Deposited</Typography>
+                      </div>
+                      <Button
+                        variant="undercover"
+                        sx={{ textDecoration: 'underline', p: 0, mt: 0.25, height: 25 }}
+                        onClick={() => fillMaxInputValue('tokenAAmount')}
+                      >
+                        max
+                      </Button>
+                    </div>
+                  </div>
+                </Box>
+
+                {selectedPool.pendingRewards > 0 && parseFloat(tokenAAmount) > 0 && (
+                  <Alert color="info" variant="outlined" sx={{ mt: 1 }}>
+                    <Typography variant="caption">
+                      You are about to claim{' '}
+                      {roundNumber(dangerouslyConvertBigIntToNumber(selectedPool.pendingRewards, 9, 9), 5)}{' '}
+                      {
+                        collTokenData?.collateralTokenMetas.find(({ token }) => isGOVTokenAddress(token.address))?.token
+                          .symbol
+                      }{' '}
+                      that are staked in this pool when you withdraw liquidity from it.
+                    </Typography>
+                  </Alert>
+                )}
               </Box>
 
               <div

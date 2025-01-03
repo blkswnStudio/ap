@@ -7,7 +7,9 @@
     "test": "test"
   },
   "scripts": {
+    "flatten": "node ./utils/flatten.ts",
     "hardhat": "hardhat",
+    "contract:sizes": "hardhat size-contracts",
     "prepare": "hardhat compile",
     "compile:watch": "nodemon --watch contracts --ext sol --exec 'npx hardhat compile'",
     "test": "hardhat test test/**/*.ts",
@@ -15,9 +17,8 @@
     "testGas": "hardhat test gasTest/**/*.ts",
     "coverage": "hardhat coverage",
     "coveralls": "cat coverage/lcov.info | coveralls",
-    "deploy:test:local": "hardhat deployCore --network localhost --test true",
-    "deploy:test:local:pools": "hardhat run utils/deploySwapPools.ts --network localhost",
-    "deploy:release:seiTest": "hardhat deployCore --network seiTest --pyth 0x2880aB155794e7179c9eE2e38200202908C17B43"
+    "deploy:test:local": "hardhat deployCore --network localhost --test true --deploymockassets true --deployswappools true",
+    "deploy:release:seiTest": "hardhat deployCore --network seiTest --deploymockassets true --deployswappools true --pyth 0x2880aB155794e7179c9eE2e38200202908C17B43"
   },
   "keywords": [],
   "author": "",
@@ -32,6 +33,7 @@
     "xmlhttprequest": "^1.8.0"
   },
   "devDependencies": {
+    "@moonlabs/solidity-scripts": "latest",
     "@nomicfoundation/hardhat-chai-matchers": "^2.0.2",
     "@nomicfoundation/hardhat-ethers": "^3.0.4",
     "@nomicfoundation/hardhat-network-helpers": "^1.0.9",
@@ -39,6 +41,7 @@
     "@nomicfoundation/hardhat-verify": "^1.1.1",
     "@openzeppelin/contracts": "^5.0.0",
     "@openzeppelin/test-helpers": "^0.5.10",
+    "@pythnetwork/pyth-evm-js": "1.44.0",
     "@pythnetwork/pyth-sdk-solidity": "^2.4.1",
     "@typechain/ethers-v6": "^0.5.0",
     "@typechain/hardhat": "^9.0.0",

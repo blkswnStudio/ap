@@ -38,10 +38,9 @@ describe('Access Control: Apollon functions with the caller restricted to Apollo
 
     // updateRewardSnapshots
     it('updateRewardSnapshots(): reverts when called by an account that is not BorrowerOperations', async () => {
-      await expect(troveManager.updateTroveRewardSnapshots(bob)).to.be.revertedWithCustomError(
-        troveManager,
-        'NotFromBorrowerOrRedemptionOps'
-      );
+      await expect(
+        troveManager.updateTroveRewardSnapshots(await buildPriceCache(contracts), bob)
+      ).to.be.revertedWithCustomError(troveManager, 'NotFromBorrowerOrRedemptionOps');
     });
 
     // removeStake

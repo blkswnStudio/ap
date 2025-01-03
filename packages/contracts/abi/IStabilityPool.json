@@ -21,6 +21,11 @@
     },
     {
         "inputs": [],
+        "name": "UnknownCollateral",
+        "type": "error"
+    },
+    {
+        "inputs": [],
         "name": "ZeroAmount",
         "type": "error"
     },
@@ -395,6 +400,31 @@
             }
         ],
         "name": "offset",
+        "outputs": [],
+        "stateMutability": "nonpayable",
+        "type": "function"
+    },
+    {
+        "inputs": [
+            {
+                "components": [
+                    {
+                        "internalType": "address",
+                        "name": "tokenAddress",
+                        "type": "address"
+                    },
+                    {
+                        "internalType": "uint256",
+                        "name": "amount",
+                        "type": "uint256"
+                    }
+                ],
+                "internalType": "struct IBase.TokenAmount[]",
+                "name": "_collToAdd",
+                "type": "tuple[]"
+            }
+        ],
+        "name": "provideIncentives",
         "outputs": [],
         "stateMutability": "nonpayable",
         "type": "function"

@@ -6,6 +6,7 @@ import Button from '@mui/material/Button';
 import InputAdornment from '@mui/material/InputAdornment';
 import Typography from '@mui/material/Typography';
 import { ethers, parseEther } from 'ethers';
+import { useSnackbar } from 'notistack';
 import { ChangeEvent, useCallback, useEffect, useState } from 'react';
 import { FormProvider, useController, useForm } from 'react-hook-form';
 import { isCollateralTokenAddress, isDebtTokenAddress, isStableCoinAddress } from '../../../../config';
@@ -28,7 +29,7 @@ import {
   GET_BORROWER_DEBT_TOKENS,
   GET_BORROWER_SWAPS,
 } from '../../../queries';
-import { WIDGET_HEIGHTS } from '../../../utils/contants';
+import { WIDGET_HEIGHTS } from '../../../utils/constants';
 import { getCheckSum } from '../../../utils/crypto';
 import {
   convertToEtherPrecission,
@@ -53,6 +54,8 @@ type FieldValues = {
 };
 
 const Swap = () => {
+  const { enqueueSnackbar } = useSnackbar();
+
   const [showSlippage, setShowSlippage] = useState(false);
   const [tradingDirection, setTradingDirection] = useState<'jUSDSpent' | 'jUSDAquired'>('jUSDSpent');
   const [inputToken, setInputToken] = useState<'JUSD' | 'Token'>('JUSD');
@@ -64,7 +67,7 @@ const Swap = () => {
   const {
     address,
     currentNetwork,
-    contracts: { swapOperationsContract, collateralTokenContracts, debtTokenContracts, swapPairContracts },
+    contracts: { swapOperationsContract, collateralTokenContracts, debtTokenContracts },
   } = useEthers();
   const { getAllowance } = useUtilities();
   const { getPythUpdateData } = usePriceFeedData();
@@ -78,6 +81,10 @@ const Swap = () => {
         borrower: address,
       },
       skip: !address,
+      onError: (error) => {
+        enqueueSnackbar('Error requesting the subgraph. Please reload the page and try again.');
+        Sentry.captureException(error);
+      },
     },
   );
   const { data: collTokenData } = useQuery<GetBorrowerCollateralTokensQuery, GetBorrowerCollateralTokensQueryVariables>(
@@ -87,6 +94,10 @@ const Swap = () => {
         borrower: address,
       },
       skip: !address || !selectedToken?.address || !isCollateralTokenAddress(selectedToken.address),
+      onError: (error) => {
+        enqueueSnackbar('Error requesting the subgraph. Please reload the page and try again.');
+        Sentry.captureException(error);
+      },
     },
   );
 
@@ -137,14 +148,14 @@ const Swap = () => {
         let tokenAmountToFill = 0n;
 
         if (tradingDirectionUpdated === 'jUSDSpent') {
-          const [[, stableFeeAmount], [tokenAmount]] = await swapOperationsContract.getAmountsOut(stableInputAsBigint, [
-            JUSDToken!.address,
-            selectedToken!.address,
-          ]);
+          const [[[, stableFeeAmount], [tokenAmount]]] = await swapOperationsContract.getAmountsOut(
+            stableInputAsBigint,
+            [JUSDToken!.address, selectedToken!.address],
+          );
           setDynamicSwapFee((stableFeeAmount * floatToBigInt(1)) / stableInputAsBigint);
           tokenAmountToFill = convertToEtherPrecission(tokenAmount, selectedToken!.decimals);
         } else {
-          const [[tokenAmount, tokenFeeAmount]] = await swapOperationsContract.getAmountsIn(stableInputAsBigint, [
+          const [[[tokenAmount, tokenFeeAmount]]] = await swapOperationsContract.getAmountsIn(stableInputAsBigint, [
             selectedToken!.address,
             JUSDToken!.address,
           ]);
@@ -169,17 +180,17 @@ const Swap = () => {
         let stableAmountToFill = 0n;
 
         if (tradingDirectionUpdated === 'jUSDSpent') {
-          const [[stableAmount, stableFeeAmount]] = await swapOperationsContract.getAmountsIn(tokenInputAsBigint, [
+          const [[[stableAmount, stableFeeAmount]]] = await swapOperationsContract.getAmountsIn(tokenInputAsBigint, [
             JUSDToken!.address,
             selectedToken!.address,
           ]);
           setDynamicSwapFee((stableFeeAmount * floatToBigInt(1)) / stableAmount);
           stableAmountToFill = stableAmount;
         } else {
-          const [[, tokenFeeAmount], [stableAmount]] = await swapOperationsContract.getAmountsOut(tokenInputAsBigint, [
-            selectedToken!.address,
-            JUSDToken!.address,
-          ]);
+          const [[[, tokenFeeAmount], [stableAmount]]] = await swapOperationsContract.getAmountsOut(
+            tokenInputAsBigint,
+            [selectedToken!.address, JUSDToken!.address],
+          );
           setDynamicSwapFee((tokenFeeAmount * floatToBigInt(1)) / tokenInputAsBigint);
           stableAmountToFill = stableAmount;
         }
@@ -460,7 +471,7 @@ const Swap = () => {
 
   useEffect(() => {
     reset();
-  }, [selectedToken, reset]);
+  }, [selectedToken?.id, reset]);
 
   // eslint-disable-next-line react-hooks/exhaustive-deps
   const handleSwapValueChangeDebounce = useCallback(debounce(handleSwapValueChange, 500), [
@@ -470,14 +481,21 @@ const Swap = () => {
   ]);
 
   // Make it either 1 or 0.1 or 0.001 depending on the wallet amount of the user
-  // Calculate the step size based on the wallet amount
+  // Calculate the step size based on the wallet amount or the pool size, depending on which is smaller.
   const stepSizeToken = selectedToken
-    ? dangerouslyConvertBigIntToNumber(relevantToken.walletAmount, selectedToken!.decimals - 6, 6) > 1
-      ? 1
-      : dangerouslyConvertBigIntToNumber(relevantToken.walletAmount, selectedToken!.decimals - 6, 6) > 0.1
-        ? 0.1
-        : 0.001
+    ? selectedToken.pool.liquidityPair[1] > relevantToken.walletAmount
+      ? dangerouslyConvertBigIntToNumber(relevantToken.walletAmount, selectedToken.decimals - 6, 6) > 1
+        ? 1
+        : dangerouslyConvertBigIntToNumber(relevantToken.walletAmount, selectedToken.decimals - 6, 6) > 0.1
+          ? 0.1
+          : 0.001
+      : dangerouslyConvertBigIntToNumber(selectedToken.pool.liquidityPair[1], selectedToken.decimals - 6, 6) > 1
+        ? 1
+        : dangerouslyConvertBigIntToNumber(selectedToken.pool.liquidityPair[1], selectedToken.decimals - 6, 6) > 0.1
+          ? 0.1
+          : 0.001
     : 1;
+
   const tokenInput = (
     <NumberInput
       key="tokenAmount"
@@ -504,10 +522,20 @@ const Swap = () => {
           parseFloat(e.target.value) >=
           dangerouslyConvertBigIntToNumber(selectedToken!.pool.liquidityPair[1], selectedToken!.decimals - 6, 6)
         ) {
+          // Round to the maxValue of the pool - 1 step (because max is also not possible)
           e.target.value = (
-            dangerouslyConvertBigIntToNumber(selectedToken!.pool.liquidityPair[1], selectedToken!.decimals - 6, 6) -
-            stepSizeToken
-          ).toString();
+            parseFloat(
+              (
+                Math.round(
+                  dangerouslyConvertBigIntToNumber(
+                    selectedToken!.pool.liquidityPair[1],
+                    selectedToken!.decimals - 6,
+                    6,
+                  ) / stepSizeToken,
+                ) * stepSizeToken
+              ).toFixed(2),
+            ) - stepSizeToken
+          ).toFixed(2);
         }
 
         tokenAmountField.onChange(e);
