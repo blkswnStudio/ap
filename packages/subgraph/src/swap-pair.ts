@@ -17,6 +17,7 @@ import {
 } from './entities/pool-entity';
 import { handleCreateSwapEvent } from './entities/swap-event-entity';
 import { handleUpdateTokenCandle_low_high, handleUpdateTokenCandle_volume } from './entities/token-candle-entity';
+import { handleUpdateTradingUserStats_onSwap } from './entities/trading-user-stats';
 
 export function handleBurn(event: BurnEvent): void {
   const swapPairContract = SwapPair.bind(event.address);
@@ -55,30 +56,22 @@ export function handleSwap(event: SwapEvent): void {
   const debtTokenSize = direction === 'SHORT' ? event.params.amount1In : event.params.amount1Out;
 
   const swapFee = direction === 'LONG' ? event.params.amount0InFee : event.params.amount1InFee;
+  const feeUSD =
+    direction === 'LONG'
+      ? swapFee
+      : PriceFeed.bind(Address.fromBytes(systemInfo.priceFeed)).getUSDValue2(nonStableCoin, swapFee);
 
   handleCreateSwapEvent(event, nonStableCoin, event.params.to, direction, debtTokenSize, stableSize, swapFee);
-
+  handleUpdateTradingUserStats_onSwap(
+    event,
+    nonStableCoin,
+    event.params.to,
+    direction,
+    feeUSD,
+    stableSize,
+    debtTokenSize,
+  );
   handleUpdateTokenCandle_volume(event, event.address, nonStableCoin, stableSize);
-
-  let feeUSD = BigInt.fromI32(0);
-  if (direction === 'LONG') {
-    // TODO: Maybe use pool price instead of oracle?
-    const stablePrice = PriceFeed.bind(Address.fromBytes(systemInfo.priceFeed)).getPrice(stableCoin).getPrice();
-    feeUSD = stablePrice
-      .times(stableSize)
-      .times(swapFee)
-      .div(BigInt.fromI32(10).pow(18 + 18));
-  } else {
-    const priceFeedContract = PriceFeed.bind(Address.fromBytes(systemInfo.priceFeed));
-    // TODO: Maybe use pool price instead of oracle?
-    const tokenPrice = priceFeedContract.getPrice(nonStableCoin).getPrice();
-
-    feeUSD = tokenPrice
-      .times(debtTokenSize)
-      .times(swapFee)
-      .div(BigInt.fromI32(10).pow(18 + 18));
-  }
-
   handleUpdatePool_volume30dUSD(event, stableCoin, nonStableCoin, stableSize, feeUSD);
 }
 

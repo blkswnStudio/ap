@@ -49,20 +49,22 @@ contract SortedTroves is Ownable(msg.sender), CheckContract, ISortedTroves {
     renounceOwnership();
   }
 
-  /*
-   * @dev Re-insert the node at a new position, based on its new CR
-   * @param _id Node's id
-   * @param _newCR Node's new CR
-   * @param _redeemableDebt Amount of stablecoin minted by the node
-   * @param _prevId Id of previous node for the new insert position
-   * @param _nextId Id of next node for the new insert position
-   */
-  function update(address _id, uint _CR, uint _redeemableDebt, address _prevId, address _nextId) external override {
+  function update(
+    address _id,
+    uint _CR,
+    uint _redeemableDebt,
+    uint _newRedeemableCollInUSD,
+    address _prevId,
+    address _nextId
+  ) external override {
     _requireCallerIsProtocol();
     _remove(_id);
 
     // only included troves which minted some stable into the list
     if (_redeemableDebt == 0) return;
+
+    // only included troves which have some collateral in the list (not only debt tokens used as coll in the trove, also "real" coll tokens)
+    if (_newRedeemableCollInUSD == 0) return;
 
     if (contains(_id)) revert ListAlreadyContainsNode();
     if (_id == address(0)) revert IdCantBeZero();

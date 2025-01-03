@@ -22,7 +22,7 @@ import {
   GET_BORROWER_DEBT_TOKENS,
   GET_SYSTEMINFO,
 } from '../../../queries';
-import { WIDGET_HEIGHTS } from '../../../utils/contants';
+import { WIDGET_HEIGHTS } from '../../../utils/constants';
 import { getHints } from '../../../utils/crypto';
 import {
   convertToEtherPrecission,
@@ -247,10 +247,10 @@ const Farm = () => {
       if (tabValue === 'Long') {
         const amountsInStable = (valueAsBigint * (floatToBigInt(1) - borrowingFee!)) / floatToBigInt(1);
 
-        const [[, stableFeeAmount], [tokenAmount]] = await swapOperationsContract.getAmountsOut(amountsInStable, [
-          JUSDToken!.address,
-          selectedToken!.address,
-        ]);
+        const [[[, stableFeeAmount], [tokenAmount]], isUsablePrice] = await swapOperationsContract.getAmountsOut(
+          amountsInStable,
+          [JUSDToken!.address, selectedToken!.address],
+        );
 
         setDynamicSwapFee((stableFeeAmount * floatToBigInt(1)) / amountsInStable);
         const tokenAmountNormalized = convertToEtherPrecission(tokenAmount, selectedToken!.decimals);
@@ -259,7 +259,7 @@ const Farm = () => {
       } else {
         const amountsInToken = (valueAsBigint * (floatToBigInt(1) - borrowingFee!)) / floatToBigInt(1);
 
-        const [[, tokenFeeAmount], [stableAmount]] = await swapOperationsContract.getAmountsOut(amountsInToken, [
+        const [[[, tokenFeeAmount], [stableAmount]]] = await swapOperationsContract.getAmountsOut(amountsInToken, [
           selectedToken!.address,
           JUSDToken!.address,
         ]);

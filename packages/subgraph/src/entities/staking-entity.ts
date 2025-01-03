@@ -41,6 +41,6 @@ export function handleUpdateStaking_rewardsPerSecond(event: ethereum.Event, rewa
   // iterate over all pools and update USD and APR
   for (let n = 0; n < staking.pools.length; n++) {
     const poolAddress = Address.fromBytes(staking.pools[n]);
-    handleUpdateStakingPool_totalDepositUSD_totalRewardUSD_stakingAPR(poolAddress);
+    handleUpdateStakingPool_totalDepositUSD_totalRewardUSD_stakingAPR(poolAddress, event);
   }
 }

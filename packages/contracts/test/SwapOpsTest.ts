@@ -257,12 +257,11 @@ describe('SwapOperations', () => {
     });
 
     it('empty trove (only stable gas comp debt), pool should not repay that', async () => {
-      const amount = parseUnits('1000');
-
       //open trove
       await open(alice, parseUnits('1', 8), parseUnits('0'));
 
       //create pair & add liquidity (alice)
+      const amount = parseUnits('1000');
       const pair = await add(alice, STOCK, amount, amount, true);
 
       //remove liquidity
@@ -282,7 +281,11 @@ describe('SwapOperations', () => {
       //remove liquidity
       await remove(alice, STOCK, await stakingOperations.balanceOf(pair, alice));
       expect(await stakingOperations.balanceOf(pair, alice)).to.be.equal(0);
-      expect(await troveManager.getTroveRepayableDebt(alice, STABLE, false, false)).to.be.equal(0);
+      expect(
+        (await troveManager.getTroveRepayableDebts(alice, false)).find(
+          ({ tokenAddress }) => tokenAddress === STABLE.target
+        )?.amount ?? 0n
+      ).to.be.equal(0);
     });
 
     it('huge debts, partial repay expected', async () => {
@@ -298,7 +301,11 @@ describe('SwapOperations', () => {
       //remove liquidity
       await remove(alice, STOCK, await stakingOperations.balanceOf(pair, alice));
       expect(await stakingOperations.balanceOf(pair, alice)).to.be.equal(0);
-      expect(await troveManager.getTroveRepayableDebt(alice, STABLE, false, false)).to.be.greaterThan(0);
+      expect(
+        (await troveManager.getTroveRepayableDebts(alice, false)).find(
+          ({ tokenAddress }) => tokenAddress === STABLE.target
+        )?.amount ?? 0n
+      ).to.be.greaterThan(0);
     });
   });
 
@@ -446,15 +453,15 @@ describe('SwapOperations', () => {
       //check initial fee
       const baseFee = await swapOperations.getSwapBaseFee();
       const reserves = await pair.getReserves();
-      expect(await pair.getSwapFee(reserves[0], reserves[1])).to.be.eq(baseFee);
+      expect((await pair.getSwapFee(reserves[0], reserves[1]))[0]).to.be.eq(baseFee);
 
       //check dex price > oracle price
       await setPrice('STOCK', '140', contracts);
-      expect(await pair.getSwapFee(reserves[0], reserves[1] + parseUnits('1'))).to.be.eq(baseFee);
+      expect((await pair.getSwapFee(reserves[0], reserves[1] + parseUnits('1')))[0]).to.be.eq(baseFee);
 
       //check dex price < oracle price
       await setPrice('STOCK', '160', contracts);
-      expect(await pair.getSwapFee(reserves[0], reserves[1] + parseUnits('1'))).to.not.be.eq(baseFee);
+      expect((await pair.getSwapFee(reserves[0], reserves[1] + parseUnits('1')))[0]).to.not.be.eq(baseFee);
     });
   });
 
@@ -657,36 +664,36 @@ describe('SwapOperations', () => {
   describe('dynamic fee', () => {
     it('getAmountsOut, STABLE-STOCK', async () => {
       await add(alice, STOCK, parseUnits('150'), parseUnits('1'), true, true);
-      const swapAmounts = await contracts.swapOperations.getAmountsOut(parseUnits('1'), [STABLE, STOCK]);
+      const swapAmounts = (await contracts.swapOperations.getAmountsOut(parseUnits('1'), [STABLE, STOCK]))[0];
       expect(swapAmounts[0][0]).to.be.equal(parseUnits('1'));
-      expect(swapAmounts[0][1]).to.be.equal(1e18 * 0.0031);
-      expect(swapAmounts[1][0]).to.be.equal(6602122295225928n);
+      expect(swapAmounts[0][1]).to.be.equal(3300000000000000n);
+      expect(swapAmounts[1][0]).to.be.equal(6600806507691889n);
       expect(swapAmounts[1][1]).to.be.equal(0);
     });
 
     it('getAmountsOut, STOCK-STABLE', async () => {
       await add(alice, STOCK, parseUnits('150'), parseUnits('1'), true, true);
-      const swapAmounts = await contracts.swapOperations.getAmountsOut(parseUnits('0.01'), [STOCK, STABLE]);
+      const swapAmounts = (await contracts.swapOperations.getAmountsOut(parseUnits('0.01'), [STOCK, STABLE]))[0];
       expect(swapAmounts[0][0]).to.be.equal(parseUnits('0.01'));
-      expect(swapAmounts[0][1]).to.be.equal(0.01e18 * 0.0031);
-      expect(swapAmounts[1][0]).to.be.equal(1480589998306878725n);
+      expect(swapAmounts[0][1]).to.be.equal(33000000000000n);
+      expect(swapAmounts[1][0]).to.be.equal(1480295890855839844n);
       expect(swapAmounts[1][1]).to.be.equal(0);
     });
 
     it('getAmountsIn, STABLE-STOCK', async () => {
       await add(alice, STOCK, parseUnits('150'), parseUnits('1'), true, true);
-      const swapAmounts = await contracts.swapOperations.getAmountsIn(parseUnits('0.01'), [STABLE, STOCK]);
-      expect(swapAmounts[0][0]).to.be.equal(1519848484848484848n);
-      expect(swapAmounts[0][1]).to.be.equal(4696969696969696n);
+      const swapAmounts = (await contracts.swapOperations.getAmountsIn(parseUnits('0.01'), [STABLE, STOCK]))[0];
+      expect(swapAmounts[0][0]).to.be.equal(1520151515151515152n);
+      expect(swapAmounts[0][1]).to.be.equal(5000000000000000n);
       expect(swapAmounts[1][0]).to.be.equal(parseUnits('0.01'));
       expect(swapAmounts[1][1]).to.be.equal(0);
     });
 
     it('getAmountsIn, STOCK-STABLE', async () => {
       await add(alice, STOCK, parseUnits('150'), parseUnits('1'), true, true);
-      const swapAmounts = await contracts.swapOperations.getAmountsIn(parseUnits('1'), [STOCK, STABLE]);
-      expect(swapAmounts[0][0]).to.be.equal(6732214765100671n);
-      expect(swapAmounts[0][1]).to.be.equal(20805369127516n);
+      const swapAmounts = (await contracts.swapOperations.getAmountsIn(parseUnits('1'), [STOCK, STABLE]))[0];
+      expect(swapAmounts[0][0]).to.be.equal(6733557046979866n);
+      expect(swapAmounts[0][1]).to.be.equal(22147651006711n);
       expect(swapAmounts[1][0]).to.be.equal(parseUnits('1'));
       expect(swapAmounts[1][1]).to.be.equal(0);
     });

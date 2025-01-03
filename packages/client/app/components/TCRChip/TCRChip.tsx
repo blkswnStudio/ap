@@ -11,7 +11,9 @@ import {
   alpha,
   useTheme,
 } from '@mui/material';
+import { useSnackbar } from 'notistack';
 import { useState } from 'react';
+import { useErrorMonitoring } from '../../context/ErrorMonitoringContext';
 import { usePriceFeedData } from '../../context/PriceFeedDataProvider';
 import { GetSystemInfoQuery, GetSystemInfoQueryVariables } from '../../generated/gql-types';
 import { GET_SYSTEMINFO } from '../../queries';
@@ -21,10 +23,19 @@ import DiamondIcon from '../Icons/DiamondIcon';
 import { CollateralRatioChart } from '../Visualizations/CollateralRatioVisualization';
 
 function TCRChip() {
+  const { enqueueSnackbar } = useSnackbar();
+
+  const { Sentry } = useErrorMonitoring();
   const theme = useTheme();
+
   const [isOpen, setIsOpen] = useState(false);
 
-  const { data } = useQuery<GetSystemInfoQuery, GetSystemInfoQueryVariables>(GET_SYSTEMINFO);
+  const { data } = useQuery<GetSystemInfoQuery, GetSystemInfoQueryVariables>(GET_SYSTEMINFO, {
+    onError: (error) => {
+      enqueueSnackbar('Error requesting the subgraph. Please reload the page and try again.');
+      Sentry.captureException(error);
+    },
+  });
 
   const { isMarketClosed } = usePriceFeedData();
 

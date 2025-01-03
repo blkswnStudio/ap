@@ -30,6 +30,15 @@ export const formatUnixTimestamp = (timestamp: string, withDelta = true, showMin
       : `${day}.${month}.${year}`;
 };
 
+export const formatTimeInSeconds = (timeInSeconds: number) => {
+  const days = Math.floor(timeInSeconds / (24 * 3600));
+  const hours = Math.floor((timeInSeconds % (24 * 3600)) / 3600);
+  const minutes = Math.floor((timeInSeconds % 3600) / 60);
+  const seconds = timeInSeconds % 60;
+
+  return `${String(days).padStart(2, '0')}:${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
+};
+
 export const convertGraphTimestamp = (timestamp: string) => {
   const numericDate = Number(timestamp) * 1000;
   return numericDate;

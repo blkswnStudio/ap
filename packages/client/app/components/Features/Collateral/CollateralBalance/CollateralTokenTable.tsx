@@ -8,13 +8,16 @@ import TableCell from '@mui/material/TableCell';
 import TableContainer from '@mui/material/TableContainer';
 import TableHead from '@mui/material/TableHead';
 import TableRow from '@mui/material/TableRow';
+import { useSnackbar } from 'notistack';
+import { isDebtTokenAddress } from '../../../../../config';
+import { useErrorMonitoring } from '../../../../context/ErrorMonitoringContext';
 import { useEthers } from '../../../../context/EthersProvider';
 import {
   GetBorrowerCollateralTokensQuery,
   GetBorrowerCollateralTokensQueryVariables,
 } from '../../../../generated/gql-types';
 import { GET_BORROWER_COLLATERAL_TOKENS } from '../../../../queries';
-import { standardDataPollInterval } from '../../../../utils/contants';
+import { standardDataPollInterval } from '../../../../utils/constants';
 import {
   bigIntStringToFloat,
   dangerouslyConvertBigIntToNumber,
@@ -33,7 +36,10 @@ import SeedCollateral from '../SeedCollateral';
 import CollateralTokenTableLoader from './CollateralTokenTableLoader';
 
 const CollateralTokenTable = () => {
+  const { enqueueSnackbar } = useSnackbar();
+
   const { address } = useEthers();
+  const { Sentry } = useErrorMonitoring();
 
   const { data } = useQuery<GetBorrowerCollateralTokensQuery, GetBorrowerCollateralTokensQueryVariables>(
     GET_BORROWER_COLLATERAL_TOKENS,
@@ -42,6 +48,10 @@ const CollateralTokenTable = () => {
         borrower: address,
       },
       pollInterval: standardDataPollInterval,
+      onError: (error) => {
+        enqueueSnackbar('Error requesting the subgraph. Please reload the page and try again.');
+        Sentry.captureException(error);
+      },
     },
   );
 
@@ -72,7 +82,8 @@ const CollateralTokenTable = () => {
               </TableRow>
             </TableHead>
             <TableBody>
-              {data.collateralTokenMetas
+              {[...data.collateralTokenMetas]
+                .sort(({ token }) => (!isDebtTokenAddress(token.address) ? -1 : 1))
                 .map((collToken) => ({
                   ...collToken,
                   totalValueLockedUSD: bigIntStringToFloat(collToken.totalValueLockedUSD),

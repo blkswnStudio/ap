@@ -481,6 +481,61 @@ enum LongShortDirection {
   SHORT
 }
 
+type Oracle {
+  id: Bytes!
+  token: Token!
+}
+
+input Oracle_filter {
+  """Filter for the block changed event."""
+  _change_block: BlockChangedFilter
+  and: [Oracle_filter]
+  id: Bytes
+  id_contains: Bytes
+  id_gt: Bytes
+  id_gte: Bytes
+  id_in: [Bytes!]
+  id_lt: Bytes
+  id_lte: Bytes
+  id_not: Bytes
+  id_not_contains: Bytes
+  id_not_in: [Bytes!]
+  or: [Oracle_filter]
+  token: String
+  token_: Token_filter
+  token_contains: String
+  token_contains_nocase: String
+  token_ends_with: String
+  token_ends_with_nocase: String
+  token_gt: String
+  token_gte: String
+  token_in: [String!]
+  token_lt: String
+  token_lte: String
+  token_not: String
+  token_not_contains: String
+  token_not_contains_nocase: String
+  token_not_ends_with: String
+  token_not_ends_with_nocase: String
+  token_not_in: [String!]
+  token_not_starts_with: String
+  token_not_starts_with_nocase: String
+  token_starts_with: String
+  token_starts_with_nocase: String
+}
+
+enum Oracle_orderBy {
+  id
+  token
+  token__address
+  token__createdAt
+  token__decimals
+  token__id
+  token__isPoolToken
+  token__oracleId
+  token__symbol
+}
+
 """Defines the order direction, either ascending or descending"""
 enum OrderDirection {
   asc
@@ -492,7 +547,7 @@ type Pool {
   id: String!
   liquidity(first: Int = 100, orderBy: PoolLiquidity_orderBy, orderDirection: OrderDirection, skip: Int = 0, where: PoolLiquidity_filter): [PoolLiquidity!]!
   liquidityDepositAPY: BigInt!
-  stakingPool: StakingPool!
+  stakingPool: StakingPool
   totalSupply: BigInt!
   totalValueUSD: BigInt!
   volume30dUSD: PoolVolume30d!
@@ -950,6 +1005,34 @@ type Query {
     subgraphError: _SubgraphErrorPolicy_! = deny
     where: DebtTokenMeta_filter
   ): [DebtTokenMeta!]!
+  oracle(
+    """
+    The block at which the query should be executed. Can either be a `{ hash: Bytes }` value containing a block hash, a `{ number: Int }` containing the block number, or a `{ number_gte: Int }` containing the minimum block number. In the case of `number_gte`, the query will be executed on the latest block only if the subgraph has progressed to or past the minimum block number. Defaults to the latest block when omitted.
+    """
+    block: Block_height
+    id: ID!
+
+    """
+    Set to `allow` to receive data even if the subgraph has skipped over errors while syncing.
+    """
+    subgraphError: _SubgraphErrorPolicy_! = deny
+  ): Oracle
+  oracles(
+    """
+    The block at which the query should be executed. Can either be a `{ hash: Bytes }` value containing a block hash, a `{ number: Int }` containing the block number, or a `{ number_gte: Int }` containing the minimum block number. In the case of `number_gte`, the query will be executed on the latest block only if the subgraph has progressed to or past the minimum block number. Defaults to the latest block when omitted.
+    """
+    block: Block_height
+    first: Int = 100
+    orderBy: Oracle_orderBy
+    orderDirection: OrderDirection
+    skip: Int = 0
+
+    """
+    Set to `allow` to receive data even if the subgraph has skipped over errors while syncing.
+    """
+    subgraphError: _SubgraphErrorPolicy_! = deny
+    where: Oracle_filter
+  ): [Oracle!]!
   pool(
     """
     The block at which the query should be executed. Can either be a `{ hash: Bytes }` value containing a block hash, a `{ number: Int }` containing the block number, or a `{ number_gte: Int }` containing the minimum block number. In the case of `number_gte`, the query will be executed on the latest block only if the subgraph has progressed to or past the minimum block number. Defaults to the latest block when omitted.
@@ -1794,7 +1877,6 @@ enum StabilityDepositChunk_orderBy {
 type Staking {
   id: String!
   pools(first: Int = 100, orderBy: StakingPool_orderBy, orderDirection: OrderDirection, skip: Int = 0, where: StakingPool_filter): [StakingPool!]!
-  rewardToken: Token!
   rewardsPerSecond: BigInt!
   rewardsPerYearUSD: BigInt!
   totalAllocPoints: BigInt!
@@ -1915,27 +1997,6 @@ input Staking_filter {
   pools_not: [String!]
   pools_not_contains: [String!]
   pools_not_contains_nocase: [String!]
-  rewardToken: String
-  rewardToken_: Token_filter
-  rewardToken_contains: String
-  rewardToken_contains_nocase: String
-  rewardToken_ends_with: String
-  rewardToken_ends_with_nocase: String
-  rewardToken_gt: String
-  rewardToken_gte: String
-  rewardToken_in: [String!]
-  rewardToken_lt: String
-  rewardToken_lte: String
-  rewardToken_not: String
-  rewardToken_not_contains: String
-  rewardToken_not_contains_nocase: String
-  rewardToken_not_ends_with: String
-  rewardToken_not_ends_with_nocase: String
-  rewardToken_not_in: [String!]
-  rewardToken_not_starts_with: String
-  rewardToken_not_starts_with_nocase: String
-  rewardToken_starts_with: String
-  rewardToken_starts_with_nocase: String
   rewardsPerSecond: BigInt
   rewardsPerSecond_gt: BigInt
   rewardsPerSecond_gte: BigInt
@@ -1965,14 +2026,6 @@ input Staking_filter {
 enum Staking_orderBy {
   id
   pools
-  rewardToken
-  rewardToken__address
-  rewardToken__createdAt
-  rewardToken__decimals
-  rewardToken__id
-  rewardToken__isPoolToken
-  rewardToken__oracleId
-  rewardToken__symbol
   rewardsPerSecond
   rewardsPerYearUSD
   totalAllocPoints
@@ -2065,6 +2118,34 @@ type Subscription {
     subgraphError: _SubgraphErrorPolicy_! = deny
     where: DebtTokenMeta_filter
   ): [DebtTokenMeta!]!
+  oracle(
+    """
+    The block at which the query should be executed. Can either be a `{ hash: Bytes }` value containing a block hash, a `{ number: Int }` containing the block number, or a `{ number_gte: Int }` containing the minimum block number. In the case of `number_gte`, the query will be executed on the latest block only if the subgraph has progressed to or past the minimum block number. Defaults to the latest block when omitted.
+    """
+    block: Block_height
+    id: ID!
+
+    """
+    Set to `allow` to receive data even if the subgraph has skipped over errors while syncing.
+    """
+    subgraphError: _SubgraphErrorPolicy_! = deny
+  ): Oracle
+  oracles(
+    """
+    The block at which the query should be executed. Can either be a `{ hash: Bytes }` value containing a block hash, a `{ number: Int }` containing the block number, or a `{ number_gte: Int }` containing the minimum block number. In the case of `number_gte`, the query will be executed on the latest block only if the subgraph has progressed to or past the minimum block number. Defaults to the latest block when omitted.
+    """
+    block: Block_height
+    first: Int = 100
+    orderBy: Oracle_orderBy
+    orderDirection: OrderDirection
+    skip: Int = 0
+
+    """
+    Set to `allow` to receive data even if the subgraph has skipped over errors while syncing.
+    """
+    subgraphError: _SubgraphErrorPolicy_! = deny
+    where: Oracle_filter
+  ): [Oracle!]!
   pool(
     """
     The block at which the query should be executed. Can either be a `{ hash: Bytes }` value containing a block hash, a `{ number: Int }` containing the block number, or a `{ number_gte: Int }` containing the minimum block number. In the case of `number_gte`, the query will be executed on the latest block only if the subgraph has progressed to or past the minimum block number. Defaults to the latest block when omitted.

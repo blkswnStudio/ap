@@ -5,6 +5,7 @@ import { BrowserProvider, Network } from 'ethers';
 import { useRouter } from 'next/navigation';
 import { defaultNetwork } from '../../../config';
 import ApollonLogo from '../../components/Icons/ApollonLogo';
+import DeviceFallbackController from '../../context/DeviceFallbackController';
 
 function NetworkNotFound() {
   const router = useRouter();
@@ -68,43 +69,45 @@ function NetworkNotFound() {
   };
 
   return (
-    <div
-      style={{
-        display: 'flex',
-        flexDirection: 'column',
-        height: 'calc(100vh - 52px)',
-        justifyContent: 'center',
-        alignItems: 'center',
-      }}
-    >
-      <div style={{ marginBottom: 20 }}>
-        <ApollonLogo />
-      </div>
-
-      <img
-        src="assets/svgs/client-side-error.svg"
-        alt="A shape with circles, white diamonds and a big yellow diamond."
-        height="332"
-        typeof="image/svg+xml"
-      />
-
-      <Typography variant="h6" sx={{ mt: '50px', mb: '10px' }}>
-        You are not connected to a supported network.
-      </Typography>
-
-      <Typography variant="titleAlternate" fontWeight={400} fontSize={17} sx={{ maxWidth: 1000 }} textAlign="center">
-        We are trying to navigate you through the Web3 landscape as conveniently as possible but sometimes things get
-        stuck. You can switch to the default network and use the latest account you had connected and try again.
-      </Typography>
-
-      <Button
-        sx={{ width: 500, borderColor: 'primary.contrastText', mt: '30px' }}
-        variant="outlined"
-        onClick={changeNetworkAndConnectLatestAccount}
+    <DeviceFallbackController>
+      <div
+        style={{
+          display: 'flex',
+          flexDirection: 'column',
+          height: 'calc(100vh - 52px)',
+          justifyContent: 'center',
+          alignItems: 'center',
+        }}
       >
-        Switch to default network and connect latest account
-      </Button>
-    </div>
+        <div style={{ marginBottom: 20 }}>
+          <ApollonLogo />
+        </div>
+
+        <img
+          src="assets/svgs/client-side-error.svg"
+          alt="A shape with circles, white diamonds and a big yellow diamond."
+          height="332"
+          typeof="image/svg+xml"
+        />
+
+        <Typography variant="h6" sx={{ mt: '50px', mb: '10px' }}>
+          You are not connected to a supported network.
+        </Typography>
+
+        <Typography variant="titleAlternate" fontWeight={400} fontSize={17} sx={{ maxWidth: 1000 }} textAlign="center">
+          We are trying to navigate you through the Web3 landscape as conveniently as possible but sometimes things get
+          stuck. You can switch to the default network and use the latest account you had connected and try again.
+        </Typography>
+
+        <Button
+          sx={{ width: 500, borderColor: 'primary.contrastText', mt: '30px' }}
+          variant="outlined"
+          onClick={changeNetworkAndConnectLatestAccount}
+        >
+          Switch to default network and connect latest account
+        </Button>
+      </div>
+    </DeviceFallbackController>
   );
 }
 

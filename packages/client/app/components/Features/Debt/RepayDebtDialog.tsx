@@ -4,6 +4,8 @@ import { useQuery } from '@apollo/client';
 import { Box, Dialog, DialogActions, DialogContent, DialogTitle, FormHelperText, IconButton } from '@mui/material';
 import Button, { ButtonProps } from '@mui/material/Button';
 import Typography from '@mui/material/Typography';
+import { parseEther } from 'ethers';
+import { useSnackbar } from 'notistack';
 import { useEffect, useState } from 'react';
 import { FormProvider, useForm } from 'react-hook-form';
 import { IBase } from '../../../../generated/types/TroveManager';
@@ -14,7 +16,7 @@ import { useTransactionDialog } from '../../../context/TransactionDialogProvider
 import { GetBorrowerDebtTokensQuery, GetBorrowerDebtTokensQueryVariables } from '../../../generated/gql-types';
 import { GET_BORROWER_COLLATERAL_TOKENS, GET_BORROWER_DEBT_TOKENS } from '../../../queries';
 import { getHints } from '../../../utils/crypto';
-import { dangerouslyConvertBigIntToNumber, floatToBigInt, roundCurrency } from '../../../utils/math';
+import { dangerouslyConvertBigIntToNumber, roundCurrency } from '../../../utils/math';
 import NumberInput from '../../FormControls/NumberInput';
 import CrossIcon from '../../Icons/CrossIcon';
 import DiamondIcon from '../../Icons/DiamondIcon';
@@ -28,6 +30,8 @@ type Props = {
 };
 
 const RepayDebtDialog = ({ buttonSx = {}, buttonVariant = 'outlined' }: Props) => {
+  const { enqueueSnackbar } = useSnackbar();
+
   const [isOpen, setIsOpen] = useState(false);
 
   const {
@@ -43,6 +47,10 @@ const RepayDebtDialog = ({ buttonSx = {}, buttonVariant = 'outlined' }: Props) =
       borrower: address,
     },
     skip: !address,
+    onError: (error) => {
+      enqueueSnackbar('Error requesting the subgraph. Please reload the page and try again.');
+      Sentry.captureException(error);
+    },
   });
 
   const methods = useForm<FieldValues>({ reValidateMode: 'onChange' });
@@ -81,10 +89,16 @@ const RepayDebtDialog = ({ buttonSx = {}, buttonVariant = 'outlined' }: Props) =
 
     const tokenAmounts = Object.entries(formData)
       .filter(([_, amount]) => amount !== '' && parseFloat(amount) > 0)
-      .map<IBase.TokenAmountStruct>(([address, amount]) => ({
-        tokenAddress: address,
-        amount: floatToBigInt(parseFloat(amount)),
-      }));
+      .map<IBase.TokenAmountStruct>(([address, amount]) => {
+        const tokenMaxAmount = data!.debtTokenMetas.find(
+          ({ token }) => token.address === address,
+        )!.troveRepableDebtAmount;
+
+        return {
+          tokenAddress: address,
+          amount: tokenMaxAmount - parseEther(amount) < parseEther('0.000001') ? tokenMaxAmount : parseEther(amount),
+        };
+      });
 
     if (tokenAmounts.length === 0) {
       return;
@@ -92,7 +106,7 @@ const RepayDebtDialog = ({ buttonSx = {}, buttonVariant = 'outlined' }: Props) =
 
     setSteps([
       {
-        title: 'Repay all debt.',
+        title: 'Repay selected debt.',
         transaction: {
           methodCall: async () => {
             const [upperHint, lowerHint] = await getHints(sortedTrovesContract, hintHelpersContract, {

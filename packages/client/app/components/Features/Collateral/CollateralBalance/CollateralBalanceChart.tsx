@@ -1,23 +1,33 @@
 import { useQuery } from '@apollo/client';
 import { Box, Typography, useTheme } from '@mui/material';
+import { useSnackbar } from 'notistack';
 import { useMemo } from 'react';
 import { CartesianGrid, Line, LineChart, Tooltip } from 'recharts';
+import { useErrorMonitoring } from '../../../../context/ErrorMonitoringContext';
 import { GetCollateralUsdHistoryQuery, GetCollateralUsdHistoryQueryVariables } from '../../../../generated/gql-types';
 import { GET_COLLATERAL_USD_HISTORY } from '../../../../queries';
 import { DARK_BACKGROUND_EMPHASIS, LIGHT_BACKGROUND_EMPHASIS } from '../../../../theme';
-import { standardDataPollInterval } from '../../../../utils/contants';
+import { standardDataPollInterval } from '../../../../utils/constants';
 import { bigIntStringToFloat, roundCurrency, stdFormatter } from '../../../../utils/math';
 import ChartTooltip from '../../../Label/ChartTooltip';
 import DiagramPlaceholder from '../../../Loader/DiagramPlaceholder';
 
 function CollateralBalanceChart() {
   const theme = useTheme();
+  const { enqueueSnackbar } = useSnackbar();
+
+  const { Sentry } = useErrorMonitoring();
+
   const isDarkMode = theme.palette.mode === 'dark';
 
   const { data } = useQuery<GetCollateralUsdHistoryQuery, GetCollateralUsdHistoryQueryVariables>(
     GET_COLLATERAL_USD_HISTORY,
     {
       pollInterval: standardDataPollInterval,
+      onError: (error) => {
+        enqueueSnackbar('Error requesting the subgraph. Please reload the page and try again.');
+        Sentry.captureException(error);
+      },
     },
   );
 

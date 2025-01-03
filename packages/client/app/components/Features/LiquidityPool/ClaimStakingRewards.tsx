@@ -1,10 +1,16 @@
 import { useQuery } from '@apollo/client';
-import { Button, Table, TableBody, TableCell, TableContainer, TableHead, TableRow } from '@mui/material';
+import { Table, TableBody, TableCell, TableContainer, TableHead, TableRow } from '@mui/material';
+import { useSnackbar } from 'notistack';
+import { useErrorMonitoring } from '../../../context/ErrorMonitoringContext';
 import { useEthers } from '../../../context/EthersProvider';
-import { useTransactionDialog } from '../../../context/TransactionDialogProvider';
-import { GetBorrowerLiquidityPoolsQuery, GetBorrowerLiquidityPoolsQueryVariables } from '../../../generated/gql-types';
-import { GET_BORROWER_LIQUIDITY_POOLS } from '../../../queries';
-import { standardDataPollInterval } from '../../../utils/contants';
+import {
+  GetBorrowerLiquidityPoolsQuery,
+  GetBorrowerLiquidityPoolsQueryVariables,
+  GetStakingVestingOperationsQuery,
+  GetStakingVestingOperationsQueryVariables,
+} from '../../../generated/gql-types';
+import { GET_BORROWER_LIQUIDITY_POOLS, GET_STAKING_VESTING_OPERATIONS } from '../../../queries';
+import { standardDataPollInterval } from '../../../utils/constants';
 import {
   bigIntStringToFloat,
   dangerouslyConvertBigIntToNumber,
@@ -17,47 +23,47 @@ import Label from '../../Label/Label';
 import DiagramPlaceholder from '../../Loader/DiagramPlaceholder';
 import HeaderCell from '../../Table/HeaderCell';
 import ClaimStakingRewardsLoader from './ClaimStakingRewardsLoader';
+import { ClaimStakingVestingDialog } from './ClaimStakingVestingDialog';
+import { OngoingVestingDialog } from './OngoingVestingDialog';
 
 export default function ClaimStakingRewards() {
-  const {
-    address,
-    contracts: { stakingOperationsContract },
-  } = useEthers();
-  const { setSteps } = useTransactionDialog();
+  const { enqueueSnackbar } = useSnackbar();
+
+  const { address, currentNetwork } = useEthers();
+  const { Sentry } = useErrorMonitoring();
 
   const { data: borrowerPoolsData } = useQuery<GetBorrowerLiquidityPoolsQuery, GetBorrowerLiquidityPoolsQueryVariables>(
     GET_BORROWER_LIQUIDITY_POOLS,
     {
       variables: { borrower: address },
       pollInterval: standardDataPollInterval,
+      onError: (error) => {
+        enqueueSnackbar('Error requesting the subgraph. Please reload the page and try again.');
+        Sentry.captureException(error);
+      },
     },
   );
 
-  if (!borrowerPoolsData) {
+  const { data: stakingVestingData } = useQuery<
+    GetStakingVestingOperationsQuery,
+    GetStakingVestingOperationsQueryVariables
+  >(GET_STAKING_VESTING_OPERATIONS, {
+    variables: { token: currentNetwork!.contracts.ERC20.GOV },
+    pollInterval: standardDataPollInterval,
+    onError: (error) => {
+      enqueueSnackbar('Error requesting the subgraph. Please reload the page and try again.');
+      Sentry.captureException(error);
+    },
+  });
+
+  if (!borrowerPoolsData || !stakingVestingData) {
     return <ClaimStakingRewardsLoader />;
   }
 
   const poolsWithRewards = borrowerPoolsData.pools.filter(({ pendingRewards }) => pendingRewards > 0);
 
-  const handleClaimStakingRewards = () => {
-    setSteps([
-      {
-        title: `Claim staking rewards for ${poolsWithRewards.length} pools.`,
-        transaction: {
-          methodCall: async () => {
-            return stakingOperationsContract.batchClaim(poolsWithRewards.map(({ address }) => address)).catch((err) => {
-              throw new Error(err, { cause: stakingOperationsContract });
-            });
-          },
-          waitForResponseOf: [],
-          reloadQueriesAfterMined: [GET_BORROWER_LIQUIDITY_POOLS],
-        },
-      },
-    ]);
-  };
-
   return (
-    <FeatureBox title="Stability Pool" noPadding border="full" sx={{ position: 'relative', left: '-0.5px' }}>
+    <FeatureBox title="Staking Rewards" noPadding border="full" sx={{ position: 'relative', left: '-0.5px' }}>
       <div style={{ display: 'flex', alignItems: 'center' }}>
         <TableContainer>
           <Table sx={{ borderRight: '1px solid', borderColor: 'background.emphasis' }}>
@@ -134,14 +140,11 @@ export default function ClaimStakingRewards() {
           </Table>
         </TableContainer>
         <div style={{ minWidth: 190, margin: '0 30px' }}>
-          <Button
-            variant="outlined"
-            sx={{ marginY: '10px' }}
-            onClick={handleClaimStakingRewards}
-            disabled={poolsWithRewards.length === 0 || !address}
-          >
-            CLAIM
-          </Button>
+          {stakingVestingData.getStakingVestingOperations.remainingTime > 0 ? (
+            <OngoingVestingDialog />
+          ) : (
+            <ClaimStakingVestingDialog />
+          )}
         </div>
       </div>
     </FeatureBox>

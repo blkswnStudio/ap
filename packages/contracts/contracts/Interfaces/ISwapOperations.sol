@@ -23,6 +23,7 @@ interface ISwapOperations is IBBase {
   error InvalidPath();
   error TransferFromFailed();
   error PairRequiresStable();
+  error UntrustedOracle();
 
   event SwapOperationsInitialized(
     address borrowerOperations,
@@ -73,11 +74,21 @@ interface ISwapOperations is IBBase {
 
   function setGovSwapFee(uint _govSwapFee) external;
 
+  function setDynamicFeeAddress(address _dynamicFee) external;
+
+  function calcDynamicSwapFee(uint val) external view returns (uint fee);
+
   function quote(uint amountA, uint reserveA, uint reserveB) external pure returns (uint amountB);
 
-  function getAmountsOut(uint amountIn, address[] calldata path) external view returns (SwapAmount[] memory amounts);
+  function getAmountsOut(
+    uint amountIn,
+    address[] calldata path
+  ) external view returns (SwapAmount[] memory amounts, bool isUsablePrice);
 
-  function getAmountsIn(uint amountOut, address[] calldata path) external view returns (SwapAmount[] memory amounts);
+  function getAmountsIn(
+    uint amountOut,
+    address[] calldata path
+  ) external view returns (SwapAmount[] memory amounts, bool isUsablePrice);
 
   // **** OPERATIONS ****
 

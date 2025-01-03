@@ -25,13 +25,17 @@ interface ITroveManager is IBBase {
 
   event SetEnableRedeeming(bool enable);
   event SetEnableLiquidation(bool enable);
+  event SetEnableMintingOnClosedHours(bool enable);
   event SetBorrowingFeeFloor(uint _borrowingFeeFloor);
+  event SetBorrowingFeeGovDiscount(uint discountFrom, uint discount);
+  event SetMaxDebtsAsCollateral(uint _maxDebtsAsCollateral);
   event SetBorrowingInterestRate(uint _borrowingInterestRate);
   event TroveAppliedRewards(address _borrower, CAmount[] _appliedRewards);
   event TroveAppliedInterests(address _borrower, uint _appliedInterests);
   event TroveClosed(address _borrower, Status _closingState);
   event TroveIndexUpdated(address _borrower, uint _newIndex);
-  event TroveCollChanged(address _borrower, address[] _collTokenAddresses);
+  event TroveCollChanged(address _borrower, TokenAmount[] _collTokenAmounts, bool _increase);
+  event TroveDebtChanged(address _borrower, DebtTokenAmount[] _debtTokenAmounts, bool _increase);
   event PaidBorrowingFee(address indexed _borrower, uint _reserve, uint _gov);
   event StableCoinBaseRateUpdated(uint _baseRate);
   event LastFeeOpTimeUpdated(uint _lastFeeOpTime);
@@ -47,17 +51,31 @@ interface ITroveManager is IBBase {
 
   // --- Functions ---
 
+  function enableMintingOnClosedHours() external view returns (bool);
+
   function enableLiquidation() external view returns (bool);
 
   function enableRedeeming() external view returns (bool);
 
+  function maxDebtsAsCollateral() external view returns (uint);
+
   function borrowingFeeFloor() external view returns (uint);
+
+  function borrowingFeeGovDiscountFrom() external view returns (uint);
+
+  function borrowingFeeGovDiscount() external view returns (uint);
 
   function setEnableLiquidation(bool _enable) external;
 
   function setEnableRedeeming(bool _enable) external;
 
+  function setEnableMintingOnClosedHours(bool _enable) external;
+
   function setBorrowingFeeFloor(uint _borrowingFeeFloor) external;
+
+  function setBorrowingFeeGovDiscount(uint _borrowingFeeGovDiscountFrom, uint _borrowingFeeGovDiscount) external;
+
+  function setMaxDebtsAsCollateral(uint _maxDebtsAsCollateral) external;
 
   function borrowingInterestRate() external view returns (uint);
 
@@ -70,11 +88,6 @@ interface ITroveManager is IBBase {
   function isTroveActive(address _borrower) external view returns (bool);
 
   function setTroveStatus(address _borrower, uint num) external;
-
-  function getCurrentTrovesUSDValues(
-    PriceCache memory _priceCache,
-    address _borrower
-  ) external view returns (uint IMCR, uint currentCollInUSD, uint currentDebtInUSD);
 
   //
 
@@ -90,13 +103,17 @@ interface ITroveManager is IBBase {
 
   function redistributeDebtAndColl(PriceCache memory _priceCache, CAmount[] memory toRedistribute) external;
 
-  function getPendingRewards(address _borrower, address _tokenAddress, bool isColl) external view returns (uint);
-
   function getPendingBorrowingInterests(address _borrower) external view returns (uint);
+
+  function getPendingRewards(
+    address borrower,
+    bool includeColls,
+    bool includeDebts
+  ) external view returns (CAmount[] memory);
 
   function applyPendingRewards(address _borrower, PriceCache memory _priceCache) external;
 
-  function updateTroveRewardSnapshots(address _borrower) external;
+  function updateTroveRewardSnapshots(PriceCache memory _priceCache, address _borrower) external;
 
   //
 
@@ -117,17 +134,15 @@ interface ITroveManager is IBBase {
 
   function getTroveDebt(address _borrower) external view returns (TokenAmount[] memory);
 
-  function getTroveRepayableDebt(
+  function getTroveRepayableDebtExcludingStableFee(
     address _borrower,
-    address _debtTokenAddress,
-    bool _includingStableCoinGasCompensation,
-    bool _includingPendingInterest
-  ) external view returns (uint amount);
+    address _debtTokenB
+  ) external view returns (uint amountA, uint amountB);
 
   function getTroveRepayableDebts(
     address _borrower,
     bool _includingStableCoinGasCompensation
-  ) external view returns (TokenAmount[] memory);
+  ) external view returns (TokenAmount[] memory debts);
 
   function getTroveRepayableDebts(
     PriceCache memory _priceCache,
@@ -137,9 +152,12 @@ interface ITroveManager is IBBase {
 
   function getTroveColl(address _borrower) external view returns (TokenAmount[] memory);
 
-  function getTroveWithdrawableColl(address _borrower, address _collTokenAddress) external view returns (uint amount);
-
   function getTroveWithdrawableColls(address _borrower) external view returns (TokenAmount[] memory colls);
+
+  function getTroveWithdrawableColls(
+    PriceCache memory _priceCache,
+    address _borrower
+  ) external view returns (TokenAmount[] memory colls);
 
   //
 
@@ -151,13 +169,17 @@ interface ITroveManager is IBBase {
 
   function getStableCoinBaseRate() external view returns (uint);
 
-  function getBorrowingRate(bool isStableCoin) external view returns (uint);
+  function getBorrowingRate(bool isStableCoin, uint govTokenAsCollRatio) external view returns (uint);
 
-  function getBorrowingRateWithDecay(bool isStableCoin) external view returns (uint);
+  function getBorrowingRateWithDecay(bool isStableCoin, uint govTokenAsCollRatio) external view returns (uint);
 
-  function getBorrowingFee(uint debt, bool isStableCoin) external view returns (uint);
+  function getBorrowingFee(uint debt, bool isStableCoin, uint govTokenAsCollRatio) external view returns (uint);
 
-  function getBorrowingFeeWithDecay(uint debt, bool isStableCoin) external view returns (uint);
+  function getBorrowingFeeWithDecay(
+    uint debt,
+    bool isStableCoin,
+    uint govTokenAsCollRatio
+  ) external view returns (uint);
 
   function decayStableCoinBaseRateFromBorrowing(uint borrowedStable) external;
 

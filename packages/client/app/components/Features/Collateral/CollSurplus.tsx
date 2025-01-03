@@ -2,6 +2,7 @@
 
 import { useQuery } from '@apollo/client';
 import { Button, Tooltip } from '@mui/material';
+import { useSnackbar } from 'notistack';
 import { useErrorMonitoring } from '../../../context/ErrorMonitoringContext';
 import { useEthers } from '../../../context/EthersProvider';
 import { useTransactionDialog } from '../../../context/TransactionDialogProvider';
@@ -16,6 +17,8 @@ function CollSurplus() {
     address,
     contracts: { borrowerOperationsContract },
   } = useEthers();
+  const { enqueueSnackbar } = useSnackbar();
+
   const { Sentry } = useErrorMonitoring();
   const { setSteps } = useTransactionDialog();
 
@@ -26,6 +29,10 @@ function CollSurplus() {
         borrower: address,
       },
       skip: !address,
+      onError: (error) => {
+        enqueueSnackbar('Error requesting the subgraph. Please reload the page and try again.');
+        Sentry.captureException(error);
+      },
     },
   );
 

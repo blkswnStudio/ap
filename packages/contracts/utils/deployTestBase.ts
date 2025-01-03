@@ -15,10 +15,11 @@ import {
   MockERC20,
   MockDebtToken,
   MockPyth,
-  StakingOperations,
+  MockStakingOperations,
   AlternativePriceFeed,
+  StakingVestingOperations,
 } from '../typechain';
-import { DeployHelper } from './deployHelpers';
+import { DeployHelper } from '@moonlabs/solidity-scripts/deployHelpers';
 import { deployCore } from '../deploy/modules/core';
 
 export interface Contracts {
@@ -36,7 +37,8 @@ export interface Contracts {
   priceFeed: PriceFeed;
   alternativePriceFeed: AlternativePriceFeed;
   swapOperations: SwapOperations;
-  stakingOperations: StakingOperations;
+  stakingOperations: MockStakingOperations;
+  stakingVestingOperations: StakingVestingOperations;
   pyth: MockPyth;
 
   USDT: MockERC20;
@@ -72,7 +74,8 @@ export default async function deployTestBase(): Promise<Contracts> {
     priceFeed: contractsCore.priceFeed,
     alternativePriceFeed: contractsCore.alternativePriceFeed,
     swapOperations: contractsCore.swapOperations,
-    stakingOperations: contractsCore.stakingOperations,
+    stakingOperations: contractsCore.stakingOperations as MockStakingOperations,
+    stakingVestingOperations: contractsCore.stakingVestingOperations,
     pyth: contractsCore.pyth as MockPyth,
 
     USDT: contractsCore.USDT as MockERC20,

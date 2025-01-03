@@ -5,6 +5,7 @@ import {
   HintHelpers,
   RedemptionOperations as RedemptionOperationsContract,
   StabilityPoolManager,
+  StakingVestingOperations,
   StoragePool,
   TroveManager,
 } from '../../../generated/types';
@@ -16,6 +17,9 @@ import DebtToken_STOCK_1 from '../typePolicies/localhost/DebtToken_STOCK_1.polic
 import DebtToken_STOCK_2 from '../typePolicies/localhost/DebtToken_STOCK_2.policy';
 import ERC20_BTC from '../typePolicies/localhost/ERC20_BTC.policy';
 import ERC20_GOV from '../typePolicies/localhost/ERC20_GOV.policy';
+import ERC20_STABLE from '../typePolicies/localhost/ERC20_STABLE.policy';
+import ERC20_STOCK_1 from '../typePolicies/localhost/ERC20_STOCK_1.policy';
+import ERC20_STOCK_2 from '../typePolicies/localhost/ERC20_STOCK_2.policy';
 import ERC20_USDT from '../typePolicies/localhost/ERC20_USDT.policy';
 import SwapPairs_BTC from '../typePolicies/localhost/SwapPairs_BTC.policy';
 import SwapPairs_GOV from '../typePolicies/localhost/SwapPairs_GOV.policy';
@@ -42,6 +46,15 @@ export const ContractDataFreshnessManager_LOCALHOST: {
     }>
   >;
   CollSurplusPool: Record<string, ContractValue<TokenAmount[]>>;
+  StakingVestingOperations: Record<
+    string,
+    ContractValue<{
+      remainingTime: bigint;
+      totalAmount: bigint;
+      claimableAmount: bigint;
+      burnedAmount: bigint;
+    }>
+  >;
 } = {
   TroveManager: {
     getTroveDebt: {
@@ -263,6 +276,41 @@ export const ContractDataFreshnessManager_LOCALHOST: {
       timeout: 1000 * 2,
     },
   },
+
+  StakingVestingOperations: {
+    checkVesting: {
+      fetch: async (
+        stakingVestingOperationsContract: StakingVestingOperations,
+        token: AddressLike,
+        depositor: AddressLike,
+      ) => {
+        ContractDataFreshnessManager_LOCALHOST.StakingVestingOperations.checkVesting.lastFetched = Date.now();
+
+        const [remainingTime, totalAmount, claimableAmount, burnedAmount] =
+          await stakingVestingOperationsContract.checkVesting(token, depositor);
+
+        ContractDataFreshnessManager_LOCALHOST.StakingVestingOperations.checkVesting.value = {
+          remainingTime,
+          totalAmount,
+          claimableAmount,
+          burnedAmount,
+        };
+
+        SchemaDataFreshnessManager_LOCALHOST.StakingVestingOperations.remainingTime.fetch();
+        SchemaDataFreshnessManager_LOCALHOST.StakingVestingOperations.totalAmount.fetch();
+        SchemaDataFreshnessManager_LOCALHOST.StakingVestingOperations.claimableAmount.fetch();
+        SchemaDataFreshnessManager_LOCALHOST.StakingVestingOperations.burnedAmount.fetch();
+      },
+      value: {
+        remainingTime: BigInt(0),
+        totalAmount: BigInt(0),
+        claimableAmount: BigInt(0),
+        burnedAmount: BigInt(0),
+      } as any,
+      lastFetched: 0,
+      timeout: 1000 * 2,
+    },
+  },
 };
 
 /**
@@ -280,6 +328,9 @@ export const SchemaDataFreshnessManager_LOCALHOST: ContractDataFreshnessManagerT
     ...ERC20_BTC,
     ...ERC20_USDT,
     ...ERC20_GOV,
+    ...ERC20_STABLE,
+    ...ERC20_STOCK_1,
+    ...ERC20_STOCK_2,
   } as any,
 
   SwapPairs: {
@@ -406,4 +457,110 @@ export const SchemaDataFreshnessManager_LOCALHOST: ContractDataFreshnessManagerT
   PriceFeed: {},
   CollSurplus: {},
   StakingOperations: {},
+  StakingVestingOperations: {
+    remainingTime: {
+      fetch: async (fetchSource?: {
+        depositor: AddressLike;
+        token: AddressLike;
+        stakingVestingOperationsContract: StakingVestingOperations;
+      }) => {
+        SchemaDataFreshnessManager_LOCALHOST.StakingVestingOperations.remainingTime.lastFetched = Date.now();
+
+        if (fetchSource) {
+          await ContractDataFreshnessManager_LOCALHOST.StakingVestingOperations.checkVesting.fetch(
+            fetchSource.stakingVestingOperationsContract,
+            fetchSource.token,
+            fetchSource.depositor,
+          );
+        }
+
+        const { remainingTime } = ContractDataFreshnessManager_LOCALHOST.StakingVestingOperations.checkVesting
+          .value as any;
+
+        SchemaDataFreshnessManager_LOCALHOST.StakingVestingOperations.remainingTime.value(remainingTime);
+      },
+      value: makeVar(defaultFieldValue),
+      lastFetched: 0,
+      timeout: 1000 * 2,
+      periodic: 1000 * 30,
+    },
+    totalAmount: {
+      fetch: async (fetchSource?: {
+        depositor: AddressLike;
+        token: AddressLike;
+        stakingVestingOperationsContract: StakingVestingOperations;
+      }) => {
+        SchemaDataFreshnessManager_LOCALHOST.StakingVestingOperations.totalAmount.lastFetched = Date.now();
+
+        if (fetchSource) {
+          await ContractDataFreshnessManager_LOCALHOST.StakingVestingOperations.checkVesting.fetch(
+            fetchSource.stakingVestingOperationsContract,
+            fetchSource.token,
+            fetchSource.depositor,
+          );
+        }
+
+        const { totalAmount } = ContractDataFreshnessManager_LOCALHOST.StakingVestingOperations.checkVesting
+          .value as any;
+
+        SchemaDataFreshnessManager_LOCALHOST.StakingVestingOperations.totalAmount.value(totalAmount);
+      },
+      value: makeVar(defaultFieldValue),
+      lastFetched: 0,
+      timeout: 1000 * 2,
+      periodic: 1000 * 30,
+    },
+    claimableAmount: {
+      fetch: async (fetchSource?: {
+        depositor: AddressLike;
+        token: AddressLike;
+        stakingVestingOperationsContract: StakingVestingOperations;
+      }) => {
+        SchemaDataFreshnessManager_LOCALHOST.StakingVestingOperations.claimableAmount.lastFetched = Date.now();
+
+        if (fetchSource) {
+          await ContractDataFreshnessManager_LOCALHOST.StakingVestingOperations.checkVesting.fetch(
+            fetchSource.stakingVestingOperationsContract,
+            fetchSource.token,
+            fetchSource.depositor,
+          );
+        }
+
+        const { claimableAmount } = ContractDataFreshnessManager_LOCALHOST.StakingVestingOperations.checkVesting
+          .value as any;
+
+        SchemaDataFreshnessManager_LOCALHOST.StakingVestingOperations.claimableAmount.value(claimableAmount);
+      },
+      value: makeVar(defaultFieldValue),
+      lastFetched: 0,
+      timeout: 1000 * 2,
+      periodic: 1000 * 30,
+    },
+    burnedAmount: {
+      fetch: async (fetchSource?: {
+        depositor: AddressLike;
+        token: AddressLike;
+        stakingVestingOperationsContract: StakingVestingOperations;
+      }) => {
+        SchemaDataFreshnessManager_LOCALHOST.StakingVestingOperations.burnedAmount.lastFetched = Date.now();
+
+        if (fetchSource) {
+          await ContractDataFreshnessManager_LOCALHOST.StakingVestingOperations.checkVesting.fetch(
+            fetchSource.stakingVestingOperationsContract,
+            fetchSource.token,
+            fetchSource.depositor,
+          );
+        }
+
+        const { burnedAmount } = ContractDataFreshnessManager_LOCALHOST.StakingVestingOperations.checkVesting
+          .value as any;
+
+        SchemaDataFreshnessManager_LOCALHOST.StakingVestingOperations.burnedAmount.value(burnedAmount);
+      },
+      value: makeVar(defaultFieldValue),
+      lastFetched: 0,
+      timeout: 1000 * 2,
+      periodic: 1000 * 30,
+    },
+  },
 };

@@ -2,6 +2,8 @@
 
 pragma solidity ^0.8.9;
 
+import '@openzeppelin/contracts/token/ERC20/IERC20.sol';
+
 import './ISwapPair.sol';
 
 interface IStakingOperations {
@@ -27,6 +29,7 @@ interface IStakingOperations {
   error CallerIsNotSwapPair();
   error CallerIsNotTokenManager();
   error CallerIsNotTokenManagerOrSwapOperations();
+  error CantVestAsStillVested();
 
   // --- Events ---
 
@@ -36,10 +39,12 @@ interface IStakingOperations {
   event Withdraw(address indexed user, ISwapPair indexed pid, uint amount);
   event Claim(address indexed user, ISwapPair indexed pid, uint amount);
   event RewardsPerSecondChanged(uint rewardsPerSecond);
-
-  event StakingOperationsInitialized(address swapOperations, address tokenManager);
+  event SetRedistributeAddress(address target);
+  event StakingOperationsInitialized(address swapOperations, address tokenManager, address vesting);
 
   // --- Config functions ---
+
+  function setRedistributeAddress(address _target) external;
 
   function setRewardsPerSecond(uint _rewardsPerSecond) external;
 
@@ -47,15 +52,19 @@ interface IStakingOperations {
 
   // --- View functions ---
 
+  function rewardToken() external view returns (IERC20);
+
   function balanceOf(ISwapPair _pid, address _user) external view returns (uint);
 
   function pendingReward(ISwapPair _pid, address _user) external view returns (uint);
 
   // --- User functions ---
 
-  function claim(ISwapPair _pid) external;
+  function harvest(bool _instantClaim) external;
 
-  function batchClaim(ISwapPair[] memory _pids) external;
+  function claim(ISwapPair _pid, bool _harvestPending, bool _instantClaim) external;
+
+  function batchClaim(ISwapPair[] memory _pids, bool _harvestPending, bool _instantClaim) external;
 
   function depositFor(ISwapPair _pid, address _user, uint _amount) external;
 

@@ -2,6 +2,7 @@ import { Address, BigInt, ethereum } from '@graphprotocol/graph-ts';
 import { PriceFeed } from '../../generated/PriceFeed/PriceFeed';
 import { SystemInfo, Token, TokenCandle, TokenCandleSingleton } from '../../generated/schema';
 import { SwapPair } from '../../generated/templates/SwapPairTemplate/SwapPair';
+// import { log } from '@graphprotocol/graph-ts';
 
 // 1min, 10min, 1hour, 6hour, 1day, 1week
 export const CandleSizes = [1, 10, 60, 360, 1440, 10080];
@@ -27,7 +28,6 @@ export function handleCreateTokenCandleSingleton(event: ethereum.Event, tokenAdd
   const systemInfo = SystemInfo.load(`SystemInfo`)!;
   const priceFeedContract = PriceFeed.bind(Address.fromBytes(systemInfo.priceFeed));
 
-  // FIXME: Also use token price in stable! => Maybe not such a big deal on the creation
   const tokenPrice = priceFeedContract.getPrice(tokenAddress).getPrice();
 
   for (let i = 0; i < CandleSizes.length; i++) {
@@ -61,6 +61,44 @@ export function handleCreateTokenCandleSingleton(event: ethereum.Event, tokenAdd
 /**
  * Updates the Singleton and creates new Candles if candle is closed
  */
+export function handleUpdateTokenCandle_lowOracle_highOracle(
+  event: ethereum.Event,
+  tokenAddress: Address,
+  tokenPriceOracle: BigInt,
+): void {
+  const token = Token.load(tokenAddress)!;
+  const pairToken = Address.fromString(token.address);
+
+  // FIXME: Workaround for timing issue in the deployment
+  if (!TokenCandleSingleton.load(`TokenCandleSingleton-${pairToken.toHexString()}-${CandleSizes[0].toString()}`)) {
+    return;
+  }
+
+  for (let i = 0; i < CandleSizes.length; i++) {
+    const candleSingleton = TokenCandleSingleton.load(
+      `TokenCandleSingleton-${pairToken.toHexString()}-${CandleSizes[i].toString()}`,
+    )!;
+
+    if (candleSingleton.timestamp.plus(BigInt.fromI32(CandleSizes[i] * 60)) < event.block.timestamp) {
+      handleCloseCandle(event, pairToken, CandleSizes[i], tokenPriceOracle);
+    } else {
+      // Oracle
+      if (candleSingleton.lowOracle.gt(tokenPriceOracle)) {
+        candleSingleton.lowOracle = tokenPriceOracle;
+      } else if (candleSingleton.highOracle.lt(tokenPriceOracle)) {
+        candleSingleton.highOracle = tokenPriceOracle;
+      }
+      // Add close so that previous price is known
+      candleSingleton.closeOracle = tokenPriceOracle;
+
+      candleSingleton.save();
+    }
+  }
+}
+
+/**
+ * Updates the Singleton and creates new Candles if candle is closed
+ */
 export function handleUpdateTokenCandle_low_high(event: ethereum.Event, swapPair: Address, pairToken: Address): void {
   const token = Token.load(pairToken)!;
   const systemInfo = SystemInfo.load(`SystemInfo`)!;
@@ -79,7 +117,7 @@ export function handleUpdateTokenCandle_low_high(event: ethereum.Event, swapPair
     )!;
 
     if (candleSingleton.timestamp.plus(BigInt.fromI32(CandleSizes[i] * 60)) < event.block.timestamp) {
-      handleCloseCandle(event, pairToken, CandleSizes[i], tokenPriceInStable, tokenPriceOracle);
+      handleCloseCandle(event, pairToken, CandleSizes[i], tokenPriceOracle, tokenPriceInStable);
     } else {
       // Swap Pair
       if (candleSingleton.low.gt(tokenPriceInStable)) {
@@ -130,7 +168,7 @@ export function handleUpdateTokenCandle_volume(
     )!;
 
     if (candleSingleton.timestamp.plus(BigInt.fromI32(CandleSizes[i] * 60)) < event.block.timestamp) {
-      handleCloseCandle(event, pairToken, CandleSizes[i], tokenPriceInStable, tokenPriceOracle, additionalTradeVolume);
+      handleCloseCandle(event, pairToken, CandleSizes[i], tokenPriceOracle, tokenPriceInStable, additionalTradeVolume);
     } else {
       candleSingleton.volume = candleSingleton.volume.plus(additionalTradeVolume);
       candleSingleton.save();
@@ -142,8 +180,8 @@ function handleCloseCandle(
   event: ethereum.Event,
   pairToken: Address,
   candleSize: i32,
-  tokenPriceStable: BigInt,
   tokenPriceOracle: BigInt,
+  tokenPriceStable: BigInt = BigInt.fromI32(0),
   initialTradeVolume: BigInt = BigInt.fromI32(0),
 ): void {
   const candleSingleton = TokenCandleSingleton.load(
@@ -190,9 +228,12 @@ function handleCloseCandle(
   // Lastly update with current candle
   // candleSingleton.timestamp = candleSingleton.timestamp.plus(BigInt.fromI32(candleSize * 60));
   candleSingleton.open = candleSingleton.close;
-  candleSingleton.high = candleSingleton.close.gt(tokenPriceStable) ? candleSingleton.close : tokenPriceStable;
-  candleSingleton.low = candleSingleton.close.lt(tokenPriceStable) ? candleSingleton.close : tokenPriceStable;
-  candleSingleton.close = tokenPriceStable;
+  // Only update the DEX price when there is new data from the DEX
+  if (tokenPriceStable.gt(BigInt.fromI32(0))) {
+    candleSingleton.high = candleSingleton.close.gt(tokenPriceStable) ? candleSingleton.close : tokenPriceStable;
+    candleSingleton.low = candleSingleton.close.lt(tokenPriceStable) ? candleSingleton.close : tokenPriceStable;
+    candleSingleton.close = tokenPriceStable;
+  }
   candleSingleton.volume = initialTradeVolume;
   candleSingleton.openOracle = candleSingleton.closeOracle;
   candleSingleton.highOracle = candleSingleton.closeOracle.gt(tokenPriceOracle)

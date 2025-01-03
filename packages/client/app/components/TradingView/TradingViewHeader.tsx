@@ -1,11 +1,16 @@
 import { useQuery } from '@apollo/client';
 import { Box, Tooltip, Typography } from '@mui/material';
+import { useSnackbar } from 'notistack';
+import { useErrorMonitoring } from '../../context/ErrorMonitoringContext';
 import { useSelectedToken } from '../../context/SelectedTokenProvider';
 import { GetSelectedTokenQuery, GetSelectedTokenQueryVariables } from '../../generated/gql-types';
 import { GET_SELECTED_TOKEN } from '../../queries';
 import { dangerouslyConvertBigIntToNumber, displayPercentage, percentageChange, roundCurrency } from '../../utils/math';
 
 function TradingViewHeader() {
+  const { enqueueSnackbar } = useSnackbar();
+
+  const { Sentry } = useErrorMonitoring();
   const { selectedToken, tokenRatio, JUSDToken } = useSelectedToken();
 
   const { data } = useQuery<GetSelectedTokenQuery, GetSelectedTokenQueryVariables>(GET_SELECTED_TOKEN, {
@@ -13,6 +18,10 @@ function TradingViewHeader() {
       address: selectedToken?.address as string,
     },
     skip: !selectedToken,
+    onError: (error) => {
+      enqueueSnackbar('Error requesting the subgraph. Please reload the page and try again.');
+      Sentry.captureException(error);
+    },
   });
 
   return (
@@ -45,7 +54,9 @@ function TradingViewHeader() {
         <Typography variant="subtitle1" fontFamily="Space Grotesk Variable">
           Pool
           <Box sx={{ color: 'text.primary', display: 'inline', ml: '8px' }}>
-            {JUSDToken && selectedToken ? roundCurrency(dangerouslyConvertBigIntToNumber(tokenRatio, 9, 9)) : ' -'}
+            {JUSDToken && selectedToken
+              ? roundCurrency(dangerouslyConvertBigIntToNumber(tokenRatio, 9, 9, Infinity))
+              : ' -'}
           </Box>{' '}
           $
         </Typography>

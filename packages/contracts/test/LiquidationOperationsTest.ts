@@ -29,6 +29,7 @@ import {
   liquidate,
   closeTrove,
   batchLiquidate,
+  increaseDebt,
 } from '../utils/testHelper';
 import { assert, expect } from 'chai';
 import { parseUnits } from 'ethers';
@@ -52,6 +53,7 @@ describe('LiquidationOperations', () => {
 
   let STABLE: MockDebtToken;
   let BTC: MockERC20;
+  let STOCK: MockERC20;
 
   let priceFeed: PriceFeed;
   let troveManager: MockTroveManager;
@@ -78,6 +80,7 @@ describe('LiquidationOperations', () => {
     sortedTroves = contracts.sortedTroves;
     STABLE = contracts.STABLE;
     BTC = contracts.BTC;
+    STOCK = contracts.STOCK;
   });
 
   describe('in Normal Mode', () => {
@@ -127,7 +130,7 @@ describe('LiquidationOperations', () => {
         const activePoolDebt_After = await storagePool.getValue(STABLE, false, 0);
         assert.equal(
           activePoolDebt_After,
-          activePoolDebt_Before - borrowedDebt - (await troveManager.getBorrowingFee(borrowedDebt, true))
+          activePoolDebt_Before - borrowedDebt - (await troveManager.getBorrowingFee(borrowedDebt, true, 0))
         );
       });
 
@@ -155,7 +158,7 @@ describe('LiquidationOperations', () => {
         const liquidatedDebt = parseUnits('100');
         const defaultPoolDebtAfter = await storagePool.getValue(STABLE, false, 1);
         expect(defaultPoolDebtAfter).to.be.equal(
-          liquidatedDebt + (await troveManager.getBorrowingFee(liquidatedDebt, true))
+          liquidatedDebt + (await troveManager.getBorrowingFee(liquidatedDebt, true, 0))
         );
       });
 
@@ -266,28 +269,37 @@ describe('LiquidationOperations', () => {
         const totalStake = await troveManager.totalStakes(BTC);
 
         // checking liquidated snapshots
-        const L_BTC_A = await troveManager.getLiquidatedCollTokens(BTC);
-        const L_STABLE_A = await troveManager.getLiquidatedDebtTokens(BTC, STABLE);
+        const L_BTC_A = await troveManager.liquidatedTokensPerStake(BTC, BTC, true);
+        const L_STABLE_A = await troveManager.liquidatedTokensPerStake(BTC, STABLE, false);
         expect(L_BTC_A).to.be.equal((defaulterBTCWithoutFee * parseUnits('1')) / totalStake);
         expect(L_STABLE_A).to.be.equal((parseUnits('100.5') * parseUnits('1')) / totalStake);
 
         // checking alice pending btc rewards
-        const alicePendingBTC = await troveManager.getPendingRewards(alice, BTC, true);
+        const alicePendingBTC =
+          (await troveManager.getPendingRewards(alice, true, false)).find(
+            ({ tokenAddress }) => tokenAddress === BTC.target
+          )?.amount ?? 0n;
         const aliceBTCCollStake = (parseUnits('1', 8) * parseUnits('1', 8)) / remainingActiveBTC;
         const aliceExpectedBTCPending = (defaulterBTCWithoutFee * aliceBTCCollStake) / parseUnits('1', 8);
         expect(alicePendingBTC - aliceExpectedBTCPending).to.be.lt(5);
 
         // 2. liquidation
-        const defaulterStableRewards = await troveManager.getPendingRewards(defaulter_2, STABLE, false);
-        const defaulterBTCRewards = await troveManager.getPendingRewards(defaulter_2, BTC, true);
+        const defaulterStableRewards =
+          (await troveManager.getPendingRewards(defaulter_2, false, true)).find(
+            ({ tokenAddress }) => tokenAddress === STABLE.target
+          )?.amount ?? 0n;
+        const defaulterBTCRewards =
+          (await troveManager.getPendingRewards(defaulter_2, true, false)).find(
+            ({ tokenAddress }) => tokenAddress === BTC.target
+          )?.amount ?? 0n;
         await liquidate(defaulter_2, contracts);
 
         remainingActiveBTC -= defaulterBTC;
 
         // checking liquidated snapshots
         const totalStakeB = await troveManager.totalStakes(BTC);
-        const L_BTC_B = await troveManager.getLiquidatedCollTokens(BTC);
-        const L_STABLE_B = await troveManager.getLiquidatedDebtTokens(BTC, STABLE);
+        const L_BTC_B = await troveManager.liquidatedTokensPerStake(BTC, BTC, true);
+        const L_STABLE_B = await troveManager.liquidatedTokensPerStake(BTC, STABLE, true);
         expect(
           L_BTC_B - ((2n * defaulterBTCWithoutFee + defaulterBTCRewards) * parseUnits('1')) / totalStakeB
         ).to.be.lt(1);
@@ -296,7 +308,10 @@ describe('LiquidationOperations', () => {
         ).to.be.lt(17000000000000);
 
         // checking alice pending btc rewards
-        const alicePendingBTCB = await troveManager.getPendingRewards(alice, BTC, true);
+        const alicePendingBTCB =
+          (await troveManager.getPendingRewards(alice, true, false)).find(
+            ({ tokenAddress }) => tokenAddress === BTC.target
+          )?.amount ?? 0n;
         const aliceBTCCollStakeB = (parseUnits('1', 8) * parseUnits('1', 8)) / remainingActiveBTC;
         const aliceExpectedBTCPendingB = (defaulterBTCWithoutFee * 2n * aliceBTCCollStakeB) / parseUnits('1', 8);
         expect(alicePendingBTCB - aliceExpectedBTCPendingB).to.be.lt(5001);
@@ -1141,14 +1156,22 @@ describe('LiquidationOperations', () => {
       await repayDebt(bob, contracts, [{ tokenAddress: STABLE, amount: parseUnits('1000') }]);
 
       // Check alice is the only trove that has pending rewards
-      const alicePendingBTCReward = await troveManager.getPendingRewards(alice, BTC, true);
+      const alicePendingBTCReward =
+        (await troveManager.getPendingRewards(alice, true, false)).find(
+          ({ tokenAddress }) => tokenAddress === BTC.target
+        )?.amount ?? 0n;
       assert.isTrue(alicePendingBTCReward > 0);
-      const bobPendingReward = await troveManager.getPendingRewards(bob, BTC, true);
+      const bobPendingReward =
+        (await troveManager.getPendingRewards(bob, true, false)).find(({ tokenAddress }) => tokenAddress === BTC.target)
+          ?.amount ?? 0n;
       assert.isFalse(bobPendingReward > 0);
 
       // Check alice's pending coll and debt rewards are <= the coll and debt in the DefaultPool
       const priceCache = await buildPriceCache(contracts);
-      const PendingDebtSTABLE_A = await troveManager.getPendingRewards(alice, STABLE, false);
+      const PendingDebtSTABLE_A =
+        (await troveManager.getPendingRewards(alice, false, true)).find(
+          ({ tokenAddress }) => tokenAddress === STABLE.target
+        )?.amount ?? 0n;
       const entireSystemCollUsd = await storagePool.getEntireSystemColl(priceCache);
       const entireSystemCollAmount = await priceFeed['getAmountFromUSDValue(address,uint256)'](
         BTC,
@@ -1182,6 +1205,49 @@ describe('LiquidationOperations', () => {
 
       // Confirm Troves count
       expect(troveLengthBefore - troveLengthAfter).to.be.equal(1);
+    });
+
+    it('pending rewards from unused debt tokens', async () => {
+      await openTrove({
+        from: alice,
+        contracts,
+        colls: [{ tokenAddress: BTC, amount: parseUnits('5', 8) }],
+        debts: [{ tokenAddress: STABLE, amount: parseUnits('8000') }],
+      });
+
+      const bobStockAmount = parseUnits('5');
+      await openTrove({
+        from: bob,
+        contracts,
+        colls: [{ tokenAddress: BTC, amount: parseUnits('2', 8) }],
+        debts: [
+          { tokenAddress: STABLE, amount: parseUnits('10000') },
+          { tokenAddress: STOCK, amount: bobStockAmount },
+        ],
+      });
+
+      await setPrice('BTC', '5000', contracts);
+      await batchLiquidate([bob], contracts);
+
+      const aliceStockReward =
+        (await troveManager.getPendingRewards(alice, false, true)).find(
+          ({ tokenAddress }) => tokenAddress === STOCK.target
+        )?.amount ?? 0n;
+      assert.equal(aliceStockReward, bobStockAmount);
+
+      const aliceDebts = await troveManager['getTroveRepayableDebts(address,bool)'](alice, true);
+      assert.equal(aliceDebts[1][1], bobStockAmount);
+
+      await increaseDebt(alice, contracts, [{ tokenAddress: STABLE, amount: parseUnits('10') }]);
+
+      const aliceStockRewardB =
+        (await troveManager.getPendingRewards(alice, false, true)).find(
+          ({ tokenAddress }) => tokenAddress === STOCK.target
+        )?.amount ?? 0n;
+      assert.equal(aliceStockRewardB, 0n);
+
+      const aliceDebtsB = await troveManager['getTroveRepayableDebts(address,bool)'](alice, true);
+      assert.equal(aliceDebtsB[1][1], bobStockAmount);
     });
 
     it('reverts if array is empty', async () => {
@@ -1561,7 +1627,7 @@ describe('LiquidationOperations', () => {
         const [[, whaleCollGain]] = await stabilityPoolManager.getDepositorCollGains(whale);
 
         assert.equal(whaleCompoundedDeposit[1], 0n);
-        assert.equal(whaleCollGain, bobColl - (await troveManager.getBorrowingFee(parseUnits('2', 8), true)));
+        assert.equal(whaleCollGain, bobColl - (await troveManager.getBorrowingFee(parseUnits('2', 8), true, 0)));
       });
 
       it('recovery mode, with  110% < ICR < TCR, full stability pool off set', async () => {

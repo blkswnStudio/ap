@@ -100,6 +100,10 @@ contract TokenManager is LiquityBase, Ownable(msg.sender), CheckContract, IToken
 
   // --- Setters ---
 
+  function setBurnRedistributeAddress(address _target) external onlyOwner {
+    stakingOperations.setRedistributeAddress(_target);
+  }
+
   function setStakingRewardsPerSecond(uint _rewardsPerSecond) external onlyOwner {
     stakingOperations.setRewardsPerSecond(_rewardsPerSecond);
   }

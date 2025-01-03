@@ -6,6 +6,7 @@ import {
   HintHelpers,
   RedemptionOperations as RedemptionOperationsContract,
   StabilityPoolManager,
+  StakingVestingOperations,
   StoragePool,
   TroveManager,
 } from '../../../generated/types';
@@ -42,6 +43,15 @@ export const ContractDataFreshnessManager_ATC: {
       TCR: bigint;
       entireSystemColl: bigint;
       entireSystemDebt: bigint;
+    }>
+  >;
+  StakingVestingOperations: Record<
+    string,
+    ContractValue<{
+      remainingTime: bigint;
+      totalAmount: bigint;
+      claimableAmount: bigint;
+      burnedAmount: bigint;
     }>
   >;
   CollSurplusPool: Record<string, ContractValue<TokenAmount[]>>;
@@ -265,6 +275,40 @@ export const ContractDataFreshnessManager_ATC: {
       timeout: 1000 * 2,
     },
   },
+  StakingVestingOperations: {
+    checkVesting: {
+      fetch: async (
+        stakingVestingOperationsContract: StakingVestingOperations,
+        token: AddressLike,
+        depositor: AddressLike,
+      ) => {
+        ContractDataFreshnessManager_ATC.StakingVestingOperations.checkVesting.lastFetched = Date.now();
+
+        const [remainingTime, totalAmount, claimableAmount, burnedAmount] =
+          await stakingVestingOperationsContract.checkVesting(token, depositor);
+
+        ContractDataFreshnessManager_ATC.StakingVestingOperations.checkVesting.value = {
+          remainingTime,
+          totalAmount,
+          claimableAmount,
+          burnedAmount,
+        };
+
+        SchemaDataFreshnessManager_ATC.StakingVestingOperations.remainingTime.fetch();
+        SchemaDataFreshnessManager_ATC.StakingVestingOperations.totalAmount.fetch();
+        SchemaDataFreshnessManager_ATC.StakingVestingOperations.claimableAmount.fetch();
+        SchemaDataFreshnessManager_ATC.StakingVestingOperations.burnedAmount.fetch();
+      },
+      value: {
+        remainingTime: BigInt(0),
+        totalAmount: BigInt(0),
+        claimableAmount: BigInt(0),
+        burnedAmount: BigInt(0),
+      } as any,
+      lastFetched: 0,
+      timeout: 1000 * 2,
+    },
+  },
 };
 
 /**
@@ -408,4 +452,106 @@ export const SchemaDataFreshnessManager_ATC: ContractDataFreshnessManagerType<ty
   PriceFeed: {},
   CollSurplus: {},
   StakingOperations: {},
+  StakingVestingOperations: {
+    remainingTime: {
+      fetch: async (fetchSource?: {
+        depositor: AddressLike;
+        token: AddressLike;
+        stakingVestingOperationsContract: StakingVestingOperations;
+      }) => {
+        SchemaDataFreshnessManager_ATC.StakingVestingOperations.remainingTime.lastFetched = Date.now();
+
+        if (fetchSource) {
+          await ContractDataFreshnessManager_ATC.StakingVestingOperations.checkVesting.fetch(
+            fetchSource.stakingVestingOperationsContract,
+            fetchSource.token,
+            fetchSource.depositor,
+          );
+        }
+
+        const { remainingTime } = ContractDataFreshnessManager_ATC.StakingVestingOperations.checkVesting.value as any;
+
+        SchemaDataFreshnessManager_ATC.StakingVestingOperations.remainingTime.value(remainingTime);
+      },
+      value: makeVar(defaultFieldValue),
+      lastFetched: 0,
+      timeout: 1000 * 2,
+      periodic: 1000 * 30,
+    },
+    totalAmount: {
+      fetch: async (fetchSource?: {
+        depositor: AddressLike;
+        token: AddressLike;
+        stakingVestingOperationsContract: StakingVestingOperations;
+      }) => {
+        SchemaDataFreshnessManager_ATC.StakingVestingOperations.totalAmount.lastFetched = Date.now();
+
+        if (fetchSource) {
+          await ContractDataFreshnessManager_ATC.StakingVestingOperations.checkVesting.fetch(
+            fetchSource.stakingVestingOperationsContract,
+            fetchSource.token,
+            fetchSource.depositor,
+          );
+        }
+
+        const { totalAmount } = ContractDataFreshnessManager_ATC.StakingVestingOperations.checkVesting.value as any;
+
+        SchemaDataFreshnessManager_ATC.StakingVestingOperations.totalAmount.value(totalAmount);
+      },
+      value: makeVar(defaultFieldValue),
+      lastFetched: 0,
+      timeout: 1000 * 2,
+      periodic: 1000 * 30,
+    },
+    claimableAmount: {
+      fetch: async (fetchSource?: {
+        depositor: AddressLike;
+        token: AddressLike;
+        stakingVestingOperationsContract: StakingVestingOperations;
+      }) => {
+        SchemaDataFreshnessManager_ATC.StakingVestingOperations.claimableAmount.lastFetched = Date.now();
+
+        if (fetchSource) {
+          await ContractDataFreshnessManager_ATC.StakingVestingOperations.checkVesting.fetch(
+            fetchSource.stakingVestingOperationsContract,
+            fetchSource.token,
+            fetchSource.depositor,
+          );
+        }
+
+        const { claimableAmount } = ContractDataFreshnessManager_ATC.StakingVestingOperations.checkVesting.value as any;
+
+        SchemaDataFreshnessManager_ATC.StakingVestingOperations.claimableAmount.value(claimableAmount);
+      },
+      value: makeVar(defaultFieldValue),
+      lastFetched: 0,
+      timeout: 1000 * 2,
+      periodic: 1000 * 30,
+    },
+    burnedAmount: {
+      fetch: async (fetchSource?: {
+        depositor: AddressLike;
+        token: AddressLike;
+        stakingVestingOperationsContract: StakingVestingOperations;
+      }) => {
+        SchemaDataFreshnessManager_ATC.StakingVestingOperations.burnedAmount.lastFetched = Date.now();
+
+        if (fetchSource) {
+          await ContractDataFreshnessManager_ATC.StakingVestingOperations.checkVesting.fetch(
+            fetchSource.stakingVestingOperationsContract,
+            fetchSource.token,
+            fetchSource.depositor,
+          );
+        }
+
+        const { burnedAmount } = ContractDataFreshnessManager_ATC.StakingVestingOperations.checkVesting.value as any;
+
+        SchemaDataFreshnessManager_ATC.StakingVestingOperations.burnedAmount.value(burnedAmount);
+      },
+      value: makeVar(defaultFieldValue),
+      lastFetched: 0,
+      timeout: 1000 * 2,
+      periodic: 1000 * 30,
+    },
+  },
 };

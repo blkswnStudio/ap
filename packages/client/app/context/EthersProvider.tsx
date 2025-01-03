@@ -1,7 +1,7 @@
 'use client';
 
 import { Button } from '@mui/material';
-import { useWeb3ModalAccount, useWeb3ModalProvider } from '@web3modal/ethers/react';
+import { useWeb3ModalAccount } from '@web3modal/ethers/react';
 import { Contract, JsonRpcSigner, Network } from 'ethers';
 import { BrowserProvider, JsonRpcProvider } from 'ethers/providers';
 import Link from 'next/link';
@@ -15,11 +15,13 @@ import {
   DebtToken,
   HintHelpers,
   MockERC20,
+  MockPyth,
   PriceFeed,
   RedemptionOperations,
   SortedTroves,
   StabilityPoolManager,
   StakingOperations,
+  StakingVestingOperations,
   StoragePool,
   SwapOperations,
   SwapPair,
@@ -31,11 +33,13 @@ import collSurplusAbi from './abis/CollSurplusPool.json';
 import debtTokenAbi from './abis/DebtToken.json';
 import hintHelpersAbi from './abis/HintHelpers.json';
 import ERC20Abi from './abis/MockERC20.json';
+import mockPythAbi from './abis/MockPyth.json';
 import priceFeedAbi from './abis/PriceFeed.json';
 import redemptionOperationsAbi from './abis/RedemptionOperations.json';
 import sortedTrovesAbi from './abis/SortedTroves.json';
 import stabilityPoolManagerAbi from './abis/StabilityPoolManager.json';
 import stakingOperationsAbi from './abis/StakingOperations.json';
+import stakingVestingOperationsAbi from './abis/StakingVestingOperations.json';
 import storagePoolAbi from './abis/StoragePool.json';
 import swapOperationsAbi from './abis/SwapOperations.json';
 import swapPairAbi from './abis/SwapPair.json';
@@ -61,7 +65,7 @@ type AllSwapPairContracts = {
 export const EthersContext = createContext<{
   provider: BrowserProvider | null;
   signer: JsonRpcSigner | null;
-  currentNetwork: typeof defaultNetwork | null;
+  currentNetwork: typeof defaultNetwork;
   address: string;
   contracts: {
     debtTokenContracts: AllDebtTokenContracts;
@@ -78,13 +82,15 @@ export const EthersContext = createContext<{
     redemptionOperationsContract: RedemptionOperations;
     collSurplusContract: CollSurplusPool;
     stakingOperationsContract: StakingOperations;
+    stakingVestingOperationsContract: StakingVestingOperations;
+    mockPythContract: MockPyth;
   };
   connectWallet: (address: string) => Promise<void>;
   setCurrentNetwork: (network: (typeof NETWORKS)[0] | null) => void;
 }>({
   provider: null,
   signer: null,
-  currentNetwork: null,
+  currentNetwork: null as any,
   address: '',
   contracts: {
     debtTokenContracts: undefined,
@@ -101,6 +107,8 @@ export const EthersContext = createContext<{
     redemptionOperationsContract: undefined,
     collSurplusContract: undefined,
     stakingOperationsContract: undefined,
+    stakingVestingOperationsContract: undefined,
+    mockPythContract: undefined,
   } as any,
   connectWallet: async () => {},
   setCurrentNetwork: () => {},
@@ -108,7 +116,6 @@ export const EthersContext = createContext<{
 
 export default function EthersProvider({ children }: { children: React.ReactNode }) {
   const { address, isConnected } = useWeb3ModalAccount();
-  const { walletProvider } = useWeb3ModalProvider();
   const { Sentry } = useErrorMonitoring();
   const { enqueueSnackbar } = useSnackbar();
   const [provider, setProvider] = useState<BrowserProvider | null>(null);
@@ -128,16 +135,28 @@ export default function EthersProvider({ children }: { children: React.ReactNode
   const [redemptionOperationsContract, setRedemptionOperationsContract] = useState<RedemptionOperations>();
   const [collSurplusContract, setCollSurplusContract] = useState<CollSurplusPool>();
   const [stakingOperationsContract, setStakingOperationsContract] = useState<StakingOperations>();
+  const [stakingVestingOperationsContract, setStakingVestingOperationsContract] = useState<StakingVestingOperations>();
+  const [mockPythContract, setMockPythContract] = useState<MockPyth>();
 
   const router = useRouter();
 
   const connectWallet = async (address: string) => {
-    try {
-      if (typeof window.ethereum !== 'undefined' && currentNetwork) {
-        // Opens Meta Mask
-        const newSigner = await provider!.getSigner(address);
+    if (typeof window.ethereum !== 'undefined' && currentNetwork) {
+      // Opens Meta Mask
+      let newSigner!: JsonRpcSigner;
+      try {
+        newSigner = await provider!.getSigner(address);
         setSigner(newSigner);
+      } catch (error: any) {
+        Sentry.captureException(error);
+        console.error('connectWallet error: ', error);
+        enqueueSnackbar('The account we tried to connect is invalid. Try disconnect and connect again.', {
+          variant: 'error',
+        });
+        return;
+      }
 
+      try {
         const debtTokenContractStable = new Contract(currentNetwork.contracts.DebtToken.STABLE, debtTokenAbi, provider);
         const debtTokenContractStableWithSigner = debtTokenContractStable.connect(newSigner) as DebtToken;
         const debtTokenContractSTOCK_1 = new Contract(
@@ -266,6 +285,16 @@ export default function EthersProvider({ children }: { children: React.ReactNode
         const stakingOperationsContractWithSigner = stakingOperationsContract.connect(newSigner) as StakingOperations;
         setStakingOperationsContract(stakingOperationsContractWithSigner);
 
+        const stakingVestingOperationsContract = new Contract(
+          currentNetwork.contracts.StakingVestingOperations,
+          stakingVestingOperationsAbi,
+          provider,
+        );
+        const stakingVestingOperationsContractWithSigner = stakingVestingOperationsContract.connect(
+          newSigner,
+        ) as StakingVestingOperations;
+        setStakingVestingOperationsContract(stakingVestingOperationsContractWithSigner);
+
         try {
           Sentry.setUser({
             id: address,
@@ -275,31 +304,31 @@ export default function EthersProvider({ children }: { children: React.ReactNode
           console.error('eth_requestAccounts error: ', error);
           enqueueSnackbar('You rejected necessary permissions. Please try again.', { variant: 'error' });
         }
-      } else {
-        // Handle if user doesnt have MM installed
-        enqueueSnackbar(
-          'MetaMask extension is not installed. The extension is required to interact with the application. Please install and reload the page.',
-          {
-            variant: 'error',
-            action: (
-              <Button
-                LinkComponent={Link}
-                href="https://metamask.io/"
-                variant="contained"
-                target="_blank"
-                rel="noreferrer"
-              >
-                Install
-              </Button>
-            ),
-            autoHideDuration: 20000,
-          },
-        );
+      } catch (error) {
+        Sentry.captureException(error);
+        console.error('connectWallet error: ', error);
+        enqueueSnackbar('You closed the authentication window. Please try loging in again.', { variant: 'error' });
       }
-    } catch (error) {
-      Sentry.captureException(error);
-      console.error('connectWallet error: ', error);
-      enqueueSnackbar('You closed the authentication window. Please try loging in again.', { variant: 'error' });
+    } else {
+      // Handle if user doesnt have MM installed
+      enqueueSnackbar(
+        'MetaMask extension is not installed. The extension is required to interact with the application. Please install and reload the page.',
+        {
+          variant: 'error',
+          action: (
+            <Button
+              LinkComponent={Link}
+              href="https://metamask.io/"
+              variant="contained"
+              target="_blank"
+              rel="noreferrer"
+            >
+              Install
+            </Button>
+          ),
+          autoHideDuration: 20000,
+        },
+      );
     }
   };
 
@@ -334,7 +363,11 @@ export default function EthersProvider({ children }: { children: React.ReactNode
           }
         })
         .catch((error: any) => {
-          Sentry.captureException(error);
+          if (error.data?.request) {
+            Sentry.captureException(error.data?.request);
+          } else {
+            Sentry.captureException(error);
+          }
         });
     } else if (typeof window.ethereum === 'undefined') {
       Sentry.captureException('MetaMask extension is not installed. Please install and try again.');
@@ -384,7 +417,7 @@ export default function EthersProvider({ children }: { children: React.ReactNode
     return () => {
       if (typeof window.ethereum !== 'undefined') {
         // @ts-ignore
-        window.ethereum.removeListener('accountsChanged', reloadWhenAccountChanged);
+        window.ethereum.removeListener?.('accountsChanged', reloadWhenAccountChanged);
       }
     };
 
@@ -522,6 +555,15 @@ export default function EthersProvider({ children }: { children: React.ReactNode
         ) as unknown as PriceFeed;
         setPriceFeedContract(priceFeedContract);
 
+        if (process.env.NEXT_PUBLIC_ENVIRONMENT === 'development' && (currentNetwork.contracts as any).MockPyth) {
+          const mockPythContract = new Contract(
+            (currentNetwork.contracts as any).MockPyth,
+            mockPythAbi,
+            provider,
+          ) as unknown as MockPyth;
+          setMockPythContract(mockPythContract);
+        }
+
         const redemptionOperationsContract = new Contract(
           currentNetwork.contracts.RedemptionOperations,
           redemptionOperationsAbi,
@@ -542,6 +584,13 @@ export default function EthersProvider({ children }: { children: React.ReactNode
           provider,
         ) as unknown as StakingOperations;
         setStakingOperationsContract(stakingOperationsContract);
+
+        const stakingVestingOperationsContract = new Contract(
+          currentNetwork.contracts.StakingVestingOperations,
+          stakingVestingOperationsAbi,
+          provider,
+        ) as unknown as StakingVestingOperations;
+        setStakingVestingOperationsContract(stakingVestingOperationsContract);
       } catch (error) {
         Sentry.captureException(error);
         console.error(error);
@@ -567,7 +616,8 @@ export default function EthersProvider({ children }: { children: React.ReactNode
     !priceFeedContract ||
     !redemptionOperationsContract ||
     !collSurplusContract ||
-    !stakingOperationsContract
+    !stakingOperationsContract ||
+    !stakingVestingOperationsContract
   )
     return null;
 
@@ -576,7 +626,7 @@ export default function EthersProvider({ children }: { children: React.ReactNode
       value={{
         provider,
         signer,
-        currentNetwork: currentNetwork as typeof defaultNetwork,
+        currentNetwork,
         address: address ?? '',
         connectWallet,
         setCurrentNetwork,
@@ -595,6 +645,8 @@ export default function EthersProvider({ children }: { children: React.ReactNode
           redemptionOperationsContract,
           collSurplusContract,
           stakingOperationsContract,
+          stakingVestingOperationsContract,
+          mockPythContract: mockPythContract!,
         },
       }}
     >
@@ -606,7 +658,7 @@ export default function EthersProvider({ children }: { children: React.ReactNode
 export function useEthers(): {
   provider: BrowserProvider | null;
   signer: JsonRpcSigner | null;
-  currentNetwork: typeof defaultNetwork | null;
+  currentNetwork: typeof defaultNetwork;
   address: string;
   contracts: {
     debtTokenContracts: AllDebtTokenContracts;
@@ -623,6 +675,8 @@ export function useEthers(): {
     redemptionOperationsContract: RedemptionOperations;
     collSurplusContract: CollSurplusPool;
     stakingOperationsContract: StakingOperations;
+    stakingVestingOperationsContract: StakingVestingOperations;
+    mockPythContract: MockPyth;
   };
   connectWallet: (address: string) => Promise<void>;
   setCurrentNetwork: (network: (typeof NETWORKS)[0] | null) => void;

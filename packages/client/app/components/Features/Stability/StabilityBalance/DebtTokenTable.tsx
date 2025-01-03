@@ -6,6 +6,8 @@ import TableCell from '@mui/material/TableCell';
 import TableContainer from '@mui/material/TableContainer';
 import TableHead from '@mui/material/TableHead';
 import TableRow from '@mui/material/TableRow';
+import { useSnackbar } from 'notistack';
+import { useErrorMonitoring } from '../../../../context/ErrorMonitoringContext';
 import { useEthers } from '../../../../context/EthersProvider';
 import { GetBorrowerDebtTokensQuery, GetBorrowerDebtTokensQueryVariables } from '../../../../generated/gql-types';
 import { GET_BORROWER_DEBT_TOKENS } from '../../../../queries';
@@ -15,7 +17,6 @@ import {
   displayPercentage,
   percentageChange,
   roundCurrency,
-  stdFormatter,
 } from '../../../../utils/math';
 import FeatureBox from '../../../FeatureBox/FeatureBox';
 import DirectionIcon from '../../../Icons/DirectionIcon';
@@ -27,11 +28,18 @@ import RepayDebtDialog from '../../Debt/RepayDebtDialog';
 import DebtTokenTableLoader from './DebtTokenTableLoader';
 
 function DebtTokenTable() {
+  const { enqueueSnackbar } = useSnackbar();
+
+  const { Sentry } = useErrorMonitoring();
   const { address } = useEthers();
 
   const { data } = useQuery<GetBorrowerDebtTokensQuery, GetBorrowerDebtTokensQueryVariables>(GET_BORROWER_DEBT_TOKENS, {
     variables: {
       borrower: address,
+    },
+    onError: (error) => {
+      enqueueSnackbar('Error requesting the subgraph. Please reload the page and try again.');
+      Sentry.captureException(error);
     },
   });
 
@@ -120,7 +128,7 @@ function DebtTokenTable() {
                     >
                       <Label variant="none">{token.symbol}</Label>
                     </TableCell>
-                    <TableCell align="right">{stdFormatter.format(totalSupplyUSD)}</TableCell>
+                    <TableCell align="right">{roundCurrency(totalSupplyUSD)} $</TableCell>
                     <TableCell width={125}>
                       <div
                         style={{

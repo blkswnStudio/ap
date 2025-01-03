@@ -1,7 +1,9 @@
 import { useQuery } from '@apollo/client';
 import InfoOutlinedIcon from '@mui/icons-material/InfoOutlined';
 import { Box, Typography, useTheme } from '@mui/material';
+import { useSnackbar } from 'notistack';
 import { useCallback, useEffect } from 'react';
+import { useErrorMonitoring } from '../../context/ErrorMonitoringContext';
 import { useEthers } from '../../context/EthersProvider';
 import {
   GetBorrowerCollateralTokensQuery,
@@ -84,19 +86,31 @@ function CollateralRatioVisualization({
   loading = false,
 }: Props) {
   const theme = useTheme();
-  const isDarkMode = theme.palette.mode === 'dark';
+  const { enqueueSnackbar } = useSnackbar();
 
+  const { Sentry } = useErrorMonitoring();
   const { address } = useEthers();
+
+  const isDarkMode = theme.palette.mode === 'dark';
 
   const { data: debtData } = useQuery<GetBorrowerDebtTokensQuery, GetBorrowerDebtTokensQueryVariables>(
     GET_BORROWER_DEBT_TOKENS,
     {
       variables: { borrower: address },
       skip: !address,
+      onError: (error) => {
+        enqueueSnackbar('Error requesting the subgraph. Please reload the page and try again.');
+        Sentry.captureException(error);
+      },
     },
   );
 
-  const { data: systemInfoData } = useQuery<GetSystemInfoQuery, GetSystemInfoQueryVariables>(GET_SYSTEMINFO);
+  const { data: systemInfoData } = useQuery<GetSystemInfoQuery, GetSystemInfoQueryVariables>(GET_SYSTEMINFO, {
+    onError: (error) => {
+      enqueueSnackbar('Error requesting the subgraph. Please reload the page and try again.');
+      Sentry.captureException(error);
+    },
+  });
   const criticalRatio = systemInfoData?.getSystemInfo?.borrowerIMCR
     ? dangerouslyConvertBigIntToNumber(systemInfoData.getSystemInfo.borrowerIMCR, 14, 4, CRIT_RATIO)
     : CRIT_RATIO;
@@ -107,6 +121,10 @@ function CollateralRatioVisualization({
   >(GET_BORROWER_COLLATERAL_TOKENS, {
     variables: { borrower: address },
     skip: !address,
+    onError: (error) => {
+      enqueueSnackbar('Error requesting the subgraph. Please reload the page and try again.');
+      Sentry.captureException(error);
+    },
   });
   const supportedCollateral =
     collateralData?.collateralTokenMetas.filter(
@@ -171,7 +189,7 @@ function CollateralRatioVisualization({
 
     const newRatio =
       addedDebtUSD !== 0
-        ? collateralValueUSD / (debtValue + addedDebtUSD)
+        ? (collateralValueUSD + addedCollateralUSD) / (debtValue + addedDebtUSD)
         : (collateralValueUSD + addedCollateralUSD) / debtValue;
 
     return [isNaN(oldRatio) ? 0 : oldRatio, isNaN(newRatio) ? 0 : newRatio];

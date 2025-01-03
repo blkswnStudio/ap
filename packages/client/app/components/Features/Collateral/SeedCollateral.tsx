@@ -22,7 +22,7 @@ function SeedCollateral({ isAlert = false }: Props) {
 
   const handleSeedCollateral = () => {
     setSteps(
-      Object.keys(collateralTokenContracts).map((collateralTokenAddress) => ({
+      Object.keys(seedCollateralTokensAmount).map((collateralTokenAddress) => ({
         title: `DEV - Seed Collateral Token ${Object.entries(currentNetwork!.contracts.ERC20).find(([_, value]) => value === collateralTokenAddress)?.[0]} into your wallet.`,
         transaction: {
           methodCall: async () => {

@@ -182,19 +182,6 @@
     },
     {
         "inputs": [],
-        "name": "MAX_DEBTS_AS_COLLATERAL",
-        "outputs": [
-            {
-                "internalType": "uint256",
-                "name": "",
-                "type": "uint256"
-            }
-        ],
-        "stateMutability": "view",
-        "type": "function"
-    },
-    {
-        "inputs": [],
         "name": "MCR",
         "outputs": [
             {
@@ -266,25 +253,6 @@
                 "internalType": "uint256",
                 "name": "",
                 "type": "uint256"
-            }
-        ],
-        "stateMutability": "view",
-        "type": "function"
-    },
-    {
-        "inputs": [
-            {
-                "internalType": "address",
-                "name": "",
-                "type": "address"
-            }
-        ],
-        "name": "balancerPricePool",
-        "outputs": [
-            {
-                "internalType": "contract IBalancerV2Pool",
-                "name": "",
-                "type": "address"
             }
         ],
         "stateMutability": "view",
@@ -453,6 +421,48 @@
         "name": "setFallbackTrustedTimespan",
         "outputs": [],
         "stateMutability": "nonpayable",
+        "type": "function"
+    },
+    {
+        "inputs": [
+            {
+                "internalType": "address",
+                "name": "_token",
+                "type": "address"
+            },
+            {
+                "internalType": "bool",
+                "name": "_isBalancer",
+                "type": "bool"
+            }
+        ],
+        "name": "setTokenAsBalancerPool",
+        "outputs": [],
+        "stateMutability": "nonpayable",
+        "type": "function"
+    },
+    {
+        "inputs": [
+            {
+                "internalType": "address",
+                "name": "",
+                "type": "address"
+            }
+        ],
+        "name": "tokenBalancerInfo",
+        "outputs": [
+            {
+                "internalType": "contract IBalancerV2Pool",
+                "name": "poolForPriceCalculation",
+                "type": "address"
+            },
+            {
+                "internalType": "bool",
+                "name": "tokenIsBalancerLP",
+                "type": "bool"
+            }
+        ],
+        "stateMutability": "view",
         "type": "function"
     },
     {

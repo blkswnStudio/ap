@@ -292,13 +292,11 @@ export const buildPriceCache = async (contracts: Contracts) => {
 };
 
 export const getTroveEntireColl = async (contracts: Contracts, trove: SignerWithAddress) => {
-  const priceCache = await buildPriceCache(contracts);
-  return (await contracts.troveManager.getEntireDebtAndColl(priceCache, trove)).troveCollInUSD;
+  return (await contracts.hintHelpers['getCurrentICR(address)'](trove)).currentCollInUSD;
 };
 
 export const getTroveEntireDebt = async (contracts: Contracts, trove: SignerWithAddress) => {
-  const priceCache = await buildPriceCache(contracts);
-  return (await contracts.troveManager.getEntireDebtAndColl(priceCache, trove)).troveDebtInUSD;
+  return (await contracts.hintHelpers['getCurrentICR(address)'](trove)).currentDebtInUSD;
 };
 
 export const getTroveStake = async (contracts: Contracts, trove: SignerWithAddress, token: AddressLike) => {

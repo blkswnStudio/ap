@@ -10,6 +10,8 @@ import './MockBalancerV2Vault.sol';
 contract MockBalancerV2Pool is IBalancerV2Pool {
   MockBalancerV2Vault public immutable vault;
   uint[] public normalizedWeights;
+  uint public totalSupply;
+  uint public decimals = 18;
 
   constructor(MockBalancerV2Vault _vault, address[] memory tokens, uint[] memory weights) {
     require(tokens.length > 0, 'Invalid Length');
@@ -42,6 +44,10 @@ contract MockBalancerV2Pool is IBalancerV2Pool {
     require(found, 'Not found');
 
     mockBalances(balances);
+  }
+
+  function mockTotalSupply(uint _supply) external {
+    totalSupply = _supply;
   }
 
   function mockBalances(uint[] memory balances) public {

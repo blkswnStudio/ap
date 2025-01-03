@@ -30,6 +30,8 @@ Sentry.init({
       maskAllText: false,
       blockAllMedia: true,
     }),
+    // The following is all you need to enable canvas recording with Replay
+    Sentry.replayCanvasIntegration(),
     ...(process.env.NEXT_PUBLIC_ENVIRONMENT === 'staging' || process.env.NEXT_PUBLIC_ENVIRONMENT === 'production'
       ? [new Sentry.BrowserTracing({ tracingOrigins: ['*'] })]
       : []),

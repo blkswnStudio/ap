@@ -14,7 +14,9 @@ import {
 } from '@mui/material';
 import Button, { ButtonProps } from '@mui/material/Button';
 import Typography from '@mui/material/Typography';
+import { useSnackbar } from 'notistack';
 import { useState } from 'react';
+import { useErrorMonitoring } from '../../../context/ErrorMonitoringContext';
 import { useEthers } from '../../../context/EthersProvider';
 import { usePriceFeedData } from '../../../context/PriceFeedDataProvider';
 import { useTransactionDialog } from '../../../context/TransactionDialogProvider';
@@ -37,14 +39,17 @@ type Props = {
 };
 
 const CloseTroveDialog = ({ buttonVariant, buttonSx = {} }: Props) => {
-  const [isOpen, setIsOpen] = useState(false);
-  const { getPythUpdateData } = usePriceFeedData();
+  const { enqueueSnackbar } = useSnackbar();
 
+  const [isOpen, setIsOpen] = useState(false);
+
+  const { getPythUpdateData } = usePriceFeedData();
   const {
     address,
     contracts: { borrowerOperationsContract },
   } = useEthers();
   const { setSteps } = useTransactionDialog();
+  const { Sentry } = useErrorMonitoring();
 
   const { data: collData } = useQuery<GetBorrowerCollateralTokensQuery, GetBorrowerCollateralTokensQueryVariables>(
     GET_BORROWER_COLLATERAL_TOKENS,
@@ -53,6 +58,10 @@ const CloseTroveDialog = ({ buttonVariant, buttonSx = {} }: Props) => {
         borrower: address,
       },
       skip: !address,
+      onError: (error) => {
+        enqueueSnackbar('Error requesting the subgraph. Please reload the page and try again.');
+        Sentry.captureException(error);
+      },
     },
   );
 
@@ -61,6 +70,10 @@ const CloseTroveDialog = ({ buttonVariant, buttonSx = {} }: Props) => {
     {
       variables: { borrower: address },
       skip: !address,
+      onError: (error) => {
+        enqueueSnackbar('Error requesting the subgraph. Please reload the page and try again.');
+        Sentry.captureException(error);
+      },
     },
   );
 

@@ -8,9 +8,11 @@ import TableCell from '@mui/material/TableCell';
 import TableContainer from '@mui/material/TableContainer';
 import TableHead from '@mui/material/TableHead';
 import TableRow from '@mui/material/TableRow';
+import { useSnackbar } from 'notistack';
+import { useErrorMonitoring } from '../../../context/ErrorMonitoringContext';
 import { GetDebtTokensQuery, GetDebtTokensQueryVariables } from '../../../generated/gql-types';
 import { GET_ALL_DEBT_TOKENS } from '../../../queries';
-import { standardDataPollInterval } from '../../../utils/contants';
+import { standardDataPollInterval } from '../../../utils/constants';
 import {
   bigIntStringToFloat,
   displayPercentage,
@@ -25,8 +27,16 @@ import HeaderCell from '../../Table/HeaderCell';
 import TreasuryTableLoader from './TreasuryTableLoader';
 
 function TreasuryTable() {
+  const { enqueueSnackbar } = useSnackbar();
+
+  const { Sentry } = useErrorMonitoring();
+
   const { data } = useQuery<GetDebtTokensQuery, GetDebtTokensQueryVariables>(GET_ALL_DEBT_TOKENS, {
     pollInterval: standardDataPollInterval,
+    onError: (error) => {
+      enqueueSnackbar('Error requesting the subgraph. Please reload the page and try again.');
+      Sentry.captureException(error);
+    },
   });
 
   if (!data) return <TreasuryTableLoader />;

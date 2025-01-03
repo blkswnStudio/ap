@@ -7,14 +7,16 @@ import TableContainer from '@mui/material/TableContainer';
 import TableHead from '@mui/material/TableHead';
 import TableRow from '@mui/material/TableRow';
 import Typography from '@mui/material/Typography';
+import { useSnackbar } from 'notistack';
 import { useCallback, useMemo, useState } from 'react';
+import { useErrorMonitoring } from '../../../context/ErrorMonitoringContext';
 import { useEthers } from '../../../context/EthersProvider';
 import {
   GetBorrowerCollateralTokensQuery,
   GetBorrowerCollateralTokensQueryVariables,
 } from '../../../generated/gql-types';
 import { GET_BORROWER_COLLATERAL_TOKENS } from '../../../queries';
-import { standardDataPollInterval } from '../../../utils/contants';
+import { standardDataPollInterval } from '../../../utils/constants';
 import {
   bigIntStringToFloat,
   dangerouslyConvertBigIntToNumber,
@@ -49,9 +51,11 @@ const generateColorPalette = (paletteLength: number) => {
 };
 
 function CollateralTable() {
+  const { enqueueSnackbar } = useSnackbar();
   const theme = useTheme();
   const isDarkMode = theme.palette.mode === 'dark';
 
+  const { Sentry } = useErrorMonitoring();
   const { address } = useEthers();
 
   const [oldRatio, setOldRatio] = useState<null | number>(null);
@@ -63,6 +67,10 @@ function CollateralTable() {
       variables: { borrower: address },
       skip: !address,
       pollInterval: standardDataPollInterval,
+      onError: (error) => {
+        enqueueSnackbar('Error requesting the subgraph. Please reload the page and try again.');
+        Sentry.captureException(error);
+      },
     },
   );
 

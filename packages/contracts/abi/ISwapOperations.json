@@ -100,6 +100,11 @@
         "type": "error"
     },
     {
+        "inputs": [],
+        "name": "UntrustedOracle",
+        "type": "error"
+    },
+    {
         "anonymous": false,
         "inputs": [
             {
@@ -403,6 +408,25 @@
     {
         "inputs": [
             {
+                "internalType": "uint256",
+                "name": "val",
+                "type": "uint256"
+            }
+        ],
+        "name": "calcDynamicSwapFee",
+        "outputs": [
+            {
+                "internalType": "uint256",
+                "name": "fee",
+                "type": "uint256"
+            }
+        ],
+        "stateMutability": "view",
+        "type": "function"
+    },
+    {
+        "inputs": [
+            {
                 "internalType": "address",
                 "name": "_plainSwapPair",
                 "type": "address"
@@ -454,6 +478,11 @@
                 "internalType": "struct ISwapOperations.SwapAmount[]",
                 "name": "amounts",
                 "type": "tuple[]"
+            },
+            {
+                "internalType": "bool",
+                "name": "isUsablePrice",
+                "type": "bool"
             }
         ],
         "stateMutability": "view",
@@ -490,6 +519,11 @@
                 "internalType": "struct ISwapOperations.SwapAmount[]",
                 "name": "amounts",
                 "type": "tuple[]"
+            },
+            {
+                "internalType": "bool",
+                "name": "isUsablePrice",
+                "type": "bool"
             }
         ],
         "stateMutability": "view",
@@ -811,6 +845,19 @@
             }
         ],
         "stateMutability": "payable",
+        "type": "function"
+    },
+    {
+        "inputs": [
+            {
+                "internalType": "address",
+                "name": "_dynamicFee",
+                "type": "address"
+            }
+        ],
+        "name": "setDynamicFeeAddress",
+        "outputs": [],
+        "stateMutability": "nonpayable",
         "type": "function"
     },
     {

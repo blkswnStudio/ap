@@ -15,6 +15,13 @@ import './Dependencies/LiquityBase.sol';
 import './Dependencies/CheckContract.sol';
 
 contract AlternativePriceFeed is Ownable(msg.sender), CheckContract, LiquityBase, IAlternativePriceFeed {
+  // --- Structs ---
+
+  struct TokenBalancerInfo {
+    IBalancerV2Pool poolForPriceCalculation; // pool to use to calculate price of token
+    bool tokenIsBalancerLP; // token is a balancer LP
+  }
+
   // --- Constants ---
 
   string public constant NAME = 'AlternativePriceFeed';
@@ -23,7 +30,7 @@ contract AlternativePriceFeed is Ownable(msg.sender), CheckContract, LiquityBase
 
   bool private initialized;
   mapping(address => FallbackPriceData) public fallbackPrices; // token => price
-  mapping(address => IBalancerV2Pool) public balancerPricePool; // token => price finding pool balancer
+  mapping(address => TokenBalancerInfo) public tokenBalancerInfo; // token => BalancerV2 info
   IPriceFeed public priceFeed;
 
   // --- Dependency setters ---
@@ -76,16 +83,24 @@ contract AlternativePriceFeed is Ownable(msg.sender), CheckContract, LiquityBase
     }
 
     // set
-    balancerPricePool[_token] = _pool;
+    tokenBalancerInfo[_token].poolForPriceCalculation = _pool;
     emit SetBalancerPricePool(_token, address(_pool));
+  }
+
+  function setTokenAsBalancerPool(address _token, bool _isBalancer) external onlyOwner {
+    if (_isBalancer) {
+      // check valid pool (call will fail otherwise)
+      try IBalancerV2Pool(_token).getVault().getPoolTokens(IBalancerV2Pool(_token).getPoolId()) {} catch {
+        revert InvalidBalancerPool();
+      }
+    }
+
+    tokenBalancerInfo[_token].tokenIsBalancerLP = _isBalancer;
   }
 
   // --- View functions ---
 
   function getPrice(address _tokenAddress) external view override returns (uint price, bool isTrusted, uint timestamp) {
-    // cache
-    FallbackPriceData memory fb = fallbackPrices[_tokenAddress];
-
     // balancer price
     price = getBalancerPrice(_tokenAddress);
     if (price != 0) {
@@ -94,6 +109,7 @@ contract AlternativePriceFeed is Ownable(msg.sender), CheckContract, LiquityBase
     }
 
     // fallback
+    FallbackPriceData memory fb = fallbackPrices[_tokenAddress];
     price = fb.price;
     isTrusted = fb.trustedTimespan == 0 ? false : fb.lastUpdateTime + fb.trustedTimespan >= block.timestamp;
 
@@ -102,7 +118,8 @@ contract AlternativePriceFeed is Ownable(msg.sender), CheckContract, LiquityBase
 
   function getBalancerPrice(address _tokenAddress) private view returns (uint price) {
     // cache
-    IBalancerV2Pool pool = balancerPricePool[_tokenAddress];
+    TokenBalancerInfo memory info = tokenBalancerInfo[_tokenAddress];
+    IBalancerV2Pool pool = (info.tokenIsBalancerLP ? IBalancerV2Pool(_tokenAddress) : info.poolForPriceCalculation);
 
     // check if pool defined
     if (address(pool) == address(0)) return 0;
@@ -111,8 +128,13 @@ contract AlternativePriceFeed is Ownable(msg.sender), CheckContract, LiquityBase
     (address[] memory tokens, uint[] memory balances, ) = pool.getVault().getPoolTokens(pool.getPoolId());
     uint[] memory weights = pool.getNormalizedWeights();
 
-    {
-      // accumulate pool values
+    if (info.tokenIsBalancerLP) {
+      // token is a BalancerV2 LP, so we need to calculate its value by adding value of balances and normalizing it
+      uint usd;
+      for (uint n = 0; n < tokens.length; n++) usd += priceFeed.getUSDValue(tokens[n], balances[n]);
+      price = (usd * (10 ** IERC20Metadata(address(pool)).decimals())) / IERC20(address(pool)).totalSupply();
+    } else {
+      // token price is calculated with a BalancerV2 pool, be checking ratio in pool and value of balances
       uint nonTargetUSD;
       uint nonTargetWeights;
       uint targetWeight;

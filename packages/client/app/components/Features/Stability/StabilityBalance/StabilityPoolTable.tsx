@@ -6,6 +6,8 @@ import TableCell from '@mui/material/TableCell';
 import TableContainer from '@mui/material/TableContainer';
 import TableHead from '@mui/material/TableHead';
 import TableRow from '@mui/material/TableRow';
+import { useSnackbar } from 'notistack';
+import { useErrorMonitoring } from '../../../../context/ErrorMonitoringContext';
 import { useEthers } from '../../../../context/EthersProvider';
 import { useTransactionDialog } from '../../../../context/TransactionDialogProvider';
 import {
@@ -34,6 +36,9 @@ import StabilityUpdateDialog from '../StabilityUpdateDialog';
 import StabilityPoolTableLoader from './StabilityPoolTableLoader';
 
 function StabilityPoolTable() {
+  const { enqueueSnackbar } = useSnackbar();
+
+  const { Sentry } = useErrorMonitoring();
   const {
     address,
     contracts: { stabilityPoolManagerContract },
@@ -46,6 +51,10 @@ function StabilityPoolTable() {
   >(GET_BORROWER_COLLATERAL_TOKENS, {
     variables: { borrower: address },
     skip: !address,
+    onError: (error) => {
+      enqueueSnackbar('Error requesting the subgraph. Please reload the page and try again.');
+      Sentry.captureException(error);
+    },
   });
   const { data: debtData, loading: debtDataLoading } = useQuery<
     GetBorrowerDebtTokensQuery,
@@ -55,6 +64,10 @@ function StabilityPoolTable() {
       borrower: address,
     },
     skip: !address,
+    onError: (error) => {
+      enqueueSnackbar('Error requesting the subgraph. Please reload the page and try again.');
+      Sentry.captureException(error);
+    },
   });
 
   if ((!collateralData && collateralDataLoading) || (!debtData && debtDataLoading)) {

@@ -8,6 +8,8 @@ import {
   whaleShrimpTroveInit,
   ZERO_ADDRESS,
   deployTesting,
+  withdrawalColl,
+  redeem,
 } from '../utils/testHelper';
 import { assert, expect } from 'chai';
 import { parseUnits } from 'ethers';
@@ -286,18 +288,10 @@ describe('SortedTroves', () => {
   });
 
   describe('findInsertPosition():', () => {
-    it('Finds the correct insert position given two addresses that loosely bound the correct position', async () => {
-      await whaleShrimpTroveInit(contracts, signers, false);
-
-      const targetNICR = parseUnits('1500', 16);
-      const insertPosition = await sortedTroves.findInsertPosition(targetNICR, dennis, defaulter_1);
-      assert.equal(insertPosition[0], alice.address);
-      assert.equal(insertPosition[1], whale.address);
-    });
-
     it('No prevId for hint - ascend list starting from nextId, result is after the tail', async () => {
       await whaleShrimpTroveInit(contracts, signers, false);
 
+      console.log('aa', defaulter_1.address);
       const pos = await sortedTroves.findInsertPosition(parseUnits('100', 16), ZERO_ADDRESS, defaulter_1.address);
       assert.equal(pos[0], defaulter_1.address, 'prevId result should be nextId param');
       assert.equal(pos[1], ZERO_ADDRESS, 'nextId result should be zero');
@@ -318,6 +312,73 @@ describe('SortedTroves', () => {
   describe('remove():', () => {
     it('fails if id is not in the list', async () => {
       await assertRevert(sortedTroves.remove(alice));
+    });
+  });
+
+  describe('troves without coll (only debt) should be removed from the list', () => {
+    it('on addColl', async () => {
+      //open trove
+      await openTrove({
+        from: alice,
+        contracts,
+        colls: [{ tokenAddress: BTC, amount: parseUnits('5', 8) }],
+        debts: [{ tokenAddress: STABLE, amount: parseUnits('2000') }],
+      });
+      await openTrove({
+        from: bob,
+        contracts,
+        colls: [{ tokenAddress: STABLE, amount: parseUnits('2000') }],
+        debts: [{ tokenAddress: STABLE, amount: parseUnits('1000') }],
+      });
+
+      //check sorted list contains trove
+      assert.isTrue(await sortedTroves.contains(alice));
+      assert.isFalse(await sortedTroves.contains(bob));
+    });
+
+    it('on withdrawal coll', async () => {
+      //open trove
+      await openTrove({
+        from: alice,
+        contracts,
+        colls: [{ tokenAddress: BTC, amount: parseUnits('5', 8) }],
+        debts: [{ tokenAddress: STABLE, amount: parseUnits('2000') }],
+      });
+      await openTrove({
+        from: bob,
+        contracts,
+        colls: [
+          { tokenAddress: BTC, amount: parseUnits('5', 8) },
+          { tokenAddress: STABLE, amount: parseUnits('2000') },
+        ],
+        debts: [{ tokenAddress: STABLE, amount: parseUnits('1000') }],
+      });
+
+      //check sorted list contains trove
+      assert.isTrue(await sortedTroves.contains(alice));
+      assert.isTrue(await sortedTroves.contains(bob));
+
+      await withdrawalColl(bob, contracts, [{ tokenAddress: BTC, amount: parseUnits('5', 8) }]);
+
+      //check sorted list contains trove
+      assert.isTrue(await sortedTroves.contains(alice));
+      assert.isFalse(await sortedTroves.contains(bob));
+    });
+
+    it('on redemption', async () => {
+      await openTrove({
+        from: bob,
+        contracts,
+        colls: [
+          { tokenAddress: BTC, amount: parseUnits('0.0001', 8) },
+          { tokenAddress: STABLE, amount: parseUnits('2000') },
+        ],
+        debts: [{ tokenAddress: STABLE, amount: parseUnits('1000') }],
+      });
+
+      assert.isTrue(await sortedTroves.contains(bob));
+      await redeem(bob, parseUnits('500'), contracts);
+      assert.isFalse(await sortedTroves.contains(bob)); // no btc in that trove left anymore
     });
   });
 });

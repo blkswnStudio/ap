@@ -9,6 +9,7 @@ import './Dependencies/LiquityBase.sol';
 import './Dependencies/CheckContract.sol';
 import './Interfaces/IRedemptionOperations.sol';
 import { IHintHelpers } from './Interfaces/IHintHelpers.sol';
+import { PriceFeed } from './PriceFeed.sol';
 
 contract HintHelpers is IHintHelpers, LiquityBase, Ownable(msg.sender), CheckContract {
   string public constant NAME = 'HintHelpers';
@@ -43,7 +44,7 @@ contract HintHelpers is IHintHelpers, LiquityBase, Ownable(msg.sender), CheckCon
   //   Return the current collateral ratio (ICR) of a given Trove. Takes a trove's pending coll and debt rewards from redistributions into account.
   function getCurrentICR(
     address _borrower
-  ) external view override returns (uint ICR, uint IMCR, uint currentDebtInUSD) {
+  ) external view override returns (uint ICR, uint IMCR, uint currentDebtInUSD, uint currentCollInUSD) {
     PriceCache memory priceCache = priceFeed.buildPriceCache();
     return _getCurrentICR(priceCache, _borrower);
   }
@@ -51,19 +52,31 @@ contract HintHelpers is IHintHelpers, LiquityBase, Ownable(msg.sender), CheckCon
   function getCurrentICR(
     PriceCache memory _priceCache,
     address _borrower
-  ) external view override returns (uint ICR, uint IMCR, uint currentDebtInUSD) {
+  ) external view override returns (uint ICR, uint IMCR, uint currentDebtInUSD, uint currentCollInUSD) {
     return _getCurrentICR(_priceCache, _borrower);
   }
 
   function _getCurrentICR(
     PriceCache memory _priceCache,
     address _borrower
-  ) internal view returns (uint ICR, uint IMCR, uint currentDebtInUSD) {
-    uint currentCollInUSD;
-    (IMCR, currentCollInUSD, currentDebtInUSD) = troveManager.getCurrentTrovesUSDValues(_priceCache, _borrower);
-    ICR = LiquityMath._computeCR(currentCollInUSD, currentDebtInUSD);
+  ) internal view returns (uint ICR, uint IMCR, uint currentDebtInUSD, uint currentCollInUSD) {
+    IPriceFeed _priceFeed = priceFeed;
 
-    return (ICR, IMCR, currentDebtInUSD);
+    TokenAmount[] memory debts = troveManager.getTroveRepayableDebts(_priceCache, _borrower, true);
+    for (uint i = 0; i < debts.length; i++)
+      currentDebtInUSD += _priceFeed.getUSDValue(_priceCache, debts[i].tokenAddress, debts[i].amount);
+
+    uint maxDebtInUSD;
+    TokenAmount[] memory colls = troveManager.getTroveWithdrawableColls(_borrower);
+    for (uint i = 0; i < colls.length; i++) {
+      uint collInUSD = _priceFeed.getUSDValue(_priceCache, colls[i].tokenAddress, colls[i].amount);
+      currentCollInUSD += collInUSD;
+      maxDebtInUSD += LiquityMath._computeMaxDebtValue(collInUSD, _priceCache.collPrices[i].supportedCollateralRatio);
+    }
+
+    IMCR = LiquityMath._computeIMCR(maxDebtInUSD, currentCollInUSD);
+    ICR = LiquityMath._computeCR(currentCollInUSD, currentDebtInUSD);
+    return (ICR, IMCR, currentDebtInUSD, currentCollInUSD);
   }
 
   function getICRIncludingPatch(
@@ -76,7 +89,7 @@ contract HintHelpers is IHintHelpers, LiquityBase, Ownable(msg.sender), CheckCon
     if (!troveManager.isTroveActive(_borrower)) return 0;
 
     PriceCache memory priceCache = priceFeed.buildPriceCache();
-    (, uint currentCollInUSD, uint currentDebtInUSD) = troveManager.getCurrentTrovesUSDValues(priceCache, _borrower);
+    (, , uint currentDebtInUSD, uint currentCollInUSD) = _getCurrentICR(priceCache, _borrower);
 
     currentCollInUSD += _getCompositeUSD(priceCache, addedColl);
     uint removedCollInUSD = _getCompositeUSD(priceCache, removedColl);

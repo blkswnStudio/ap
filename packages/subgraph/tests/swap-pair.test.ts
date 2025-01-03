@@ -1,11 +1,20 @@
 import { BigInt } from '@graphprotocol/graph-ts';
 import { assert, beforeEach, test } from 'matchstick-as';
 import { afterEach, clearStore, describe } from 'matchstick-as/assembly/index';
+import { handleTransfer as handleTransfer_debtToken } from '../src/debt-token';
 import { handleUpdatePool_volume30dUSD } from '../src/entities/pool-entity';
-import { CandleSizes, oneEther } from '../src/entities/token-candle-entity';
+import { CandleSizes } from '../src/entities/token-candle-entity';
 import { handlePairCreated } from '../src/swap-operations';
 import { handleBurn, handleMint, handleSwap, handleSync, handleTransfer } from '../src/swap-pair';
-import { mockPriceFeed_getPrice } from './price-feed-utils';
+import { oneEther } from '../src/utils';
+import { createTransferEvent as createTransferEvent_debtToken, mockDebtToken_totalSupply } from './debt-token-utils';
+import {
+  mockPriceFeed_getPrice,
+  mockPriceFeed_getUSDValue,
+  mockPriceFeed_getUSDValue_withPrice,
+} from './price-feed-utils';
+import { mockStabilityPoolManager_getStabilityPool } from './stability-pool-manager-utils';
+import { mockStabilityPool_getTotalDeposit } from './stability-pool-utils';
 import { createPairCreatedEvent } from './swap-operations-utils';
 import {
   createBurnEvent,
@@ -22,8 +31,10 @@ import {
   MockDebtTokenAddress,
   MockDebtToken_STABLE_Address,
   MockReservePoolAddress,
+  MockStabilityPoolManagerAddress,
   MockSwapPair_STABLE_MockDebtToken_Address,
   MockUserAddress,
+  ZeroAddress,
   initSystemInfo,
   initToken,
 } from './utils';
@@ -400,6 +411,7 @@ describe('handleSync()', () => {
 describe('handleSwap()', () => {
   beforeEach(() => {
     initSystemInfo();
+
     initToken();
 
     mockSwapPair_getReserves();
@@ -424,212 +436,104 @@ describe('handleSwap()', () => {
     clearStore();
   });
 
-  test('handleCreateSwapEvent: create LONG for DebtToken', () => {
-    const event = createSwapEvent(
-      MockSwapPair_STABLE_MockDebtToken_Address,
-      oneEther, // amount0In
-      BigInt.fromI32(0), // amount1In
-      BigInt.fromI32(0), // amount0Out
-      oneEther, // amount1Out
-      oneEther.div(BigInt.fromI32(10)), // amount0InFee
-      BigInt.fromI32(0), // amount1InFee
-      MockUserAddress, // to
-    );
+  describe('handleUpdateTradingUserStats_onSwap()', () => {
+    beforeEach(() => {
+      mockDebtToken_totalSupply(MockDebtTokenAddress);
+      mockStabilityPoolManager_getStabilityPool(MockStabilityPoolManagerAddress);
+      mockStabilityPoolManager_getStabilityPool(MockDebtTokenAddress);
+      mockStabilityPool_getTotalDeposit();
+    });
 
-    handleSwap(event);
+    test('short generic DebtToken', () => {
+      // mint jTSLA (900$ oracle) => short jTSLA (sell jTSLA for jUSD at 1000$ dex price)
+      const mintAmount = oneEther;
+      const entityId_jUSD = `${MockUserAddress.toHexString()}-${MockDebtToken_STABLE_Address.toHexString()}`;
+      const entityId_jTSLA = `${MockUserAddress.toHexString()}-${MockDebtTokenAddress.toHexString()}`;
 
-    assert.entityCount('SwapEvent', 1);
+      // first mint 1 jTSLA at 900$ oracle price
+      mockPriceFeed_getUSDValue_withPrice(MockDebtTokenAddress, mintAmount, oneEther.times(BigInt.fromI32(900)));
+      handleTransfer_debtToken(
+        createTransferEvent_debtToken(ZeroAddress, MockUserAddress, mintAmount, MockDebtTokenAddress),
+      );
+      assert.fieldEquals('TradingUserPosition', entityId_jTSLA, 'amount', mintAmount.toString());
+      assert.fieldEquals(
+        'TradingUserPosition',
+        entityId_jTSLA,
+        'value',
+        mintAmount.times(BigInt.fromI32(900)).toString(),
+      );
 
-    const entityId = event.transaction.hash.concatI32(event.logIndex.toI32()).toHexString();
-    assert.fieldEquals('SwapEvent', entityId, 'borrower', MockUserAddress.toHexString());
-    assert.fieldEquals('SwapEvent', entityId, 'token', MockDebtTokenAddress.toHexString());
-    assert.fieldEquals('SwapEvent', entityId, 'direction', 'LONG');
-    assert.fieldEquals('SwapEvent', entityId, 'timestamp', event.block.timestamp.toString());
-    assert.fieldEquals('SwapEvent', entityId, 'size', oneEther.toString());
-    assert.fieldEquals('SwapEvent', entityId, 'totalPriceInStable', oneEther.toString());
-    assert.fieldEquals('SwapEvent', entityId, 'swapFee', oneEther.div(BigInt.fromI32(10)).toString());
+      // transfer to LP (remember in lastTransfer)
+      mockPriceFeed_getUSDValue(MockDebtToken_STABLE_Address, oneEther);
+      handleTransfer_debtToken(
+        createTransferEvent_debtToken(
+          MockUserAddress,
+          MockSwapPair_STABLE_MockDebtToken_Address,
+          oneEther,
+          MockDebtTokenAddress,
+        ),
+      );
+      assert.fieldEquals('TradingUserPosition', entityId_jTSLA, 'amount', BigInt.fromI32(0).toString());
+      assert.fieldEquals('TradingUserPosition', entityId_jTSLA, 'value', BigInt.fromI32(0).toString());
+      assert.fieldEquals('TradingUserPosition', entityId_jTSLA, 'lastTransferAmount', mintAmount.toString());
+      assert.fieldEquals(
+        'TradingUserPosition',
+        entityId_jTSLA,
+        'lastTransferValue',
+        mintAmount.times(BigInt.fromI32(900)).toString(),
+      );
+
+      // swap 1 jTSLA => 1000 jUSD, 0.005 jTSLA fee (1000$ oracle = 5$)
+      const amountOut = oneEther.times(BigInt.fromI32(1000));
+      const oraclePrice_jTSLA = oneEther.times(BigInt.fromI32(1000));
+      mockSwapPair_token0();
+      mockSwapPair_token1();
+      mockPriceFeed_getPrice(MockDebtTokenAddress, oraclePrice_jTSLA);
+      handleSwap(
+        createSwapEvent(
+          MockSwapPair_STABLE_MockDebtToken_Address,
+          BigInt.fromI32(0), // amount0In
+          mintAmount, // amount1In
+          amountOut, // amount0Out
+          BigInt.fromI32(0), // amount1Out
+          BigInt.fromI32(0), // amount0InFee
+          mintAmount.div(BigInt.fromI32(200)), // amount1InFee
+          MockUserAddress, // to
+        ),
+      );
+
+      // check jUSD
+      assert.fieldEquals('TradingUserPosition', entityId_jUSD, 'amount', amountOut.toString());
+      assert.fieldEquals('TradingUserPosition', entityId_jUSD, 'value', amountOut.toString());
+
+      // check jTSLA
+      assert.fieldEquals('TradingUserPosition', entityId_jTSLA, 'amount', BigInt.fromI32(0).toString());
+      assert.fieldEquals('TradingUserPosition', entityId_jTSLA, 'value', BigInt.fromI32(0).toString());
+      assert.fieldEquals('TradingUserPosition', entityId_jTSLA, 'lastTransferAmount', BigInt.fromI32(0).toString());
+      assert.fieldEquals('TradingUserPosition', entityId_jTSLA, 'lastTransferValue', BigInt.fromI32(0).toString());
+
+      // check user stats
+      const entityId_stats = MockUserAddress.toHexString();
+      assert.fieldEquals('TradingUserStats', entityId_stats, 'swapCount', BigInt.fromI32(1).toString());
+      assert.fieldEquals('TradingUserStats', entityId_stats, 'feesUSD', oneEther.times(BigInt.fromI32(5)).toString());
+      assert.fieldEquals('TradingUserStats', entityId_stats, 'volumeUSD', amountOut.toString());
+      assert.fieldEquals(
+        'TradingUserStats',
+        entityId_stats,
+        'profitUSD',
+        oneEther.times(BigInt.fromI32(100)).toString(),
+      );
+      assert.fieldEquals(
+        'TradingUserStats',
+        entityId_stats,
+        'profitToVolume',
+        oneEther.div(BigInt.fromI32(10)).toString(),
+      );
+    });
   });
 
-  test('handleCreateSwapEvent: create SHORT for DebtToken', () => {
-    const event = createSwapEvent(
-      MockSwapPair_STABLE_MockDebtToken_Address,
-      BigInt.fromI32(0), // amount0In
-      oneEther, // amount1In
-      oneEther, // amount0Out
-      BigInt.fromI32(0), // amount1Out
-      BigInt.fromI32(0), // amount0InFee
-      oneEther.div(BigInt.fromI32(10)), // amount1InFee
-      MockUserAddress, // to
-    );
-
-    handleSwap(event);
-
-    assert.entityCount('SwapEvent', 1);
-
-    const entityId = event.transaction.hash.concatI32(event.logIndex.toI32()).toHexString();
-    assert.fieldEquals('SwapEvent', entityId, 'borrower', MockUserAddress.toHexString());
-    assert.fieldEquals('SwapEvent', entityId, 'token', MockDebtTokenAddress.toHexString());
-    assert.fieldEquals('SwapEvent', entityId, 'direction', 'SHORT');
-    assert.fieldEquals('SwapEvent', entityId, 'timestamp', event.block.timestamp.toString());
-    assert.fieldEquals('SwapEvent', entityId, 'size', oneEther.toString());
-    assert.fieldEquals('SwapEvent', entityId, 'totalPriceInStable', oneEther.toString());
-    assert.fieldEquals('SwapEvent', entityId, 'swapFee', oneEther.div(BigInt.fromI32(10)).toString());
-  });
-
-  test('handleUpdatePool_volume30dUSD: create volume for DebtToken', () => {
-    const event = createSwapEvent(
-      MockSwapPair_STABLE_MockDebtToken_Address,
-      oneEther, // amount0In
-      BigInt.fromI32(0), // amount1In
-      BigInt.fromI32(0), // amount0Out
-      oneEther, // amount1Out
-      oneEther.div(BigInt.fromI32(10)), // amount0InFee
-      BigInt.fromI32(0), // amount1InFee
-      MockUserAddress, // to
-    );
-
-    handleSwap(event);
-
-    assert.entityCount('PoolVolume30d', 2);
-    assert.entityCount('PoolVolumeChunk', 1);
-
-    const volumeEntityId = `PoolVolume30d-${MockSwapPair_STABLE_MockDebtToken_Address.toHexString()}`;
-    assert.fieldEquals('PoolVolume30d', volumeEntityId, 'leadingIndex', '1');
-    assert.fieldEquals('PoolVolume30d', volumeEntityId, 'lastIndex', '1');
-    assert.fieldEquals('PoolVolume30d', volumeEntityId, 'value', oneEther.toString());
-    assert.fieldEquals('PoolVolume30d', volumeEntityId, 'feeUSD', oneEther.div(BigInt.fromI32(10)).toString());
-
-    const chunkEntityId = `PoolVolumeChunk-${MockDebtToken_STABLE_Address.toHexString()}-${MockDebtTokenAddress.toHexString()}-1`;
-    assert.fieldEquals('PoolVolumeChunk', chunkEntityId, 'timestamp', '1');
-    assert.fieldEquals('PoolVolumeChunk', chunkEntityId, 'value', oneEther.toString());
-    assert.fieldEquals('PoolVolumeChunk', chunkEntityId, 'feeUSD', oneEther.div(BigInt.fromI32(10)).toString());
-  });
-
-  test('handleUpdatePool_volume30dUSD: accumulate volume for DebtToken from 2 events', () => {
-    const event = createSwapEvent(
-      MockSwapPair_STABLE_MockDebtToken_Address,
-      oneEther, // amount0In
-      BigInt.fromI32(0), // amount1In
-      BigInt.fromI32(0), // amount0Out
-      oneEther, // amount1Out
-      oneEther.div(BigInt.fromI32(10)), // amount0InFee
-      BigInt.fromI32(0), // amount1InFee
-      MockUserAddress, // to
-    );
-
-    handleSwap(event);
-    handleSwap(event);
-
-    assert.entityCount('PoolVolume30d', 2);
-    assert.entityCount('PoolVolumeChunk', 1);
-
-    const volumeEntityId = `PoolVolume30d-${MockSwapPair_STABLE_MockDebtToken_Address.toHexString()}`;
-    assert.fieldEquals('PoolVolume30d', volumeEntityId, 'leadingIndex', '1');
-    assert.fieldEquals('PoolVolume30d', volumeEntityId, 'lastIndex', '1');
-    assert.fieldEquals('PoolVolume30d', volumeEntityId, 'value', oneEther.times(BigInt.fromI32(2)).toString());
-    assert.fieldEquals(
-      'PoolVolume30d',
-      volumeEntityId,
-      'feeUSD',
-      oneEther.div(BigInt.fromI32(10)).times(BigInt.fromI32(2)).toString(),
-    );
-
-    const chunkEntityId = `PoolVolumeChunk-${MockDebtToken_STABLE_Address.toHexString()}-${MockDebtTokenAddress.toHexString()}-1`;
-    assert.fieldEquals('PoolVolumeChunk', chunkEntityId, 'timestamp', '1');
-    assert.fieldEquals('PoolVolumeChunk', chunkEntityId, 'value', oneEther.times(BigInt.fromI32(2)).toString());
-    assert.fieldEquals(
-      'PoolVolumeChunk',
-      chunkEntityId,
-      'feeUSD',
-      oneEther.div(BigInt.fromI32(10)).times(BigInt.fromI32(2)).toString(),
-    );
-  });
-
-  test('handleUpdatePool_volume30dUSD: create second volume chunk when outdated after 60min', () => {
-    const event = createSwapEvent(
-      MockSwapPair_STABLE_MockDebtToken_Address,
-      oneEther, // amount0In
-      BigInt.fromI32(0), // amount1In
-      BigInt.fromI32(0), // amount0Out
-      oneEther, // amount1Out
-      oneEther.div(BigInt.fromI32(10)), // amount0InFee
-      BigInt.fromI32(0), // amount1InFee
-      MockUserAddress, // to
-    );
-
-    handleSwap(event);
-
-    event.block.timestamp = event.block.timestamp.plus(BigInt.fromI32(60 * 60 + 2));
-    handleSwap(event);
-
-    assert.entityCount('PoolVolume30d', 2);
-    assert.entityCount('PoolVolumeChunk', 2);
-
-    const volumeEntityId = `PoolVolume30d-${MockSwapPair_STABLE_MockDebtToken_Address.toHexString()}`;
-    assert.fieldEquals('PoolVolume30d', volumeEntityId, 'leadingIndex', '2');
-    assert.fieldEquals('PoolVolume30d', volumeEntityId, 'lastIndex', '1');
-    assert.fieldEquals('PoolVolume30d', volumeEntityId, 'value', oneEther.times(BigInt.fromI32(2)).toString());
-    assert.fieldEquals(
-      'PoolVolume30d',
-      volumeEntityId,
-      'feeUSD',
-      oneEther.div(BigInt.fromI32(10)).times(BigInt.fromI32(2)).toString(),
-    );
-
-    const chunkEntityId = `PoolVolumeChunk-${MockDebtToken_STABLE_Address.toHexString()}-${MockDebtTokenAddress.toHexString()}-2`;
-    assert.fieldEquals('PoolVolumeChunk', chunkEntityId, 'timestamp', (1 + 60 * 60).toString());
-    assert.fieldEquals('PoolVolumeChunk', chunkEntityId, 'value', oneEther.toString());
-    assert.fieldEquals('PoolVolumeChunk', chunkEntityId, 'feeUSD', oneEther.div(BigInt.fromI32(10)).toString());
-  });
-
-  test('handleUpdatePool_volume30dUSD: no 30dAgo volume on recent event', () => {
-    const event = createSwapEvent(
-      MockSwapPair_STABLE_MockDebtToken_Address,
-      oneEther, // amount0In
-      BigInt.fromI32(0), // amount1In
-      BigInt.fromI32(0), // amount0Out
-      oneEther, // amount1Out
-      oneEther.div(BigInt.fromI32(10)), // amount0InFee
-      BigInt.fromI32(0), // amount1InFee
-      MockUserAddress, // to
-    );
-
-    handleSwap(event);
-
-    event.block.timestamp = event.block.timestamp.plus(BigInt.fromI32(60 * 60 + 2));
-    handleSwap(event);
-
-    assert.entityCount('PoolVolume30d', 2);
-    assert.entityCount('PoolVolumeChunk', 2);
-
-    const volumeEntityId = `PoolVolume30dAgo-${MockSwapPair_STABLE_MockDebtToken_Address.toHexString()}`;
-    assert.fieldEquals('PoolVolume30d', volumeEntityId, 'leadingIndex', '1');
-    assert.fieldEquals('PoolVolume30d', volumeEntityId, 'lastIndex', '1');
-    assert.fieldEquals('PoolVolume30d', volumeEntityId, 'value', '0');
-    assert.fieldEquals('PoolVolume30d', volumeEntityId, 'feeUSD', '0');
-  });
-
-  test('handleUpdatePool_volume30dUSD: 30dAgo one first chunk after 30d', () => {
-    const firstEvent = createSwapEvent(
-      MockSwapPair_STABLE_MockDebtToken_Address,
-      oneEther.times(BigInt.fromI32(10)), // amount0In
-      BigInt.fromI32(0), // amount1In
-      BigInt.fromI32(0), // amount0Out
-      oneEther.times(BigInt.fromI32(10)), // amount1Out
-      oneEther.times(BigInt.fromI32(10)).div(BigInt.fromI32(10)), // amount0InFee
-      BigInt.fromI32(0), // amount1InFee
-      MockUserAddress, // to
-    );
-    handleUpdatePool_volume30dUSD(
-      firstEvent,
-      MockDebtToken_STABLE_Address,
-      MockDebtTokenAddress,
-      oneEther.times(BigInt.fromI32(10)),
-      oneEther.times(BigInt.fromI32(10)).div(BigInt.fromI32(10)),
-    );
-
-    // fill a complete month with data
-    for (let i = 1; i <= 30 * 24; i++) {
+  describe('handleCreateSwapEvent()', () => {
+    test('create LONG for DebtToken', () => {
       const event = createSwapEvent(
         MockSwapPair_STABLE_MockDebtToken_Address,
         oneEther, // amount0In
@@ -640,168 +544,388 @@ describe('handleSwap()', () => {
         BigInt.fromI32(0), // amount1InFee
         MockUserAddress, // to
       );
-      event.block.timestamp = BigInt.fromI32(i * 60 * 60 + 2);
-      // TODO: Needs to long over 30d so I use the entity mapper instead
-      // handleSwap(event);
-      // handleUpdatePool_volume30dUSD(event, stableCoin, nonStableCoin, stableSize, feeUSD);
+
+      handleSwap(event);
+
+      assert.entityCount('SwapEvent', 1);
+
+      const entityId = event.transaction.hash.concatI32(event.logIndex.toI32()).toHexString();
+      assert.fieldEquals('SwapEvent', entityId, 'borrower', MockUserAddress.toHexString());
+      assert.fieldEquals('SwapEvent', entityId, 'token', MockDebtTokenAddress.toHexString());
+      assert.fieldEquals('SwapEvent', entityId, 'direction', 'LONG');
+      assert.fieldEquals('SwapEvent', entityId, 'timestamp', event.block.timestamp.toString());
+      assert.fieldEquals('SwapEvent', entityId, 'size', oneEther.toString());
+      assert.fieldEquals('SwapEvent', entityId, 'totalPriceInStable', oneEther.toString());
+      assert.fieldEquals('SwapEvent', entityId, 'swapFee', oneEther.div(BigInt.fromI32(10)).toString());
+    });
+
+    test('create SHORT for DebtToken', () => {
+      const event = createSwapEvent(
+        MockSwapPair_STABLE_MockDebtToken_Address,
+        BigInt.fromI32(0), // amount0In
+        oneEther, // amount1In
+        oneEther, // amount0Out
+        BigInt.fromI32(0), // amount1Out
+        BigInt.fromI32(0), // amount0InFee
+        oneEther.div(BigInt.fromI32(10)), // amount1InFee
+        MockUserAddress, // to
+      );
+
+      handleSwap(event);
+
+      assert.entityCount('SwapEvent', 1);
+
+      const entityId = event.transaction.hash.concatI32(event.logIndex.toI32()).toHexString();
+      assert.fieldEquals('SwapEvent', entityId, 'borrower', MockUserAddress.toHexString());
+      assert.fieldEquals('SwapEvent', entityId, 'token', MockDebtTokenAddress.toHexString());
+      assert.fieldEquals('SwapEvent', entityId, 'direction', 'SHORT');
+      assert.fieldEquals('SwapEvent', entityId, 'timestamp', event.block.timestamp.toString());
+      assert.fieldEquals('SwapEvent', entityId, 'size', oneEther.toString());
+      assert.fieldEquals('SwapEvent', entityId, 'totalPriceInStable', oneEther.toString());
+      assert.fieldEquals('SwapEvent', entityId, 'swapFee', oneEther.div(BigInt.fromI32(10)).toString());
+    });
+  });
+
+  describe('handleUpdatePool_volume30dUSD()', () => {
+    test('create volume for DebtToken', () => {
+      const event = createSwapEvent(
+        MockSwapPair_STABLE_MockDebtToken_Address,
+        oneEther, // amount0In
+        BigInt.fromI32(0), // amount1In
+        BigInt.fromI32(0), // amount0Out
+        oneEther, // amount1Out
+        oneEther.div(BigInt.fromI32(10)), // amount0InFee
+        BigInt.fromI32(0), // amount1InFee
+        MockUserAddress, // to
+      );
+
+      handleSwap(event);
+
+      assert.entityCount('PoolVolume30d', 2);
+      assert.entityCount('PoolVolumeChunk', 1);
+
+      const volumeEntityId = `PoolVolume30d-${MockSwapPair_STABLE_MockDebtToken_Address.toHexString()}`;
+      assert.fieldEquals('PoolVolume30d', volumeEntityId, 'leadingIndex', '1');
+      assert.fieldEquals('PoolVolume30d', volumeEntityId, 'lastIndex', '1');
+      assert.fieldEquals('PoolVolume30d', volumeEntityId, 'value', oneEther.toString());
+      assert.fieldEquals('PoolVolume30d', volumeEntityId, 'feeUSD', oneEther.div(BigInt.fromI32(10)).toString());
+
+      const chunkEntityId = `PoolVolumeChunk-${MockDebtToken_STABLE_Address.toHexString()}-${MockDebtTokenAddress.toHexString()}-1`;
+      assert.fieldEquals('PoolVolumeChunk', chunkEntityId, 'timestamp', '1');
+      assert.fieldEquals('PoolVolumeChunk', chunkEntityId, 'value', oneEther.toString());
+      assert.fieldEquals('PoolVolumeChunk', chunkEntityId, 'feeUSD', oneEther.div(BigInt.fromI32(10)).toString());
+    });
+
+    test('accumulate volume for DebtToken from 2 events', () => {
+      const event = createSwapEvent(
+        MockSwapPair_STABLE_MockDebtToken_Address,
+        oneEther, // amount0In
+        BigInt.fromI32(0), // amount1In
+        BigInt.fromI32(0), // amount0Out
+        oneEther, // amount1Out
+        oneEther.div(BigInt.fromI32(10)), // amount0InFee
+        BigInt.fromI32(0), // amount1InFee
+        MockUserAddress, // to
+      );
+
+      handleSwap(event);
+      handleSwap(event);
+
+      assert.entityCount('PoolVolume30d', 2);
+      assert.entityCount('PoolVolumeChunk', 1);
+
+      const volumeEntityId = `PoolVolume30d-${MockSwapPair_STABLE_MockDebtToken_Address.toHexString()}`;
+      assert.fieldEquals('PoolVolume30d', volumeEntityId, 'leadingIndex', '1');
+      assert.fieldEquals('PoolVolume30d', volumeEntityId, 'lastIndex', '1');
+      assert.fieldEquals('PoolVolume30d', volumeEntityId, 'value', oneEther.times(BigInt.fromI32(2)).toString());
+      assert.fieldEquals(
+        'PoolVolume30d',
+        volumeEntityId,
+        'feeUSD',
+        oneEther.div(BigInt.fromI32(10)).times(BigInt.fromI32(2)).toString(),
+      );
+
+      const chunkEntityId = `PoolVolumeChunk-${MockDebtToken_STABLE_Address.toHexString()}-${MockDebtTokenAddress.toHexString()}-1`;
+      assert.fieldEquals('PoolVolumeChunk', chunkEntityId, 'timestamp', '1');
+      assert.fieldEquals('PoolVolumeChunk', chunkEntityId, 'value', oneEther.times(BigInt.fromI32(2)).toString());
+      assert.fieldEquals(
+        'PoolVolumeChunk',
+        chunkEntityId,
+        'feeUSD',
+        oneEther.div(BigInt.fromI32(10)).times(BigInt.fromI32(2)).toString(),
+      );
+    });
+
+    test('create second volume chunk when outdated after 60min', () => {
+      const event = createSwapEvent(
+        MockSwapPair_STABLE_MockDebtToken_Address,
+        oneEther, // amount0In
+        BigInt.fromI32(0), // amount1In
+        BigInt.fromI32(0), // amount0Out
+        oneEther, // amount1Out
+        oneEther.div(BigInt.fromI32(10)), // amount0InFee
+        BigInt.fromI32(0), // amount1InFee
+        MockUserAddress, // to
+      );
+
+      handleSwap(event);
+
+      event.block.timestamp = event.block.timestamp.plus(BigInt.fromI32(60 * 60 + 2));
+      handleSwap(event);
+
+      assert.entityCount('PoolVolume30d', 2);
+      assert.entityCount('PoolVolumeChunk', 2);
+
+      const volumeEntityId = `PoolVolume30d-${MockSwapPair_STABLE_MockDebtToken_Address.toHexString()}`;
+      assert.fieldEquals('PoolVolume30d', volumeEntityId, 'leadingIndex', '2');
+      assert.fieldEquals('PoolVolume30d', volumeEntityId, 'lastIndex', '1');
+      assert.fieldEquals('PoolVolume30d', volumeEntityId, 'value', oneEther.times(BigInt.fromI32(2)).toString());
+      assert.fieldEquals(
+        'PoolVolume30d',
+        volumeEntityId,
+        'feeUSD',
+        oneEther.div(BigInt.fromI32(10)).times(BigInt.fromI32(2)).toString(),
+      );
+
+      const chunkEntityId = `PoolVolumeChunk-${MockDebtToken_STABLE_Address.toHexString()}-${MockDebtTokenAddress.toHexString()}-2`;
+      assert.fieldEquals('PoolVolumeChunk', chunkEntityId, 'timestamp', (1 + 60 * 60).toString());
+      assert.fieldEquals('PoolVolumeChunk', chunkEntityId, 'value', oneEther.toString());
+      assert.fieldEquals('PoolVolumeChunk', chunkEntityId, 'feeUSD', oneEther.div(BigInt.fromI32(10)).toString());
+    });
+
+    test('no 30dAgo volume on recent event', () => {
+      const event = createSwapEvent(
+        MockSwapPair_STABLE_MockDebtToken_Address,
+        oneEther, // amount0In
+        BigInt.fromI32(0), // amount1In
+        BigInt.fromI32(0), // amount0Out
+        oneEther, // amount1Out
+        oneEther.div(BigInt.fromI32(10)), // amount0InFee
+        BigInt.fromI32(0), // amount1InFee
+        MockUserAddress, // to
+      );
+
+      handleSwap(event);
+
+      event.block.timestamp = event.block.timestamp.plus(BigInt.fromI32(60 * 60 + 2));
+      handleSwap(event);
+
+      assert.entityCount('PoolVolume30d', 2);
+      assert.entityCount('PoolVolumeChunk', 2);
+
+      const volumeEntityId = `PoolVolume30dAgo-${MockSwapPair_STABLE_MockDebtToken_Address.toHexString()}`;
+      assert.fieldEquals('PoolVolume30d', volumeEntityId, 'leadingIndex', '1');
+      assert.fieldEquals('PoolVolume30d', volumeEntityId, 'lastIndex', '1');
+      assert.fieldEquals('PoolVolume30d', volumeEntityId, 'value', '0');
+      assert.fieldEquals('PoolVolume30d', volumeEntityId, 'feeUSD', '0');
+    });
+
+    test('30dAgo one first chunk after 30d', () => {
+      const firstEvent = createSwapEvent(
+        MockSwapPair_STABLE_MockDebtToken_Address,
+        oneEther.times(BigInt.fromI32(10)), // amount0In
+        BigInt.fromI32(0), // amount1In
+        BigInt.fromI32(0), // amount0Out
+        oneEther.times(BigInt.fromI32(10)), // amount1Out
+        oneEther.times(BigInt.fromI32(10)).div(BigInt.fromI32(10)), // amount0InFee
+        BigInt.fromI32(0), // amount1InFee
+        MockUserAddress, // to
+      );
       handleUpdatePool_volume30dUSD(
-        event,
+        firstEvent,
         MockDebtToken_STABLE_Address,
         MockDebtTokenAddress,
-        oneEther,
-        oneEther.div(BigInt.fromI32(10)),
+        oneEther.times(BigInt.fromI32(10)),
+        oneEther.times(BigInt.fromI32(10)).div(BigInt.fromI32(10)),
       );
-    }
 
-    assert.entityCount('PoolVolume30d', 2);
-    assert.entityCount('PoolVolumeChunk', 30 * 24 + 1);
+      // fill a complete month with data
+      for (let i = 1; i <= 30 * 24; i++) {
+        const event = createSwapEvent(
+          MockSwapPair_STABLE_MockDebtToken_Address,
+          oneEther, // amount0In
+          BigInt.fromI32(0), // amount1In
+          BigInt.fromI32(0), // amount0Out
+          oneEther, // amount1Out
+          oneEther.div(BigInt.fromI32(10)), // amount0InFee
+          BigInt.fromI32(0), // amount1InFee
+          MockUserAddress, // to
+        );
+        event.block.timestamp = BigInt.fromI32(i * 60 * 60 + 2);
+        // TODO: Needs to long over 30d so I use the entity mapper instead
+        // handleSwap(event);
+        // handleUpdatePool_volume30dUSD(event, stableCoin, nonStableCoin, stableSize, feeUSD);
+        handleUpdatePool_volume30dUSD(
+          event,
+          MockDebtToken_STABLE_Address,
+          MockDebtTokenAddress,
+          oneEther,
+          oneEther.div(BigInt.fromI32(10)),
+        );
+      }
 
-    // 30dAgo volume with single big chunk
-    const volume30dAgoEntityId = `PoolVolume30dAgo-${MockSwapPair_STABLE_MockDebtToken_Address.toHexString()}`;
-    assert.fieldEquals('PoolVolume30d', volume30dAgoEntityId, 'leadingIndex', '2');
-    assert.fieldEquals('PoolVolume30d', volume30dAgoEntityId, 'lastIndex', '1');
-    assert.fieldEquals('PoolVolume30d', volume30dAgoEntityId, 'value', oneEther.times(BigInt.fromI32(10)).toString());
-    assert.fieldEquals(
-      'PoolVolume30d',
-      volume30dAgoEntityId,
-      'feeUSD',
-      oneEther.times(BigInt.fromI32(10)).div(BigInt.fromI32(10)).toString(),
-    );
+      assert.entityCount('PoolVolume30d', 2);
+      assert.entityCount('PoolVolumeChunk', 30 * 24 + 1);
 
-    // Recent volume without bigger chunk
-    const volumeEntityId = `PoolVolume30d-${MockSwapPair_STABLE_MockDebtToken_Address.toHexString()}`;
-    assert.fieldEquals('PoolVolume30d', volumeEntityId, 'leadingIndex', (30 * 24 + 1).toString());
-    assert.fieldEquals('PoolVolume30d', volumeEntityId, 'lastIndex', '2');
-    assert.fieldEquals('PoolVolume30d', volumeEntityId, 'value', oneEther.times(BigInt.fromI32(30 * 24)).toString());
-    assert.fieldEquals(
-      'PoolVolume30d',
-      volumeEntityId,
-      'feeUSD',
-      oneEther
-        .div(BigInt.fromI32(10))
-        .times(BigInt.fromI32(30 * 24))
-        .toString(),
-    );
-  });
+      // 30dAgo volume with single big chunk
+      const volume30dAgoEntityId = `PoolVolume30dAgo-${MockSwapPair_STABLE_MockDebtToken_Address.toHexString()}`;
+      assert.fieldEquals('PoolVolume30d', volume30dAgoEntityId, 'leadingIndex', '2');
+      assert.fieldEquals('PoolVolume30d', volume30dAgoEntityId, 'lastIndex', '1');
+      assert.fieldEquals('PoolVolume30d', volume30dAgoEntityId, 'value', oneEther.times(BigInt.fromI32(10)).toString());
+      assert.fieldEquals(
+        'PoolVolume30d',
+        volume30dAgoEntityId,
+        'feeUSD',
+        oneEther.times(BigInt.fromI32(10)).div(BigInt.fromI32(10)).toString(),
+      );
 
-  test('handleUpdateTokenCandle_volume: Update traded volume of the pool for all candles - LONG', () => {
-    // LONG
-    const event = createSwapEvent(
-      MockSwapPair_STABLE_MockDebtToken_Address,
-      oneEther.times(BigInt.fromI32(2)), // amount0In
-      BigInt.fromI32(0), // amount1In
-      BigInt.fromI32(0), // amount0Out
-      oneEther, // amount1Out
-      oneEther.div(BigInt.fromI32(10)), // amount0InFee
-      BigInt.fromI32(0), // amount1InFee
-      MockUserAddress, // to
-    );
-
-    handleSwap(event);
-
-    CandleSizes.forEach((size) => {
-      const entityId = `TokenCandleSingleton-${MockDebtTokenAddress.toHexString()}-${size.toString()}`;
-      assert.fieldEquals('TokenCandleSingleton', entityId, 'volume', oneEther.times(BigInt.fromI32(2)).toString());
+      // Recent volume without bigger chunk
+      const volumeEntityId = `PoolVolume30d-${MockSwapPair_STABLE_MockDebtToken_Address.toHexString()}`;
+      assert.fieldEquals('PoolVolume30d', volumeEntityId, 'leadingIndex', (30 * 24 + 1).toString());
+      assert.fieldEquals('PoolVolume30d', volumeEntityId, 'lastIndex', '2');
+      assert.fieldEquals('PoolVolume30d', volumeEntityId, 'value', oneEther.times(BigInt.fromI32(30 * 24)).toString());
+      assert.fieldEquals(
+        'PoolVolume30d',
+        volumeEntityId,
+        'feeUSD',
+        oneEther
+          .div(BigInt.fromI32(10))
+          .times(BigInt.fromI32(30 * 24))
+          .toString(),
+      );
     });
   });
 
-  test('handleUpdateTokenCandle_volume: Update traded volume of the pool for all candles - SHORT', () => {
-    // SHORT
-    const event = createSwapEvent(
-      MockSwapPair_STABLE_MockDebtToken_Address,
-      BigInt.fromI32(0), // amount0In
-      oneEther, // amount1In
-      oneEther.times(BigInt.fromI32(2)), // amount0Out
-      BigInt.fromI32(0), // amount1Out
-      BigInt.fromI32(0), // amount0InFee
-      oneEther.div(BigInt.fromI32(10)), // amount1InFee
-      MockUserAddress, // to
-    );
+  describe('handleUpdateTokenCandle_volume()', () => {
+    test('Update traded volume of the pool for all candles - LONG', () => {
+      // LONG
+      const event = createSwapEvent(
+        MockSwapPair_STABLE_MockDebtToken_Address,
+        oneEther.times(BigInt.fromI32(2)), // amount0In
+        BigInt.fromI32(0), // amount1In
+        BigInt.fromI32(0), // amount0Out
+        oneEther, // amount1Out
+        oneEther.div(BigInt.fromI32(10)), // amount0InFee
+        BigInt.fromI32(0), // amount1InFee
+        MockUserAddress, // to
+      );
 
-    handleSwap(event);
+      handleSwap(event);
 
-    CandleSizes.forEach((size) => {
-      const entityId = `TokenCandleSingleton-${MockDebtTokenAddress.toHexString()}-${size.toString()}`;
-      assert.fieldEquals('TokenCandleSingleton', entityId, 'volume', oneEther.times(BigInt.fromI32(2)).toString());
+      CandleSizes.forEach((size) => {
+        const entityId = `TokenCandleSingleton-${MockDebtTokenAddress.toHexString()}-${size.toString()}`;
+        assert.fieldEquals('TokenCandleSingleton', entityId, 'volume', oneEther.times(BigInt.fromI32(2)).toString());
+      });
     });
-  });
 
-  test('handleUpdateTokenCandle_volume: Add traded volume to the same candle', () => {
-    // LONG
-    const event = createSwapEvent(
-      MockSwapPair_STABLE_MockDebtToken_Address,
-      oneEther.times(BigInt.fromI32(2)), // amount0In
-      BigInt.fromI32(0), // amount1In
-      BigInt.fromI32(0), // amount0Out
-      oneEther, // amount1Out
-      oneEther.div(BigInt.fromI32(10)), // amount0InFee
-      BigInt.fromI32(0), // amount1InFee
-      MockUserAddress, // to
-    );
+    test('Update traded volume of the pool for all candles - SHORT', () => {
+      // SHORT
+      const event = createSwapEvent(
+        MockSwapPair_STABLE_MockDebtToken_Address,
+        BigInt.fromI32(0), // amount0In
+        oneEther, // amount1In
+        oneEther.times(BigInt.fromI32(2)), // amount0Out
+        BigInt.fromI32(0), // amount1Out
+        BigInt.fromI32(0), // amount0InFee
+        oneEther.div(BigInt.fromI32(10)), // amount1InFee
+        MockUserAddress, // to
+      );
 
-    // Add volume twice
-    handleSwap(event);
-    handleSwap(event);
+      handleSwap(event);
 
-    CandleSizes.forEach((size) => {
-      const entityId = `TokenCandleSingleton-${MockDebtTokenAddress.toHexString()}-${size.toString()}`;
-      assert.fieldEquals('TokenCandleSingleton', entityId, 'volume', oneEther.times(BigInt.fromI32(2 * 2)).toString());
+      CandleSizes.forEach((size) => {
+        const entityId = `TokenCandleSingleton-${MockDebtTokenAddress.toHexString()}-${size.toString()}`;
+        assert.fieldEquals('TokenCandleSingleton', entityId, 'volume', oneEther.times(BigInt.fromI32(2)).toString());
+      });
     });
-  });
 
-  test('handleUpdateTokenCandle_volume: create a new candle but add volume to old candles if below candle size since last event', () => {
-    const event = createSwapEvent(
-      MockSwapPair_STABLE_MockDebtToken_Address,
-      oneEther.times(BigInt.fromI32(10)), // amount0In
-      BigInt.fromI32(0), // amount1In
-      BigInt.fromI32(0), // amount0Out
-      oneEther, // amount1Out
-      oneEther.div(BigInt.fromI32(10)), // amount0InFee
-      BigInt.fromI32(0), // amount1InFee
-      MockUserAddress, // to
-    );
+    test('Add traded volume to the same candle', () => {
+      // LONG
+      const event = createSwapEvent(
+        MockSwapPair_STABLE_MockDebtToken_Address,
+        oneEther.times(BigInt.fromI32(2)), // amount0In
+        BigInt.fromI32(0), // amount1In
+        BigInt.fromI32(0), // amount0Out
+        oneEther, // amount1Out
+        oneEther.div(BigInt.fromI32(10)), // amount0InFee
+        BigInt.fromI32(0), // amount1InFee
+        MockUserAddress, // to
+      );
 
-    handleSwap(event);
+      // Add volume twice
+      handleSwap(event);
+      handleSwap(event);
 
-    const secondEvent = createSwapEvent(
-      MockSwapPair_STABLE_MockDebtToken_Address,
-      oneEther.times(BigInt.fromI32(10)), // amount0In
-      BigInt.fromI32(0), // amount1In
-      BigInt.fromI32(0), // amount0Out
-      oneEther, // amount1Out
-      oneEther.div(BigInt.fromI32(10)), // amount0InFee
-      BigInt.fromI32(0), // amount1InFee
-      MockUserAddress, // to
-    );
+      CandleSizes.forEach((size) => {
+        const entityId = `TokenCandleSingleton-${MockDebtTokenAddress.toHexString()}-${size.toString()}`;
+        assert.fieldEquals(
+          'TokenCandleSingleton',
+          entityId,
+          'volume',
+          oneEther.times(BigInt.fromI32(2 * 2)).toString(),
+        );
+      });
+    });
 
-    // strikes 2 candles but adds to the bigger candles
-    secondEvent.block.timestamp = event.block.timestamp.plus(BigInt.fromI32(10 * 60 + 1));
+    test('create a new candle but add volume to old candles if below candle size since last event', () => {
+      const event = createSwapEvent(
+        MockSwapPair_STABLE_MockDebtToken_Address,
+        oneEther.times(BigInt.fromI32(10)), // amount0In
+        BigInt.fromI32(0), // amount1In
+        BigInt.fromI32(0), // amount0Out
+        oneEther, // amount1Out
+        oneEther.div(BigInt.fromI32(10)), // amount0InFee
+        BigInt.fromI32(0), // amount1InFee
+        MockUserAddress, // to
+      );
 
-    handleSwap(secondEvent);
+      handleSwap(event);
 
-    assert.entityCount('TokenCandleSingleton', 6);
-    assert.entityCount('TokenCandle', 11);
+      const secondEvent = createSwapEvent(
+        MockSwapPair_STABLE_MockDebtToken_Address,
+        oneEther.times(BigInt.fromI32(10)), // amount0In
+        BigInt.fromI32(0), // amount1In
+        BigInt.fromI32(0), // amount0Out
+        oneEther, // amount1Out
+        oneEther.div(BigInt.fromI32(10)), // amount0InFee
+        BigInt.fromI32(0), // amount1InFee
+        MockUserAddress, // to
+      );
 
-    const smallestCandleEntityId = `TokenCandle-${MockDebtTokenAddress.toHexString()}-1-${event.block.timestamp.toString()}`;
-    assert.fieldEquals('TokenCandle', smallestCandleEntityId, 'timestamp', event.block.timestamp.toString());
-    assert.fieldEquals('TokenCandle', smallestCandleEntityId, 'volume', oneEther.times(BigInt.fromI32(10)).toString());
+      // strikes 2 candles but adds to the bigger candles
+      secondEvent.block.timestamp = event.block.timestamp.plus(BigInt.fromI32(10 * 60 + 1));
 
-    const nextCandleEntityId = `TokenCandle-${MockDebtTokenAddress.toHexString()}-1-${event.block.timestamp.plus(BigInt.fromI32(1 * 60)).toString()}`;
-    assert.fieldEquals(
-      'TokenCandle',
-      nextCandleEntityId,
-      'timestamp',
-      event.block.timestamp.plus(BigInt.fromI32(1 * 60)).toString(),
-    );
-    assert.fieldEquals('TokenCandle', nextCandleEntityId, 'volume', '0');
+      handleSwap(secondEvent);
 
-    const candleEntityTenMinutesId = `TokenCandle-${MockDebtTokenAddress.toHexString()}-10-${event.block.timestamp.toString().toString()}`;
-    assert.fieldEquals('TokenCandle', candleEntityTenMinutesId, 'timestamp', event.block.timestamp.toString());
-    assert.fieldEquals(
-      'TokenCandle',
-      candleEntityTenMinutesId,
-      'volume',
-      oneEther.times(BigInt.fromI32(10)).toString(),
-    );
+      assert.entityCount('TokenCandleSingleton', 6);
+      assert.entityCount('TokenCandle', 11);
+
+      const smallestCandleEntityId = `TokenCandle-${MockDebtTokenAddress.toHexString()}-1-${event.block.timestamp.toString()}`;
+      assert.fieldEquals('TokenCandle', smallestCandleEntityId, 'timestamp', event.block.timestamp.toString());
+      assert.fieldEquals(
+        'TokenCandle',
+        smallestCandleEntityId,
+        'volume',
+        oneEther.times(BigInt.fromI32(10)).toString(),
+      );
+
+      const nextCandleEntityId = `TokenCandle-${MockDebtTokenAddress.toHexString()}-1-${event.block.timestamp.plus(BigInt.fromI32(1 * 60)).toString()}`;
+      assert.fieldEquals(
+        'TokenCandle',
+        nextCandleEntityId,
+        'timestamp',
+        event.block.timestamp.plus(BigInt.fromI32(1 * 60)).toString(),
+      );
+      assert.fieldEquals('TokenCandle', nextCandleEntityId, 'volume', '0');
+
+      const candleEntityTenMinutesId = `TokenCandle-${MockDebtTokenAddress.toHexString()}-10-${event.block.timestamp.toString().toString()}`;
+      assert.fieldEquals('TokenCandle', candleEntityTenMinutesId, 'timestamp', event.block.timestamp.toString());
+      assert.fieldEquals(
+        'TokenCandle',
+        candleEntityTenMinutesId,
+        'volume',
+        oneEther.times(BigInt.fromI32(10)).toString(),
+      );
+    });
   });
 });

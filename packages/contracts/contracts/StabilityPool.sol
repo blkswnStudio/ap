@@ -290,11 +290,29 @@ contract StabilityPool is LiquityBase, CheckContract, IStabilityPool {
    * and transfers the Trove's collateral from ActivePool to StabilityPool.
    * Only called by liquidation functions in the TroveManager.
    */
+  function provideIncentives(TokenAmount[] memory _collToAdd) external override {
+    // only allow already known collateral tokens, to prevent adding new tokens from strangers
+    for (uint i = 0; i < _collToAdd.length; i++) {
+      TokenAmount memory collEntry = _collToAdd[i];
+
+      bool found = false;
+      for (uint ii = 0; ii < usedCollTokens.length; ii++) {
+        if (usedCollTokens[ii] != collEntry.tokenAddress) continue;
+        found = true;
+        break;
+      }
+      if (!found) revert UnknownCollateral();
+    }
+
+    // transfer the tokens into the pool
+    for (uint i = 0; i < _collToAdd.length; i++)
+      IERC20(_collToAdd[i].tokenAddress).safeTransferFrom(msg.sender, address(this), _collToAdd[i].amount);
+
+    _offset(0, _collToAdd);
+  }
+
   function offset(uint _debtToOffset, TokenAmount[] memory _collToAdd) external override {
     _requireCallerIsStabilityPoolManager();
-
-    uint _totalDeposits = totalDeposits;
-    if (_totalDeposits == 0) return;
 
     // adding coll token address into the usedCollTokens array, if they are not already there
     for (uint i = 0; i < _collToAdd.length; i++) {
@@ -309,12 +327,16 @@ contract StabilityPool is LiquityBase, CheckContract, IStabilityPool {
       if (!found) usedCollTokens.push(collEntry.tokenAddress);
     }
 
+    _offset(_debtToOffset, _collToAdd);
+  }
+
+  function _offset(uint _debtToOffset, TokenAmount[] memory _collToAdd) internal {
+    assert(totalDeposits > 0);
+
     (TokenAmount[] memory collGainPerUnitStaked, uint depositLossPerUnitStaked) = _computeRewardsPerUnitStaked(
       _collToAdd,
-      _debtToOffset,
-      _totalDeposits
+      _debtToOffset
     );
-
     _updateRewardSumAndProduct(collGainPerUnitStaked, depositLossPerUnitStaked); // updates S and P
 
     totalDeposits -= _debtToOffset;
@@ -323,8 +345,7 @@ contract StabilityPool is LiquityBase, CheckContract, IStabilityPool {
 
   function _computeRewardsPerUnitStaked(
     TokenAmount[] memory _collToAdd,
-    uint _depositToOffset,
-    uint _totalDeposits
+    uint _depositToOffset
   ) internal returns (TokenAmount[] memory collGainPerUnitStaked, uint depositLossPerUnitStaked) {
     /*
      * Compute the rewards. Uses a "feedback" error correction, to keep
@@ -338,6 +359,7 @@ contract StabilityPool is LiquityBase, CheckContract, IStabilityPool {
      * 5) Note: static analysis tools complain about this "division before multiplication", however, it is intended.
      */
 
+    uint _totalDeposits = totalDeposits;
     assert(_depositToOffset <= _totalDeposits);
 
     collGainPerUnitStaked = new TokenAmount[](_collToAdd.length);
@@ -352,7 +374,9 @@ contract StabilityPool is LiquityBase, CheckContract, IStabilityPool {
       totalGainedColl[tokenAddress] += _collToAdd[i].amount;
     }
 
-    if (_depositToOffset == _totalDeposits) {
+    if (_depositToOffset == 0) {
+      depositLossPerUnitStaked = 0;
+    } else if (_depositToOffset == _totalDeposits) {
       depositLossPerUnitStaked = DECIMAL_PRECISION; // When the Pool depletes to 0, so does each deposit
       lastErrorOffset[address(depositToken)] = 0;
     } else {
@@ -381,8 +405,6 @@ contract StabilityPool is LiquityBase, CheckContract, IStabilityPool {
      */
 
     uint currentP = P;
-
-    uint newP;
     uint128 currentScaleCached = currentScale;
     uint128 currentEpochCached = currentEpoch;
 
@@ -403,27 +425,30 @@ contract StabilityPool is LiquityBase, CheckContract, IStabilityPool {
       emit S_Updated(tokenAddress, newS, currentEpochCached, currentScaleCached);
     }
 
-    // If the Stability Pool was emptied, increment the epoch, and reset the scale and product P
-    uint newProductFactor = uint(DECIMAL_PRECISION) - depositLossPerUnitStaked;
-    if (newProductFactor == 0) {
-      currentEpoch = currentEpochCached + 1;
-      emit EpochUpdated(currentEpoch);
-      currentScale = 0;
-      emit ScaleUpdated(currentScale);
-      newP = DECIMAL_PRECISION;
+    if (depositLossPerUnitStaked > 0) {
+      // If the Stability Pool was emptied, increment the epoch, and reset the scale and product P
+      uint newProductFactor = uint(DECIMAL_PRECISION) - depositLossPerUnitStaked;
+      uint newP;
+      if (newProductFactor == 0) {
+        currentEpoch = currentEpochCached + 1;
+        emit EpochUpdated(currentEpoch);
+        currentScale = 0;
+        emit ScaleUpdated(currentScale);
+        newP = DECIMAL_PRECISION;
 
-      // If multiplying P by a non-zero product factor would reduce P below the scale boundary, increment the scale
-    } else if ((currentP * newProductFactor) / DECIMAL_PRECISION < SCALE_FACTOR) {
-      newP = (currentP * newProductFactor * SCALE_FACTOR) / DECIMAL_PRECISION;
-      currentScale = currentScaleCached + 1;
-      emit ScaleUpdated(currentScale);
-    } else {
-      newP = (currentP * newProductFactor) / DECIMAL_PRECISION;
+        // If multiplying P by a non-zero product factor would reduce P below the scale boundary, increment the scale
+      } else if ((currentP * newProductFactor) / DECIMAL_PRECISION < SCALE_FACTOR) {
+        newP = (currentP * newProductFactor * SCALE_FACTOR) / DECIMAL_PRECISION;
+        currentScale = currentScaleCached + 1;
+        emit ScaleUpdated(currentScale);
+      } else {
+        newP = (currentP * newProductFactor) / DECIMAL_PRECISION;
+      }
+
+      assert(newP > 0);
+      P = newP;
+      emit P_Updated(newP);
     }
-
-    assert(newP > 0);
-    P = newP;
-    emit P_Updated(newP);
   }
 
   // --- Reward calculator functions ---
@@ -437,11 +462,10 @@ contract StabilityPool is LiquityBase, CheckContract, IStabilityPool {
     for (uint i = 0; i < usedCollTokens.length; i++) {
       address collTokenAddress = usedCollTokens[i];
       uint collGain = getDepositorCollGain(_depositor, collTokenAddress);
-      if (collGain == 0) continue;
 
       totalGainedColl[collTokenAddress] -= collGain;
       collGains[i] = TokenAmount(collTokenAddress, collGain);
-      if (!hasAnyCollGain) hasAnyCollGain = true;
+      if (!hasAnyCollGain && collGain != 0) hasAnyCollGain = true;
     }
 
     uint initialDeposit = deposits[_depositor];

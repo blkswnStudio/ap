@@ -175,25 +175,15 @@ contract SwapPair is ISwapPair, SwapERC20, CheckContract, LiquityBase {
     return (reserve0_ * 10 ** token1Decimal * DECIMAL_PRECISION) / reserve1_ / 10 ** token0Decimal;
   }
 
-  function _calcFee(uint val) internal view returns (uint fee) {
-    if (tokenManager.disableDebtMinting(token1)) return 0;
-    if (val < 0.02e18) return 0.0001e18;
-    else if (val < 0.03e18) return 0.0001e18 + ((val - 0.02e18) * 0.0004e18) / DECIMAL_PRECISION;
-    else if (val < 0.05e18) return 0.0005e18 + ((val - 0.03e18) * 0.00075e18) / DECIMAL_PRECISION;
-    else if (val < 0.06e18) return 0.002e18 + ((val - 0.05e18) * 0.002e18) / DECIMAL_PRECISION;
-    else if (val < 0.07e18) return 0.004e18 + ((val - 0.06e18) * 0.004e18) / DECIMAL_PRECISION;
-    else if (val < 0.08e18) return 0.008e18 + ((val - 0.07e18) * 0.008e18) / DECIMAL_PRECISION;
-    else if (val < 0.09e18) return 0.016e18 + ((val - 0.08e18) * 0.016e18) / DECIMAL_PRECISION;
-    else if (val < 0.1e18) return 0.032e18 + ((val - 0.09e18) * 0.018e18) / DECIMAL_PRECISION;
-    else return 0.050e18;
-  }
-
-  function getSwapFee(uint postReserve0, uint postReserve1) public view override returns (uint feePercentage) {
+  function getSwapFee(
+    uint postReserve0,
+    uint postReserve1
+  ) public view override returns (uint feePercentage, bool isUsablePrice) {
     address nonStableCoin = token1; // find stable coin
     if (tokenManager.isDebtToken(nonStableCoin) && totalSupply > 0) {
-      // query prices
       (uint oraclePrice, bool oracleTrusted, ) = priceFeed.getPrice(nonStableCoin);
-      if (!priceFeed.checkPriceUsable(nonStableCoin, oracleTrusted)) revert UntrustedOracle(nonStableCoin); // fail on outdated prices
+      isUsablePrice = priceFeed.checkPriceUsable(nonStableCoin, oracleTrusted);
+
       uint preDexPrice = _getDexPrice(reserve0, reserve1);
       uint postDexPrice = _getDexPrice(postReserve0, postReserve1);
 
@@ -202,15 +192,21 @@ contract SwapPair is ISwapPair, SwapERC20, CheckContract, LiquityBase {
         (postDexPrice > oraclePrice && postDexPrice > preDexPrice) ||
         (postDexPrice < oraclePrice && preDexPrice > postDexPrice)
       ) {
+        if (tokenManager.disableDebtMinting(token1)) return (0, isUsablePrice);
+
         uint avgDexPrice = (preDexPrice + postDexPrice) / 2;
-        uint priceRatio = (oraclePrice * DECIMAL_PRECISION) / avgDexPrice; // 1e18
-        return
-          _calcFee(priceRatio > DECIMAL_PRECISION ? priceRatio - DECIMAL_PRECISION : DECIMAL_PRECISION - priceRatio) +
-          swapOperations.getSwapBaseFee();
+        return (
+          swapOperations.calcDynamicSwapFee(
+            avgDexPrice > oraclePrice
+              ? ((avgDexPrice - oraclePrice) * DECIMAL_PRECISION) / oraclePrice
+              : ((oraclePrice - avgDexPrice) * DECIMAL_PRECISION) / oraclePrice
+          ) + swapOperations.getSwapBaseFee(),
+          isUsablePrice
+        );
       }
     }
 
-    return swapOperations.getSwapBaseFee();
+    return (swapOperations.getSwapBaseFee(), true);
   }
 
   function swap(uint amount0InFee, uint amount1InFee, uint amount0Out, uint amount1Out, address to) external lock {

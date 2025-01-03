@@ -9,8 +9,10 @@ import TableContainer from '@mui/material/TableContainer';
 import TableHead from '@mui/material/TableHead';
 import TableRow from '@mui/material/TableRow';
 import { parseUnits } from 'ethers';
+import { useSnackbar } from 'notistack';
 import { useEffect, useMemo, useState } from 'react';
 import { isStableCoinAddress } from '../../../../config';
+import { useErrorMonitoring } from '../../../context/ErrorMonitoringContext';
 import { SelectedToken, useSelectedToken } from '../../../context/SelectedTokenProvider';
 import {
   GetAllPoolsQuery,
@@ -19,7 +21,7 @@ import {
   GetPastTokenPricesQueryVariables,
 } from '../../../generated/gql-types';
 import { GET_ALL_POOLS, GET_TOKEN_PRICES_24h_AGO } from '../../../queries';
-import { WIDGET_HEIGHTS, standardDataPollInterval } from '../../../utils/contants';
+import { WIDGET_HEIGHTS, standardDataPollInterval } from '../../../utils/constants';
 import { getCheckSum } from '../../../utils/crypto';
 import {
   convertToEtherPrecission,
@@ -39,6 +41,8 @@ export const FAVORITE_ASSETS_LOCALSTORAGE_KEY = 'favoriteAssets';
 
 function Assets() {
   const [favoritedAssets, setFavoritedAssets] = useState<string[]>([]);
+  const { enqueueSnackbar } = useSnackbar();
+  const { Sentry } = useErrorMonitoring();
 
   // FIXME: Cant access LS in useState initializer because of page pre-rendering.
   useEffect(() => {
@@ -50,11 +54,19 @@ function Assets() {
   // TODO: Implement a filter for only JUSD to subgraph
   const { data } = useQuery<GetAllPoolsQuery, GetAllPoolsQueryVariables>(GET_ALL_POOLS, {
     pollInterval: 5000,
+    onError: (error) => {
+      enqueueSnackbar('Error requesting the subgraph. Please reload the page and try again.');
+      Sentry.captureException(error);
+    },
   });
   const { data: pastTokenPrices } = useQuery<GetPastTokenPricesQuery, GetPastTokenPricesQueryVariables>(
     GET_TOKEN_PRICES_24h_AGO,
     {
       pollInterval: standardDataPollInterval,
+      onError: (error) => {
+        enqueueSnackbar('Error requesting the subgraph. Please reload the page and try again.');
+        Sentry.captureException(error);
+      },
     },
   );
 

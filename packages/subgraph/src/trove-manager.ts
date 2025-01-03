@@ -18,10 +18,11 @@ import {
 import { handleCreateReservePoolUSDHistoryChunk } from './entities/reserve-pool-USD-history-chunk-entity';
 
 export function handleCollChanged(event: TroveCollChangedEvent): void {
-  for (let i = 0; i < event.params._collTokenAddresses.length; i++) {
+  for (let i = 0; i < event.params._collTokenAmounts.length; i++) {
+    const tokenAddress = event.params._collTokenAmounts[i].tokenAddress;
     // TODO: Loop over troves from the troveManager to get totalValueLockedUSD for any single collToken
-    handleCreateUpdateCollateralTokenMeta(event, event.params._collTokenAddresses[i]);
-    handleUpdateCollateralTokenMeta_totalValueLockedUSD30dAverage(event, event.params._collTokenAddresses[i]);
+    handleCreateUpdateCollateralTokenMeta(event, tokenAddress);
+    handleUpdateCollateralTokenMeta_totalValueLockedUSD30dAverage(event, tokenAddress);
   }
 }
 

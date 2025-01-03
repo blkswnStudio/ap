@@ -4,7 +4,9 @@ import { useQuery } from '@apollo/client';
 import ExpandLessSharpIcon from '@mui/icons-material/ExpandLessSharp';
 import { Box, Button, Dialog, DialogContent, DialogContentProps, DialogTitle, IconButton } from '@mui/material';
 import Typography from '@mui/material/Typography';
+import { useSnackbar } from 'notistack';
 import { useState } from 'react';
+import { useErrorMonitoring } from '../../../context/ErrorMonitoringContext';
 import { useEthers } from '../../../context/EthersProvider';
 import {
   BorrowerHistoryType,
@@ -19,8 +21,11 @@ import DiamondIcon from '../../Icons/DiamondIcon';
 import Label from '../../Label/Label';
 
 const StabilityHistoryDialog = () => {
+  const { enqueueSnackbar } = useSnackbar();
+
   const [open, setOpen] = useState(false);
 
+  const { Sentry } = useErrorMonitoring();
   const { address } = useEthers();
 
   const { data, fetchMore, refetch } = useQuery<
@@ -35,6 +40,10 @@ const StabilityHistoryDialog = () => {
       },
     },
     skip: !address,
+    onError: (error) => {
+      enqueueSnackbar('Error requesting the subgraph. Please reload the page and try again.');
+      Sentry.captureException(error);
+    },
   });
 
   const getComponentForBorrowerHistoryType = (

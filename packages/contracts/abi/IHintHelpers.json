@@ -103,6 +103,11 @@
                 "internalType": "uint256",
                 "name": "currentDebtInUSD",
                 "type": "uint256"
+            },
+            {
+                "internalType": "uint256",
+                "name": "currentCollInUSD",
+                "type": "uint256"
             }
         ],
         "stateMutability": "view",
@@ -202,6 +207,11 @@
             {
                 "internalType": "uint256",
                 "name": "currentDebtInUSD",
+                "type": "uint256"
+            },
+            {
+                "internalType": "uint256",
+                "name": "currentCollInUSD",
                 "type": "uint256"
             }
         ],

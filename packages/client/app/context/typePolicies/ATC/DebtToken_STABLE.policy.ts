@@ -1,8 +1,14 @@
-import { makeVar } from '@apollo/client';
-import { AddressLike, parseEther } from 'ethers';
-import { Contracts_ATC, isStableCoinAddress } from '../../../../config';
+import { InMemoryCache, makeVar } from '@apollo/client';
+import { AddressLike, ethers, parseEther } from 'ethers';
+import { Contracts_ATC, isGOVTokenAddress, isStableCoinAddress } from '../../../../config';
 import { DebtToken, PriceFeed, StabilityPoolManager, TroveManager } from '../../../../generated/types';
+import {
+  GetBorrowerCollateralTokensQuery,
+  GetBorrowerCollateralTokensQueryVariables,
+} from '../../../generated/gql-types';
+import { GET_BORROWER_COLLATERAL_TOKENS } from '../../../queries';
 import { getCheckSum } from '../../../utils/crypto';
+import { convertToEtherPrecission } from '../../../utils/math';
 import {
   ContractDataFreshnessManager_ATC,
   SchemaDataFreshnessManager_ATC,
@@ -26,15 +32,40 @@ const DebtToken_STABLE = {
       },
       value: makeVar(parseEther('1')),
       lastFetched: 0,
-      timeout: 1000 * 10,
+      timeout: 1000 * 5,
     },
 
     borrowingRate: {
-      fetch: async (troveManagerContract: TroveManager) => {
+      fetch: async (troveManagerContract: TroveManager, cache: InMemoryCache, borrower: string) => {
         SchemaDataFreshnessManager_ATC.DebtToken[Contracts_ATC.DebtToken.STABLE].borrowingRate.lastFetched = Date.now();
+
+        const data = cache.readQuery<GetBorrowerCollateralTokensQuery, GetBorrowerCollateralTokensQueryVariables>({
+          query: GET_BORROWER_COLLATERAL_TOKENS,
+          variables: { borrower },
+        });
+
+        let percentageGovToken = 0n;
+        if (data) {
+          const totalCollateralValue = data.collateralTokenMetas.reduce(
+            (acc, { troveLockedAmount, token }) =>
+              acc +
+              (convertToEtherPrecission(troveLockedAmount, token.decimals) * token.priceUSDOracle) /
+                ethers.parseEther('1'),
+            0n,
+          );
+          const govToken = data?.collateralTokenMetas.find(({ token }) => isGOVTokenAddress(token.address));
+          const govTokenValue = govToken
+            ? (convertToEtherPrecission(govToken.troveLockedAmount, govToken.token.decimals) *
+                govToken.token.priceUSDOracle) /
+              ethers.parseEther('1')
+            : 0n;
+
+          percentageGovToken = (govTokenValue * ethers.parseEther('1')) / totalCollateralValue;
+        }
 
         const borrowingRate = await troveManagerContract.getBorrowingRate(
           isStableCoinAddress(Contracts_ATC.DebtToken.STABLE),
+          percentageGovToken,
         );
 
         SchemaDataFreshnessManager_ATC.DebtToken[Contracts_ATC.DebtToken.STABLE].borrowingRate.value(borrowingRate);
@@ -42,7 +73,8 @@ const DebtToken_STABLE = {
       value: makeVar(defaultFieldValue),
       lastFetched: 0,
       timeout: 1000 * 2,
-      periodic: 1000 * 30,
+      periodic: 1000 * 15,
+      initDelayed: 1000 * 3,
     },
 
     walletAmount: {
@@ -71,12 +103,12 @@ const DebtToken_STABLE = {
           );
         }
 
-        const tokenAmount = ContractDataFreshnessManager_ATC.TroveManager.getTroveDebt.value.find(
-          ({ tokenAddress }) => getCheckSum(tokenAddress) === getCheckSum(Contracts_ATC.DebtToken.STABLE),
-        )?.amount;
-        if (tokenAmount) {
-          SchemaDataFreshnessManager_ATC.DebtToken[Contracts_ATC.DebtToken.STABLE].troveMintedAmount.value(tokenAmount);
-        }
+        const tokenAmount =
+          ContractDataFreshnessManager_ATC.TroveManager.getTroveDebt.value.find(
+            ({ tokenAddress }) => getCheckSum(tokenAddress) === getCheckSum(Contracts_ATC.DebtToken.STABLE),
+          )?.amount ?? defaultFieldValue;
+
+        SchemaDataFreshnessManager_ATC.DebtToken[Contracts_ATC.DebtToken.STABLE].troveMintedAmount.value(tokenAmount);
       },
       value: makeVar(defaultFieldValue),
       lastFetched: 0,
@@ -155,12 +187,12 @@ const DebtToken_STABLE = {
           );
         }
 
-        const tokenAmount = ContractDataFreshnessManager_ATC.StabilityPoolManager.getDepositorDeposits.value.find(
-          ({ tokenAddress }) => getCheckSum(tokenAddress) === getCheckSum(Contracts_ATC.DebtToken.STABLE),
-        )?.amount;
-        if (tokenAmount) {
-          SchemaDataFreshnessManager_ATC.DebtToken[Contracts_ATC.DebtToken.STABLE].providedStability.value(tokenAmount);
-        }
+        const tokenAmount =
+          ContractDataFreshnessManager_ATC.StabilityPoolManager.getDepositorDeposits.value.find(
+            ({ tokenAddress }) => getCheckSum(tokenAddress) === getCheckSum(Contracts_ATC.DebtToken.STABLE),
+          )?.amount ?? defaultFieldValue;
+
+        SchemaDataFreshnessManager_ATC.DebtToken[Contracts_ATC.DebtToken.STABLE].providedStability.value(tokenAmount);
       },
       value: makeVar(defaultFieldValue),
       lastFetched: 0,
